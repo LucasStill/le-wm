@@ -5,7 +5,7 @@ defaults:
 output_model_name: lewm
 subdir: ${hydra:job.id}
 
-num_workers: 6
+num_workers: 0
 train_split: 0.9
 seed: 3072
 img_size: 224
@@ -23,19 +23,23 @@ trainer:
 loader:
   batch_size: 128
   num_workers: ${num_workers}
-  persistent_workers: True
-  prefetch_factor: 3
-  pin_memory: True
+  persistent_workers: False
+  prefetch_factor: null
+  pin_memory: False
 
 optimizer:
   type: AdamW
   lr: 5e-5
   weight_decay: 1e-3
 
+scheduler:
+  warmup_steps: 500
+  max_steps: 80000
+
 wandb:
   enabled: True
   config:
-    entity: lewm
+    entity: thil-ecole-polytechnique
     project: lewm
     name: ${output_model_name}
     id: ${subdir}
@@ -46,13 +50,13 @@ wm:
   type: lewm
   history_size: 3
   num_preds: 1
-  embed_dim: 192
+  embed_dim: 64 #192
 
 predictor:
-  depth: 6
-  heads: 16
-  mlp_dim: 2048
-  dim_head: 64
+  depth: 3 #6
+  heads: 8 #16
+  mlp_dim: 512 #2048
+  dim_head: 32 #64
   dropout: 0.1
   emb_dropout: 0.0
 
@@ -61,4 +65,26 @@ loss:
     weight: 0.09
     kwargs:
       knots: 17
-      num_proj: 1024
+      num_proj: 256 #1024
+
+  # STEP temporal triplet loss.
+  # Set weight > 0 to enable (also activates TemporalMetadataWrapper).
+  # margin lives in cosine-similarity space [-1, 1]; 0.5 is a safe start.
+  #
+  # Margin design (mirrors STEP's health_margin / margin):
+  #
+  #   |Δepisode_pos| < pos_radius                  → positive pair
+  #   |Δepisode_pos| > pos_radius + neg_gap         → negative pair
+  #   (dead zone in between, pairs are ignored)
+  #
+  # episode_pos is normalised to [0, 1] so these values are fractions of
+  # the episode length — no need to tune per-dataset based on episode length.
+  #
+  # Additionally, any cross-episode pair is always treated as a negative,
+  # guaranteeing that negatives are available even in batches where few
+  # sequences share the same episode.
+  temporal_triplet:
+    weight: 0.05      # λ_step  —  set to 0.0 to disable
+    margin: 0.5       # cosine triplet margin
+    pos_radius: 0.10  # max |Δpos| to be a positive (within ~10 % of episode)
+    neg_gap: 0.10     # dead-zone width beyond pos_radius before negatives start

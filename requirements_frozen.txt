@@ -1,0 +1,1 @@
+Error getting pip freeze: Command '['/Users/lucas-andreithil/PycharmProjects/le-wm/.venv/bin/python', '-m', 'pip', 'freeze']' returned non-zero exit status 1.

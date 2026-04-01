@@ -1,0 +1,61 @@
+defaults:
+  - _self_
+  - data: synthetic
+
+output_model_name: lewm_synthetic
+subdir: ${hydra:job.id}
+
+num_workers: 0
+train_split: 0.9
+seed: 3072
+img_size: 224
+patch_size: 14
+encoder_scale: tiny
+dump_object: True
+
+trainer:
+  max_epochs: 5
+  devices: auto
+  accelerator: cpu
+  precision: 32
+  gradient_clip_val: 1.0
+
+loader:
+  batch_size: 8
+  num_workers: ${num_workers}
+  persistent_workers: False
+  prefetch_factor: null
+  pin_memory: False
+
+optimizer:
+  type: AdamW
+  lr: 5e-5
+  weight_decay: 1e-3
+
+scheduler:
+  warmup_steps: 50
+  max_steps: 1000
+
+wandb:
+  enabled: False
+
+wm:
+  type: lewm
+  history_size: 3
+  num_preds: 1
+  embed_dim: 32
+
+predictor:
+  depth: 2
+  heads: 4
+  mlp_dim: 256
+  dim_head: 16
+  dropout: 0.1
+  emb_dropout: 0.0
+
+loss:
+  sigreg:
+    weight: 0.09
+    kwargs:
+      knots: 17
+      num_proj: 128

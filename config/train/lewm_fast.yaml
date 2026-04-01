@@ -1,0 +1,63 @@
+defaults:
+  - _self_
+  - data: synthetic
+
+output_model_name: lewm_fast
+subdir: ${hydra:job.id}
+
+num_workers: 0
+train_split: 0.8
+seed: 3072
+img_size: 64
+patch_size: 8
+encoder_scale: tiny
+dump_object: False
+
+trainer:
+  max_epochs: 1
+  devices: 1
+  accelerator: cpu
+  precision: 32
+  gradient_clip_val: 1.0
+  limit_train_batches: 0.1
+  limit_val_batches: 0.1
+
+loader:
+  batch_size: 2
+  num_workers: ${num_workers}
+  persistent_workers: False
+  prefetch_factor: null
+  pin_memory: False
+
+optimizer:
+  type: AdamW
+  lr: 1e-3
+  weight_decay: 1e-4
+
+scheduler:
+  warmup_steps: 1
+  max_steps: 10
+
+wandb:
+  enabled: False
+
+wm:
+  type: lewm
+  history_size: 2
+  num_preds: 1
+  embed_dim: 16
+
+predictor:
+  depth: 1
+  heads: 2
+  mlp_dim: 64
+  dim_head: 8
+  dropout: 0.0
+  emb_dropout: 0.0
+
+loss:
+  sigreg:
+    weight: 0.01
+    kwargs:
+      knots: 3
+      num_proj: 32

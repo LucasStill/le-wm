@@ -13,6 +13,8 @@ from omegaconf import OmegaConf, open_dict
 from jepa import JEPA
 from module import ARPredictor, Embedder, MLP, SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
+from step_loss import temporal_triplet_loss, episode_triplet_loss
+from step_dataset import TemporalMetadataWrapper
 
 
 def lejepa_forward(self, batch, stage, cfg):
@@ -36,10 +38,43 @@ def lejepa_forward(self, batch, stage, cfg):
     tgt_emb = emb[:, n_preds:] # label
     pred_emb = self.model.predict(ctx_emb, ctx_act) # pred
 
-    # LeWM loss
-    output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
-    output["sigreg_loss"]= self.sigreg(emb.transpose(0, 1))
-    output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]  
+    # LeWM base losses
+    output["pred_loss"]   = (pred_emb - tgt_emb).pow(2).mean()
+    output["sigreg_loss"] = self.sigreg(emb.transpose(0, 1))
+
+    # ------------------------------------------------------------------
+    # STEP temporal triplet loss
+    # Encourages consecutive frames within a window to be more similar
+    # (cosine) than frames drawn from different trajectory windows.
+    # Controlled by cfg.loss.temporal_triplet.{weight, margin}.
+    # ------------------------------------------------------------------
+    step_cfg = cfg.loss.get("temporal_triplet", None)
+    step_weight = step_cfg.weight if step_cfg is not None else 0.0
+
+    if step_weight > 0.0:
+        margin = step_cfg.get("margin", 0.5)
+
+        if "episode_idx" in batch and "episode_pos" in batch:
+            # Step 2: episode-aware triplet (requires metadata in batch).
+            output["temporal_loss"] = episode_triplet_loss(
+                emb,
+                episode_idx=batch["episode_idx"],
+                episode_pos=batch["episode_pos"],
+                margin=margin,
+                pos_radius=step_cfg.get("pos_radius", 0.1),
+                neg_gap=step_cfg.get("neg_gap", 0.1),
+            )
+        else:
+            # Step 1: intra-window triplet — no metadata required.
+            output["temporal_loss"] = temporal_triplet_loss(emb, margin=margin)
+    else:
+        output["temporal_loss"] = emb.new_tensor(0.0)
+
+    output["loss"] = (
+        output["pred_loss"]
+        + lambd        * output["sigreg_loss"]
+        + step_weight  * output["temporal_loss"]
+    )
 
     losses_dict = {f"{stage}/{k}": v.detach() for k, v in output.items() if "loss" in k}
     self.log_dict(losses_dict, on_step=True, sync_dist=True)
@@ -52,6 +87,15 @@ def run(cfg):
     #########################
 
     dataset = swm.data.HDF5Dataset(**cfg.data.dataset, transform=None)
+
+    # Attach temporal metadata (episode_idx, episode_pos) before any split or
+    # transform so that the positions are computed from the raw clip indices.
+    # episode_pos is normalised to [0, 1] by TemporalMetadataWrapper so that
+    # the triplet margins in the config are episode-length-agnostic.
+    step_cfg = cfg.loss.get("temporal_triplet", None)
+    if step_cfg is not None and step_cfg.get("weight", 0.0) > 0.0:
+        dataset = TemporalMetadataWrapper(dataset)
+
     transforms = [get_img_preprocessor(source='pixels', target='pixels', img_size=cfg.img_size)]
     
     with open_dict(cfg):
@@ -127,7 +171,7 @@ def run(cfg):
         'model_opt': {
             "modules": 'model',
             "optimizer": dict(cfg.optimizer),
-            "scheduler": {"type": "LinearWarmupCosineAnnealingLR"},
+            "scheduler": {"type": "LinearWarmupCosineAnnealingLR", **dict(cfg.scheduler)},
             "interval": "epoch",
         },
     }
