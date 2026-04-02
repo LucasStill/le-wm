@@ -31,17 +31,21 @@ This codebase builds on [stable-worldmodel](https://github.com/galilai-group/sta
 
 **Installation:**
 ```bash
-uv venv --python=3.10
+uv venv --python=3.12
 source .venv/bin/activate
 uv pip install stable-worldmodel[train,env]
+uv pip install --upgrade datasets transformers huggingface-hub torchmetrics pyarrow lightning
 ```
 
 ## Data
 
 Datasets use the HDF5 format for fast loading. Download the data from [HuggingFace](https://huggingface.co/collections/quentinll/lewm) and decompress with:
 
+Lucas download way:
 ```bash
-tar --zstd -xvf archive.tar.zst
+ hf download quentinll/lewm-pusht --repo-type=dataset --local-dir ~/.stable_worldmodel/
+cd ~/.stable_worldmodel/                                                              
+zstd -d pusht_expert_train.h5.zst
 ```
 
 Place the extracted `.h5` files under `$STABLEWM_HOME` (defaults to `~/.stable-wm/`). You can override this path:
@@ -63,9 +67,9 @@ wandb:
     project: your_project
 ```
 
-To launch training:
+To launch training (disable wandb):
 ```bash
-python train.py data=pusht
+python train.py data=pusht wandb.enabled=False
 ```
 
 Checkpoints are saved to `$STABLEWM_HOME` upon completion.

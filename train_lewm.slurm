@@ -14,11 +14,15 @@
 #       in config/train/lewm.yaml first.
 
 set -e
+
+# and set up this path:
+export STABLEWM_HOME=/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
+
 source ~/.bashrc
 
 # ── Activate environment ──────────────────────────────────────────────────────
 # The project ships with a .venv — activate it, or swap for your conda env.
-PROJECT_DIR=$WORK/le-wm          # ← update if your checkout lives elsewhere
+PROJECT_DIR=$WORK/thesis/le-wm          # ← update if your checkout lives elsewhere
 cd "$PROJECT_DIR"
 source .venv/bin/activate
 # conda activate lucasenv         # ← alternative if using conda
@@ -51,7 +55,9 @@ srun python -u train.py \
     data=pusht \
     num_workers=24 \
     loader.persistent_workers=True \
-    loader.pin_memory=True
+    loader.pin_memory=True \
+    subdir=pusht_step1 \
+    output_model_name=lewm_step_pusht
 
 echo "========================================"
 echo "Training complete."
