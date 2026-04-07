@@ -50,16 +50,14 @@ export WANDB_MODE=offline
 # loader.pin_memory=True — speeds up host→GPU transfers.
 srun python -u train.py \
     data=turbofan \
-    num_workers=24 \
+    img_size=28 \
+    patch_size=14 \
+    num_workers=8 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     subdir=turbofan1 \
     output_model_name=lewm_turbo1 \
-
-# V2 has extended CLIP batch coverage
-# DTimeM is to run deep metrics on the V2 architecture
-# V4 is with prototypes
-# lewm_STEPS_a1p0_DTimeM5_proto2
+    data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
 
 
 echo "========================================"

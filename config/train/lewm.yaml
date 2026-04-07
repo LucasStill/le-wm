@@ -35,11 +35,11 @@ optimizer:
 wandb:
   enabled: True
   config:
-    entity: lewm
-    project: lewm
+    entity: thil-ecole-polytechnique
+    project: turbofan
     name: ${output_model_name}
-    id: ${subdir}
-    resume: allow
+    #id: ${subdir}
+    resume: never
     log_model: False
 
 wm:
