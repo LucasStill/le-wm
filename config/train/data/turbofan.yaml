@@ -33,3 +33,14 @@ dataset:
     - action        # discrete {0: nothing, 1: repair} — z-normalized at runtime
   keys_to_cache:
     - action
+
+# ── Downstream HI probe ──────────────────────────────────────────────────────
+# Trains an MLP every eval_interval epochs to predict HI states from embeddings.
+# Requires 'observation.state' key in the HDF5 file (included by default).
+# Set enabled: false to skip (saves ~30s per eval_interval epochs).
+hi_probe:
+  enabled: true
+  eval_interval: 5      # run probe every N epochs
+  n_probe_epochs: 100   # training epochs for the MLP probe
+  hidden_dim: 256       # probe hidden layer size
+  n_subsample: 30000    # max timesteps to encode per split (for speed)

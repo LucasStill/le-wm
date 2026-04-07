@@ -1,4 +1,7 @@
+import json
+import logging
 import os
+import types
 from functools import partial
 from pathlib import Path
 
@@ -11,6 +14,7 @@ from lightning.pytorch.loggers import WandbLogger
 from omegaconf import OmegaConf, open_dict
 
 from jepa import JEPA
+from hi_probe import HIProbeCallback
 from module import ARPredictor, Embedder, MLP, SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
 
@@ -39,11 +43,43 @@ def lejepa_forward(self, batch, stage, cfg):
     # LeWM loss
     output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
     output["sigreg_loss"]= self.sigreg(emb.transpose(0, 1))
-    output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]  
+    output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]
 
     losses_dict = {f"{stage}/{k}": v.detach() for k, v in output.items() if "loss" in k}
     self.log_dict(losses_dict, on_step=True, sync_dist=True)
     return output
+
+
+def _patch_wandb_offline(manager: spt.Manager) -> None:
+    """Patch stable_pretraining's init_and_sync_wandb to handle the first
+    offline run gracefully.
+
+    Bug: when WANDB_MODE=offline and no previous run exists,
+    _wandb_previous_dir() returns None, but the original code unconditionally
+    does `None / "files/wandb-config.json"`, crashing with TypeError.
+    """
+
+    def _safe_init_and_sync_wandb(self):
+        import lightning
+        if not isinstance(
+            self._trainer.logger, lightning.pytorch.loggers.wandb.WandbLogger
+        ):
+            return
+        logging.info("📈 Using Wandb")
+        exp = self._trainer.logger.experiment
+        if exp.offline:
+            previous_run = self._wandb_previous_dir()
+            if previous_run is None:
+                logging.info("[wandb] Offline mode: first run, no config to reuse.")
+                return
+            logging.info(f"[wandb] Reusing config from previous run: {previous_run}")
+            with open(previous_run / "files/wandb-config.json", "r") as f:
+                last_config = json.load(f)
+            exp.config.update(last_config)
+            logging.info("[wandb] Config reloaded.")
+
+    manager.init_and_sync_wandb = types.MethodType(_safe_init_and_sync_wandb, manager)
+
 
 @hydra.main(version_base=None, config_path="./config/train", config_name="lewm")
 def run(cfg):
@@ -53,7 +89,7 @@ def run(cfg):
 
     dataset = swm.data.HDF5Dataset(**cfg.data.dataset, transform=None)
     transforms = [get_img_preprocessor(source='pixels', target='pixels', img_size=cfg.img_size)]
-    
+
     with open_dict(cfg):
         for col in cfg.data.dataset.keys_to_load:
             if col.startswith("pixels"):
@@ -72,9 +108,9 @@ def run(cfg):
         dataset, lengths=[cfg.train_split, 1 - cfg.train_split], generator=rnd_gen
     )
 
-    train = torch.utils.data.DataLoader(train_set, **cfg.loader,shuffle=True, drop_last=True, generator=rnd_gen)
+    train = torch.utils.data.DataLoader(train_set, **cfg.loader, shuffle=True, drop_last=True, generator=rnd_gen)
     val = torch.utils.data.DataLoader(val_set, **cfg.loader, shuffle=False, drop_last=False)
-    
+
     ##############################
     ##       model / optim      ##
     ##############################
@@ -100,7 +136,7 @@ def run(cfg):
     )
 
     action_encoder = Embedder(input_dim=effective_act_dim, emb_dim=embed_dim)
-    
+
     projector = MLP(
         input_dim=hidden_dim,
         output_dim=embed_dim,
@@ -132,37 +168,62 @@ def run(cfg):
         },
     }
 
-    data_module = spt.data.DataModule(train=train, val=val)
-    world_model = spt.Module(
-        model = world_model,
-        sigreg = SIGReg(**cfg.loss.sigreg.kwargs),
-        forward=partial(lejepa_forward, cfg=cfg),
-        optim=optimizers,
-    )
+    ##########################
+    ##       callbacks      ##
+    ##########################
+
+    run_id = cfg.get("subdir") or ""
+    run_dir = Path(swm.data.utils.get_cache_dir(), run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    callbacks = [
+        ModelObjectCallBack(dirpath=run_dir, filename=cfg.output_model_name, epoch_interval=1),
+    ]
+
+    # Optional: HI probe — evaluates downstream degradation prediction every N epochs
+    hi_probe_cfg = cfg.get("hi_probe", None)
+    if hi_probe_cfg is not None and hi_probe_cfg.get("enabled", False):
+        data_path = str(
+            Path(cfg.data.dataset.cache_dir) / f"{cfg.data.dataset.name}.h5"
+        )
+        callbacks.append(HIProbeCallback(
+            data_path      = data_path,
+            img_size       = cfg.img_size,
+            train_split    = cfg.train_split,
+            seed           = cfg.seed,
+            eval_interval  = hi_probe_cfg.get("eval_interval", 5),
+            n_probe_epochs = hi_probe_cfg.get("n_probe_epochs", 100),
+            hidden_dim     = hi_probe_cfg.get("hidden_dim", 256),
+            n_subsample    = hi_probe_cfg.get("n_subsample", 30_000),
+        ))
+        logging.info(
+            f"[HIProbe] Enabled — evaluating every "
+            f"{hi_probe_cfg.get('eval_interval', 5)} epochs"
+        )
 
     ##########################
     ##       training       ##
     ##########################
 
-    run_id = cfg.get("subdir") or ""
-    run_dir = Path(swm.data.utils.get_cache_dir(), run_id)
+    data_module = spt.data.DataModule(train=train, val=val)
+    world_model = spt.Module(
+        model=world_model,
+        sigreg=SIGReg(**cfg.loss.sigreg.kwargs),
+        forward=partial(lejepa_forward, cfg=cfg),
+        optim=optimizers,
+    )
 
     logger = None
     if cfg.wandb.enabled:
         logger = WandbLogger(**cfg.wandb.config)
         logger.log_hyperparams(OmegaConf.to_container(cfg))
 
-    run_dir.mkdir(parents=True, exist_ok=True)
     with open(run_dir / "config.yaml", "w") as f:
         OmegaConf.save(cfg, f)
 
-    object_dump_callback = ModelObjectCallBack(
-        dirpath=run_dir, filename=cfg.output_model_name, epoch_interval=1,
-    )
-
     trainer = pl.Trainer(
         **cfg.trainer,
-        callbacks=[object_dump_callback],
+        callbacks=callbacks,
         num_sanity_val_steps=1,
         logger=logger,
         enable_checkpointing=True,
@@ -174,6 +235,10 @@ def run(cfg):
         data=data_module,
         ckpt_path=run_dir / f"{cfg.output_model_name}_weights.ckpt",
     )
+
+    # Fix stable_pretraining bug: offline mode crashes on first run
+    if os.environ.get("WANDB_MODE") == "offline":
+        _patch_wandb_offline(manager)
 
     manager()
     return
