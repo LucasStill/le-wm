@@ -9,6 +9,14 @@ Why MLP instead of Ridge?
 
 The callback uses the same episode-wise train/test split and seed as
 le-wm training so the test set is guaranteed to be held out.
+
+Metrics logged per HI dimension (e.g. hi_probe/HPC_eff/r2):
+  - r2          : coefficient of determination
+  - rmse        : root mean squared error
+  - pearson_r   : Pearson correlation coefficient
+
+Plus aggregates:
+  - hi_probe/mean_r2 / mean_rmse / mean_pearson_r
 """
 
 import logging
@@ -20,6 +28,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import lightning as pl
+from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 
 
@@ -48,7 +57,7 @@ class HIProbeCallback(pl.Callback):
 
     1. Encodes a random subset of test observations with the frozen JEPA encoder.
     2. Trains a small MLP to predict the 10 HI degradation states.
-    3. Reports per-component and mean R² to wandb and the console.
+    3. Reports per-component R², RMSE, and Pearson-r to wandb and the console.
 
     Parameters
     ----------
@@ -85,16 +94,16 @@ class HIProbeCallback(pl.Callback):
         batch_size: int = 2048,
     ):
         super().__init__()
-        self.data_path     = Path(data_path)
-        self.img_size      = img_size
-        self.train_split   = train_split
-        self.seed          = seed
-        self.eval_interval = eval_interval
+        self.data_path      = Path(data_path)
+        self.img_size       = img_size
+        self.train_split    = train_split
+        self.seed           = seed
+        self.eval_interval  = eval_interval
         self.n_probe_epochs = n_probe_epochs
-        self.probe_lr      = probe_lr
-        self.hidden_dim    = hidden_dim
-        self.n_subsample   = n_subsample
-        self.batch_size    = batch_size
+        self.probe_lr       = probe_lr
+        self.hidden_dim     = hidden_dim
+        self.n_subsample    = n_subsample
+        self.batch_size     = batch_size
 
         # Filled in setup()
         self._obs_tr:   np.ndarray | None = None
@@ -181,10 +190,10 @@ class HIProbeCallback(pl.Callback):
         X_tr: np.ndarray, y_tr: np.ndarray,
         X_te: np.ndarray, y_te: np.ndarray,
         device: torch.device,
-    ) -> tuple[list[float], float]:
-        """Train MLP probe, return per-component R² and mean R²."""
-        embed_dim  = X_tr.shape[1]
-        n_targets  = y_tr.shape[1]
+    ) -> dict[str, list[float]]:
+        """Train MLP probe, return per-dimension dict of {r2, rmse, pearson_r}."""
+        embed_dim = X_tr.shape[1]
+        n_targets = y_tr.shape[1]
 
         probe = _MLPProbe(embed_dim, self.hidden_dim, n_targets).to(device)
         opt   = torch.optim.Adam(probe.parameters(), lr=self.probe_lr)
@@ -205,16 +214,24 @@ class HIProbeCallback(pl.Callback):
         with torch.no_grad():
             preds = probe(torch.from_numpy(X_te).float().to(device)).cpu().numpy()
 
-        r2s = [r2_score(y_te[:, i], preds[:, i]) for i in range(n_targets)]
-        return r2s, float(np.mean(r2s))
+        r2s, rmses, pearson_rs = [], [], []
+        for i in range(n_targets):
+            gt, pr = y_te[:, i], preds[:, i]
+            r2s.append(float(r2_score(gt, pr)))
+            rmses.append(float(np.sqrt(np.mean((gt - pr) ** 2))))
+            r, _ = pearsonr(gt, pr)
+            pearson_rs.append(float(r))
+
+        return {"r2": r2s, "rmse": rmses, "pearson_r": pearson_rs}
 
     # ── main hook ──────────────────────────────────────────────────────────
 
     def on_validation_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        if trainer.current_epoch % self.eval_interval != 0:
+        epoch = trainer.current_epoch
+        # Skip epoch 0 (model untrained) and only run every eval_interval epochs
+        if epoch == 0 or epoch % self.eval_interval != 0:
             return
 
-        epoch  = trainer.current_epoch
         device = next(pl_module.model.parameters()).device
 
         logging.info(f"[HIProbe] Epoch {epoch}: encoding observations …")
@@ -224,16 +241,63 @@ class HIProbeCallback(pl.Callback):
         pl_module.model.train()
 
         logging.info(f"[HIProbe] Training MLP probe ({self.n_probe_epochs} epochs) …")
-        r2s, mean_r2 = self._train_and_eval_probe(X_tr, self._hi_tr, X_te, self._hi_te, device)
+        metrics = self._train_and_eval_probe(X_tr, self._hi_tr, X_te, self._hi_te, device)
 
-        # ── console ──────────────────────────────────────────────────────
-        short = [n.replace("deg_", "").replace("_s_map", "/") for n in self._hi_names]
-        logging.info(f"[HIProbe] Epoch {epoch} results — mean R²: {mean_r2:.4f}")
-        for s, r2 in zip(short, r2s):
-            logging.info(f"  {s:<32}: R² = {r2:.4f}")
+        r2s       = metrics["r2"]
+        rmses     = metrics["rmse"]
+        pearson_rs= metrics["pearson_r"]
 
-        # ── log to wandb / Lightning ──────────────────────────────────────
-        log_dict = {f"hi_probe/{s}": r2 for s, r2 in zip(short, r2s)}
-        log_dict["hi_probe/mean_r2"] = mean_r2
+        mean_r2       = float(np.mean(r2s))
+        mean_rmse     = float(np.mean(rmses))
+        mean_pearson  = float(np.mean(pearson_rs))
 
-        pl_module.log_dict(log_dict, on_step=False, on_epoch=True, sync_dist=True)
+        # ── pretty console table ──────────────────────────────────────────
+        # Convert e.g. "deg_CmpBst_s_mapEff_in" → "Bst/Eff"
+        def _shorten(name: str) -> str:
+            n = name.replace("deg_Cmp", "").replace("deg_Trb", "Trb")
+            n = n.replace("_s_mapEff_in", "/Eff").replace("_s_mapWc_in", "/Wc")
+            # Handle turbine names: TrbHTrbH → TrbH, etc.
+            n = n.replace("TrbTrbH", "TrbH").replace("TrbTrbL", "TrbL")
+            return n
+
+        short = [_shorten(n) for n in self._hi_names]
+        sep = "─" * 64
+        logging.info(f"\n[HIProbe] Epoch {epoch} results")
+        logging.info(sep)
+        logging.info(f"  {'Component':<28}  {'R²':>8}  {'RMSE':>10}  {'Pearson-r':>10}")
+        logging.info(sep)
+        for name, r2, rmse, pr in zip(short, r2s, rmses, pearson_rs):
+            logging.info(f"  {name:<28}  {r2:>8.4f}  {rmse:>10.5f}  {pr:>10.4f}")
+        logging.info(sep)
+        logging.info(
+            f"  {'MEAN':<28}  {mean_r2:>8.4f}  {mean_rmse:>10.5f}  {mean_pearson:>10.4f}"
+        )
+        logging.info(sep)
+
+        # ── build log dict ────────────────────────────────────────────────
+        # Key format: hi_probe/<component>/<metric>
+        # e.g. hi_probe/HPC_eff/r2, hi_probe/HPC_eff/rmse, hi_probe/HPC_eff/pearson_r
+        log_dict: dict[str, float] = {}
+        for name, r2, rmse, pr in zip(short, r2s, rmses, pearson_rs):
+            log_dict[f"hi_probe/{name}/r2"]        = r2
+            log_dict[f"hi_probe/{name}/rmse"]      = rmse
+            log_dict[f"hi_probe/{name}/pearson_r"] = pr
+        log_dict["hi_probe/mean_r2"]       = mean_r2
+        log_dict["hi_probe/mean_rmse"]     = mean_rmse
+        log_dict["hi_probe/mean_pearson_r"] = mean_pearson
+
+        # ── log to wandb directly (bypasses Lightning's metric aggregation) ──
+        # pl_module.log_dict() called from a callback's on_validation_epoch_end
+        # gets silently buffered/dropped.  Log to the wandb experiment directly.
+        if trainer.logger is not None:
+            try:
+                # WandbLogger exposes the run via .experiment
+                wandb_run = trainer.logger.experiment
+                wandb_run.log({**log_dict, "trainer/global_step": trainer.global_step})
+                logging.info(f"[HIProbe] Logged {len(log_dict)} metrics to wandb.")
+            except Exception as e:
+                logging.warning(f"[HIProbe] wandb log failed: {e}")
+
+        # Also feed into Lightning's progress bar / CSV logger as a fallback
+        for k, v in log_dict.items():
+            pl_module.log(k, v, on_step=False, on_epoch=True, prog_bar=False, sync_dist=False)
