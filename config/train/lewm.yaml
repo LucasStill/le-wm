@@ -62,3 +62,14 @@ loss:
     kwargs:
       knots: 17
       num_proj: 1024
+
+# ── Downstream HI probe ──────────────────────────────────────────────────────
+# Trains an MLP every eval_interval epochs to predict HI states from JEPA
+# encoder embeddings. Requires 'observation.state' in the HDF5 (always present).
+# Set enabled: false to skip (saves ~30-60s per eval_interval epochs).
+hi_probe:
+  enabled: false          # override to true via CLI: hi_probe.enabled=true
+  eval_interval: 5        # run probe every N epochs
+  n_probe_epochs: 100     # MLP probe training epochs
+  hidden_dim: 256         # probe hidden layer width
+  n_subsample: 30000      # max timesteps to encode per split (speed/memory)

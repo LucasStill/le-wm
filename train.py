@@ -180,26 +180,38 @@ def run(cfg):
         ModelObjectCallBack(dirpath=run_dir, filename=cfg.output_model_name, epoch_interval=1),
     ]
 
-    # Optional: HI probe — evaluates downstream degradation prediction every N epochs
+    # Optional: HI probe — evaluates downstream degradation prediction every N epochs.
+    # Config lives at top-level cfg.hi_probe (NOT cfg.data.hi_probe) because
+    # the data config is loaded under cfg.data.* by Hydra.
     hi_probe_cfg = cfg.get("hi_probe", None)
+    logging.info(f"[HIProbe] Config found: {hi_probe_cfg is not None}, "
+                 f"enabled: {hi_probe_cfg.get('enabled', False) if hi_probe_cfg else False}")
+
     if hi_probe_cfg is not None and hi_probe_cfg.get("enabled", False):
-        data_path = str(
-            Path(cfg.data.dataset.cache_dir) / f"{cfg.data.dataset.name}.h5"
-        )
-        callbacks.append(HIProbeCallback(
-            data_path      = data_path,
-            img_size       = cfg.img_size,
-            train_split    = cfg.train_split,
-            seed           = cfg.seed,
-            eval_interval  = hi_probe_cfg.get("eval_interval", 5),
-            n_probe_epochs = hi_probe_cfg.get("n_probe_epochs", 100),
-            hidden_dim     = hi_probe_cfg.get("hidden_dim", 256),
-            n_subsample    = hi_probe_cfg.get("n_subsample", 30_000),
-        ))
-        logging.info(
-            f"[HIProbe] Enabled — evaluating every "
-            f"{hi_probe_cfg.get('eval_interval', 5)} epochs"
-        )
+        cache_dir = cfg.data.dataset.get("cache_dir")
+        name      = cfg.data.dataset.get("name", "dataset")
+        if not cache_dir or cache_dir == "???":
+            logging.error(
+                "[HIProbe] data.dataset.cache_dir is not set — "
+                "pass it via CLI: data.dataset.cache_dir=/path/to/data"
+            )
+        else:
+            data_path = str(Path(cache_dir) / f"{name}.h5")
+            logging.info(f"[HIProbe] data_path = {data_path}")
+            callbacks.append(HIProbeCallback(
+                data_path      = data_path,
+                img_size       = cfg.img_size,
+                train_split    = cfg.train_split,
+                seed           = cfg.seed,
+                eval_interval  = hi_probe_cfg.get("eval_interval", 5),
+                n_probe_epochs = hi_probe_cfg.get("n_probe_epochs", 100),
+                hidden_dim     = hi_probe_cfg.get("hidden_dim", 256),
+                n_subsample    = hi_probe_cfg.get("n_subsample", 30_000),
+            ))
+            logging.info(
+                f"[HIProbe] ✓ Registered — evaluating every "
+                f"{hi_probe_cfg.get('eval_interval', 5)} epochs"
+            )
 
     ##########################
     ##       training       ##
