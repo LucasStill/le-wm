@@ -55,8 +55,8 @@ srun python -u train.py \
     num_workers=8 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan1 \
-    output_model_name=lewm_turbo1 \
+    subdir=turbofan1_1 \
+    output_model_name=lewm_turbo1_1 \
     data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
 
 
