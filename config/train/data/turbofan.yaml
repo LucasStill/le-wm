@@ -1,0 +1,35 @@
+# Turbofan engine degradation dataset for le-wm training.
+#
+# PREREQUISITES — run once in rl_simulator_safran/:
+#
+#   python hpc/prepare_lewm_dataset.py \
+#       --input  data/opendeck_2000.h5 \
+#       --output data/opendeck_2000_lewm.h5
+#
+# TRAINING — from le-wm/:
+#
+#   python train.py \
+#       data=turbofan \
+#       data.dataset.cache_dir=/abs/path/to/rl_simulator_safran/data
+#
+# The file loaded will be: {cache_dir}/opendeck_2000_lewm.h5
+# Alternatively, set STABLEWM_HOME to the data dir and drop cache_dir.
+#
+# NOTES ON ARCHITECTURE:
+#   • img_size=224, patch_size=14  →  256 patches per observation (standard ViT-tiny).
+#     The 3×7×4 "image" is upsampled to 3×224×224 via nearest-neighbor.
+#     For a lighter model try: img_size=28 patch_size=14  (4 patches, much faster).
+#   • frameskip=1: turbofan degrades slowly, consecutive steps are informative.
+#   • action is discrete {0: do nothing, 1: repair}. It is z-normalized by
+#     get_column_normalizer at training time (same as pushT's continuous actions).
+
+dataset:
+  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
+  frameskip: 1
+  name: opendeck_2000_lewm
+  cache_dir: ???   # set via CLI or env STABLEWM_HOME
+  keys_to_load:
+    - pixels        # observation.sensors (3×7×4), normalized, created by prepare_lewm_dataset.py
+    - action        # discrete {0: nothing, 1: repair} — z-normalized at runtime
+  keys_to_cache:
+    - action
