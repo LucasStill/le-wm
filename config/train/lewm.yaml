@@ -46,13 +46,13 @@ wm:
   type: lewm
   history_size: 3
   num_preds: 1
-  embed_dim: 192
+  embed_dim: 64 #192
 
 predictor:
-  depth: 6
-  heads: 16
-  mlp_dim: 2048
-  dim_head: 64
+  depth: 4 #6
+  heads: 8 #16
+  mlp_dim: 512 #2048
+  dim_head: 32 #64
   dropout: 0.1
   emb_dropout: 0.0
 
