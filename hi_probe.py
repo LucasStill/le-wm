@@ -204,11 +204,14 @@ class HIProbeCallback(pl.Callback):
         dl = torch.utils.data.DataLoader(ds, batch_size=512, shuffle=True)
 
         probe.train()
-        for _ in range(self.n_probe_epochs):
-            for xb, yb in dl:
-                opt.zero_grad()
-                F.mse_loss(probe(xb), yb).backward()
-                opt.step()
+        # torch.enable_grad() is required: on_validation_epoch_end is called
+        # inside Lightning's no_grad context, which prevents .backward().
+        with torch.enable_grad():
+            for _ in range(self.n_probe_epochs):
+                for xb, yb in dl:
+                    opt.zero_grad()
+                    F.mse_loss(probe(xb), yb).backward()
+                    opt.step()
 
         probe.eval()
         with torch.no_grad():
