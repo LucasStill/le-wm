@@ -27,7 +27,7 @@ dataset:
   num_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
   frameskip: 1
   name: opendeck_2000_lewm
-  cache_dir: ???   # set via CLI or env STABLEWM_HOME
+  cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data   # set via CLI or env STABLEWM_HOME
   keys_to_load:
     - pixels        # observation.sensors (3×7×4), normalized, created by prepare_lewm_dataset.py
     - action        # discrete {0: nothing, 1: repair} — z-normalized at runtime
@@ -36,4 +36,4 @@ dataset:
 
 # NOTE: hi_probe config lives in lewm.yaml (top-level), not here,
 # because Hydra loads this file under cfg.data.* and train.py reads
-# hi_probe from the top-level cfg.
+# hi_probe from the top-level cfg

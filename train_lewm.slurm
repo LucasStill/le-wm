@@ -52,12 +52,14 @@ srun python -u train.py \
     data=turbofan \
     img_size=28 \
     patch_size=14 \
-    num_workers=8 \
+    num_workers=16 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan1_1 \
-    output_model_name=lewm_turbo1_1 \
-    data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
+    subdir=turbofan1_2 \
+    output_model_name=lewm_turbo1_3_1 \
+    data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data \
+    hi_probe.enabled=true \
+    hi_probe.eval_interval=1
 
 
 echo "========================================"
