@@ -80,7 +80,7 @@ loss:
 #   python train.py ... hi_probe.enabled=true hi_probe.probe_seq_len=10
 hi_probe:
   enabled: false          # override via CLI: hi_probe.enabled=true
-  eval_interval: 5        # run probe every N training epochs
+  eval_interval: 1        # run probe every N training epochs
   n_probe_epochs: 150     # was 50 — more epochs to reach stable convergence
   probe_lr: 1e-3          # Adam lr for the probe
   probe_patience: 20      # was 10 — more patience before early stop
