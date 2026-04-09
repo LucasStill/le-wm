@@ -9,25 +9,20 @@
 #SBATCH --output=logs/lewm_%j.out
 #SBATCH --error=logs/lewm_%j.out
 #SBATCH -C h100
-# NOTE: bf16 precision (set in lewm.yaml) requires A100 or H100.
-#       If switching to V100 (yil@v100 / -C v100), change precision to fp16
-#       in config/train/lewm.yaml first.
+# NOTE: bf16 precision requires A100 or H100.
+#       For V100 (yil@v100 / -C v100) change precision to fp16 in lewm.yaml.
 
 set -e
 
-# and set up this path:
 export STABLEWM_HOME=/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
 
 source ~/.bashrc
 
-# ── Activate environment ──────────────────────────────────────────────────────
-# The project ships with a .venv — activate it, or swap for your conda env.
-PROJECT_DIR=$WORK/thesis/le-wm-vanilla          # ← update if your checkout lives elsewhere
+# Activate environment
+PROJECT_DIR=$WORK/thesis/le-wm-vanilla
 cd "$PROJECT_DIR"
 source .venv/bin/activate
-# conda activate lucasenv         # ← alternative if using conda
 
-# ── Logging / output dirs ─────────────────────────────────────────────────────
 mkdir -p logs
 
 echo "========================================"
@@ -37,28 +32,31 @@ echo "GPU      : $CUDA_VISIBLE_DEVICES"
 echo "Dir      : $(pwd)"
 echo "========================================"
 
-# ── Environment variables ─────────────────────────────────────────────────────
 export PYTHONUNBUFFERED=1
 export CUDA_LAUNCH_BLOCKING=0
-# Uncomment to run wandb offline and sync later (useful if the compute nodes
-# have no internet access on Jean Zay):
 export WANDB_MODE=offline
 
-# ── Training ──────────────────────────────────────────────────────────────────
-# num_workers=8  — overrides the yaml default of 0; use ~CPUs/GPUs on the node.
-# loader.persistent_workers=True — required when num_workers > 0 in Lightning.
-# loader.pin_memory=True — speeds up host→GPU transfers.
+DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
+
+# -----------------------------------------------------------------------
+# SEQ_LEN controls the downstream HI probe window size:
+#   1  = single-snapshot probe (fast, baseline)
+#   10 = 10-step trajectory window probe (slower setup, richer context)
+# Change SEQ_LEN and RUN_NAME to switch between the two variants.
+# -----------------------------------------------------------------------
+SEQ_LEN=1
+RUN_NAME=lewm_turbo_v2_sl${SEQ_LEN}
+
 srun python -u train.py \
     data=turbofan \
     num_workers=16 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan_v2 \
-    output_model_name=lewm_turbo_v2 \
-    data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data \
+    subdir=turbofan_v2_sl${SEQ_LEN} \
+    output_model_name=${RUN_NAME} \
+    data.dataset.cache_dir=${DATA_DIR} \
     hi_probe.enabled=true \
-    hi_probe.probe_seq_len=1
-
+    hi_probe.probe_seq_len=${SEQ_LEN}
 
 echo "========================================"
 echo "Training complete."
