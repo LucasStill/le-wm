@@ -64,12 +64,31 @@ loss:
       num_proj: 1024
 
 # ── Downstream HI probe ──────────────────────────────────────────────────────
-# Trains an MLP every eval_interval epochs to predict HI states from JEPA
-# encoder embeddings. Requires 'observation.state' in the HDF5 (always present).
-# Set enabled: false to skip (saves ~30-60s per eval_interval epochs).
+# Trains a TransformerProbe every eval_interval epochs to predict HI states
+# from frozen JEPA encoder embeddings.
+# Enable via CLI: hi_probe.enabled=true data.dataset.cache_dir=/path/to/data
+#
+# Two useful configurations to compare:
+#   seq_len=1  (default): single-snapshot probe — each input is one embedding.
+#              Self-attention is trivial; equivalent to an MLP. Fast.
+#   seq_len=10: trajectory-window probe — each input is 10 consecutive
+#              embeddings from the same episode. The transformer attends over
+#              the window. Requires whole-episode gathering (slower setup).
+#
+# Launch two parallel runs to compare:
+#   python train.py ... hi_probe.enabled=true hi_probe.probe_seq_len=1
+#   python train.py ... hi_probe.enabled=true hi_probe.probe_seq_len=10
 hi_probe:
-  enabled: false          # override to true via CLI: hi_probe.enabled=true
-  eval_interval: 5        # run probe every N epochs
-  n_probe_epochs: 100     # MLP probe training epochs
-  hidden_dim: 256         # probe hidden layer width
-  n_subsample: 30000      # max timesteps to encode per split (speed/memory)
+  enabled: false          # override via CLI: hi_probe.enabled=true
+  eval_interval: 5        # run probe every N training epochs
+  n_probe_epochs: 50      # max probe training epochs (early stopping applies)
+  probe_lr: 1e-3          # Adam lr for the probe
+  probe_patience: 10      # early-stopping patience on mean per-dim RMSE
+  d_model: 64             # transformer hidden dim (64 = embed_dim, avoids bottleneck)
+  nhead: 4                # attention heads (d_model must be divisible by nhead)
+  num_layers: 2           # transformer encoder layers
+  probe_dropout: 0.1      # dropout in transformer + output head
+  probe_batch_size: 256   # batch size for probe training
+  probe_seq_len: 1        # 1 = single-step; >1 = temporal window (episode-aware)
+  n_subsample: 30000      # max timesteps per split (for seq_len>1: whole episodes)
+  enc_batch_size: 2048    # JEPA encoding batch size

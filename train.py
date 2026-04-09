@@ -199,14 +199,22 @@ def run(cfg):
             data_path = str(Path(cache_dir) / f"{name}.h5")
             logging.info(f"[HIProbe] data_path = {data_path}")
             callbacks.append(HIProbeCallback(
-                data_path      = data_path,
-                img_size       = cfg.img_size,
-                train_split    = cfg.train_split,
-                seed           = cfg.seed,
-                eval_interval  = hi_probe_cfg.get("eval_interval", 5),
-                n_probe_epochs = hi_probe_cfg.get("n_probe_epochs", 100),
-                hidden_dim     = hi_probe_cfg.get("hidden_dim", 256),
-                n_subsample    = hi_probe_cfg.get("n_subsample", 30_000),
+                data_path        = data_path,
+                img_size         = cfg.img_size,
+                train_split      = cfg.train_split,
+                seed             = cfg.seed,
+                eval_interval    = hi_probe_cfg.get("eval_interval", 5),
+                n_probe_epochs   = hi_probe_cfg.get("n_probe_epochs", 50),
+                probe_lr         = hi_probe_cfg.get("probe_lr", 1e-3),
+                probe_patience   = hi_probe_cfg.get("probe_patience", 10),
+                d_model          = hi_probe_cfg.get("d_model", 64),
+                nhead            = hi_probe_cfg.get("nhead", 4),
+                num_layers       = hi_probe_cfg.get("num_layers", 2),
+                probe_dropout    = hi_probe_cfg.get("probe_dropout", 0.1),
+                probe_batch_size = hi_probe_cfg.get("probe_batch_size", 256),
+                probe_seq_len    = hi_probe_cfg.get("probe_seq_len", 1),
+                n_subsample      = hi_probe_cfg.get("n_subsample", 30_000),
+                enc_batch_size   = hi_probe_cfg.get("enc_batch_size", 2048),
             ))
             logging.info(
                 f"[HIProbe] ✓ Registered — evaluating every "
