@@ -50,16 +50,13 @@ export WANDB_MODE=offline
 # loader.pin_memory=True — speeds up host→GPU transfers.
 srun python -u train.py \
     data=turbofan \
-    img_size=28 \
-    patch_size=14 \
     num_workers=16 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan_probe \
-    output_model_name=lewm_turbo_sl1 \
+    subdir=turbofan_v2 \
+    output_model_name=lewm_turbo_v2 \
     data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data \
     hi_probe.enabled=true \
-    hi_probe.eval_interval=1 \
     hi_probe.probe_seq_len=1
 
 

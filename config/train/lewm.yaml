@@ -8,8 +8,8 @@ subdir: ${hydra:job.id}
 num_workers: 6
 train_split: 0.9
 seed: 3072
-img_size: 224
-patch_size: 14
+img_size: 28
+patch_size: 7    # 28/7 = 16 patches (was patch_size=14 → 4 patches, too coarse)
 encoder_scale: tiny
 dump_object: True
 
@@ -29,7 +29,7 @@ loader:
 
 optimizer:
   type: AdamW
-  lr: 5e-5
+  lr: 3e-4    # was 5e-5 — higher LR to sustain learning past epoch 1
   weight_decay: 1e-3
 
 wandb:
@@ -58,7 +58,7 @@ predictor:
 
 loss:
   sigreg:
-    weight: 0.09
+    weight: 0.5   # was 0.09 — stronger push for isotropic embedding geometry
     kwargs:
       knots: 17
       num_proj: 1024
@@ -81,9 +81,9 @@ loss:
 hi_probe:
   enabled: false          # override via CLI: hi_probe.enabled=true
   eval_interval: 5        # run probe every N training epochs
-  n_probe_epochs: 50      # max probe training epochs (early stopping applies)
+  n_probe_epochs: 150     # was 50 — more epochs to reach stable convergence
   probe_lr: 1e-3          # Adam lr for the probe
-  probe_patience: 10      # early-stopping patience on mean per-dim RMSE
+  probe_patience: 20      # was 10 — more patience before early stop
   d_model: 64             # transformer hidden dim (64 = embed_dim, avoids bottleneck)
   nhead: 4                # attention heads (d_model must be divisible by nhead)
   num_layers: 2           # transformer encoder layers

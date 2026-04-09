@@ -469,6 +469,23 @@ class HIProbeCallback(pl.Callback):
         X_te = self._encode(pl_module, self._obs_te)
         pl_module.model.train()
 
+        # ── embedding health check ────────────────────────────────────────
+        emb_std = X_te.std(axis=0)
+        logging.info(
+            f"[HIProbe] Embedding std — min={emb_std.min():.4f}  "
+            f"mean={emb_std.mean():.4f}  max={emb_std.max():.4f}"
+        )
+        if trainer.logger is not None:
+            try:
+                trainer.logger.experiment.log({
+                    "hi_probe/emb_std_min":  float(emb_std.min()),
+                    "hi_probe/emb_std_mean": float(emb_std.mean()),
+                    "hi_probe/emb_std_max":  float(emb_std.max()),
+                    "trainer/global_step":   trainer.global_step,
+                })
+            except Exception:
+                pass
+
         logging.info(
             f"[HIProbe] Training TransformerProbe "
             f"(max {self.n_probe_epochs} epochs, patience={self.probe_patience}) …"
