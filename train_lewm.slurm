@@ -60,7 +60,7 @@ srun python -u train.py \
     data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data \
     hi_probe.enabled=true \
     hi_probe.eval_interval=1 \
-    hi_probe.seq_len=1
+    hi_probe.probe_seq_len=1
 
 
 echo "========================================"
