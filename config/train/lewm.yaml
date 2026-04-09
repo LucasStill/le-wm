@@ -92,3 +92,4 @@ hi_probe:
   probe_seq_len: 1        # 1 = single-step; >1 = temporal window (episode-aware)
   n_subsample: 30000      # max timesteps per split (for seq_len>1: whole episodes)
   enc_batch_size: 2048    # JEPA encoding batch size
+  rul_max_horizon: 300    # cap (steps) for Action-RUL probe; 0 = disabled

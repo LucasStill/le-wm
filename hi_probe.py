@@ -1,12 +1,15 @@
-"""HI Probe callback — trains a Transformer probe every N epochs to predict
-turbofan Health Indicator (HI) states from frozen JEPA encoder embeddings.
+"""Probe callbacks — train Transformer probes every N epochs to evaluate
+frozen JEPA encoder embeddings on two downstream tasks:
+
+  1. HI Probe: predict 10 turbofan Health Indicator (HI) states.
+  2. Action-RUL Probe: predict steps-to-next-maintenance-action (regression).
 
 Probe architecture (aligned with prior benchmark TransformerRegressor):
   - StandardScaler normalisation of encoder embeddings
-  - Linear(input_dim → d_model) projection, scaled by √d_model
-  - TransformerEncoder (batch_first, num_layers, nhead, dim_feedforward=4×d_model)
-  - Output head: d_model → d_model//2 → ReLU → Dropout → n_outputs
-  - Adam optimiser, early stopping on mean per-dim RMSE (patience configurable)
+  - Linear(input_dim -> d_model) projection, scaled by sqrt(d_model)
+  - TransformerEncoder (batch_first, num_layers, nhead, dim_feedforward=4*d_model)
+  - Output head: d_model -> d_model//2 -> ReLU -> Dropout -> n_outputs
+  - Adam optimiser, early stopping on RMSE (patience configurable)
 
 seq_len config parameter:
   - seq_len=1  : each probe input is a single JEPA embedding (current timestep
@@ -20,18 +23,21 @@ seq_len config parameter:
                  boundaries.
 
 Use seq_len=1 and seq_len=10 as two comparative configurations:
-  hi_probe.probe_seq_len=1   → single-snapshot probe (baseline)
-  hi_probe.probe_seq_len=10  → 10-step window probe (trajectory-aware)
+  hi_probe.probe_seq_len=1   -> single-snapshot probe (baseline)
+  hi_probe.probe_seq_len=10  -> 10-step window probe (trajectory-aware)
 
-Metrics logged per HI dimension  (wandb key: hi_probe/<component>/<metric>):
+HI metrics logged per dimension (wandb key: hi_probe/sl{N}/<component>/<metric>):
   r2, rmse, pearson_r
 
+Action-RUL metrics (wandb key: hi_probe/sl{N}/rul/<metric>):
+  rmse (steps), mae (steps), r2, pearson_r
+
 Aggregates:
-  hi_probe/mean_r2, hi_probe/mean_rmse, hi_probe/mean_pearson_r
+  hi_probe/sl{N}/mean_r2, hi_probe/sl{N}/mean_rmse, hi_probe/sl{N}/mean_pearson_r
 
 CSV fallback (always written, wandb-independent):
   {trainer.log_dir}/hi_probe_metrics.csv
-  columns: epoch, global_step, seq_len, component, r2, rmse, pearson_r
+  columns: epoch, global_step, seq_len, task, component, r2, rmse, pearson_r
 """
 
 import copy
@@ -145,6 +151,10 @@ class HIProbeCallback(pl.Callback):
         For seq_len>1, whole episodes are gathered up to this limit.
     enc_batch_size : int
         Batch size for JEPA encoding pass (default 2048).
+    rul_max_horizon : int
+        Cap on steps-to-next-action for the Action-RUL probe (default 300).
+        Timesteps beyond this horizon are clipped to rul_max_horizon.
+        Set to 0 to disable the RUL probe entirely.
     """
 
     def __init__(
@@ -165,6 +175,7 @@ class HIProbeCallback(pl.Callback):
         probe_seq_len: int = 1,
         n_subsample: int = 30_000,
         enc_batch_size: int = 2048,
+        rul_max_horizon: int = 300,
         # legacy alias kept for config backward compat (ignored)
         hidden_dim: int = 256,
     ):
@@ -185,12 +196,15 @@ class HIProbeCallback(pl.Callback):
         self.probe_seq_len    = probe_seq_len
         self.n_subsample      = n_subsample
         self.enc_batch_size   = enc_batch_size
+        self.rul_max_horizon  = rul_max_horizon
 
         # Filled in setup()
         self._obs_tr:    np.ndarray | None = None
         self._obs_te:    np.ndarray | None = None
         self._hi_tr:     np.ndarray | None = None
         self._hi_te:     np.ndarray | None = None
+        self._rul_tr:    np.ndarray | None = None   # (N,) steps-to-next-action
+        self._rul_te:    np.ndarray | None = None
         self._ep_ids_tr: np.ndarray | None = None   # episode ID per timestep
         self._ep_ids_te: np.ndarray | None = None
         self._hi_names:  list[str] | None  = None
@@ -241,6 +255,46 @@ class HIProbeCallback(pl.Callback):
 
         return np.array(windows, dtype=np.float32), np.array(targets, dtype=np.float32)
 
+    @staticmethod
+    def _compute_rul(
+        actions: np.ndarray,    # (N_total,) float — 1.0 = maintenance event
+        ep_offset: np.ndarray,  # (E,) int start index of each episode
+        ep_len: np.ndarray,     # (E,) int length of each episode
+        max_horizon: int,       # cap (timesteps)
+    ) -> np.ndarray:
+        """Compute steps-to-next-maintenance-action for every timestep.
+
+        At each timestep t inside an episode, the target is:
+          rul[t] = min(steps until next action, max_horizon)
+
+        If no future action exists in the episode, the target is:
+          rul[t] = min(steps until end of episode, max_horizon)
+
+        Returns
+        -------
+        rul : (N_total,) float32
+        """
+        rul = np.full(len(actions), max_horizon, dtype=np.float32)
+        for offset, length in zip(ep_offset, ep_len):
+            ep_actions = actions[offset : offset + length]
+            # Normalise to binary — handle both float and int encodings
+            action_times = np.where(ep_actions > 0.5)[0]
+            t_arr = np.arange(length, dtype=np.int32)
+            if len(action_times) > 0:
+                # searchsorted finds the first action at or after t+1 (i.e., strictly future)
+                next_idx = np.searchsorted(action_times, t_arr + 1)
+                has_future = next_idx < len(action_times)
+                safe_idx   = np.minimum(next_idx, len(action_times) - 1)
+                rul_ep = np.where(
+                    has_future,
+                    np.minimum(action_times[safe_idx] - t_arr, max_horizon),
+                    np.minimum(length - t_arr, max_horizon),
+                ).astype(np.float32)
+            else:
+                rul_ep = np.minimum(length - t_arr, max_horizon).astype(np.float32)
+            rul[offset : offset + length] = rul_ep
+        return rul
+
     # ── setup ──────────────────────────────────────────────────────────────
 
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str):
@@ -261,6 +315,26 @@ class HIProbeCallback(pl.Callback):
                 f.attrs.get("state_label_names",
                             [f"HI_{i}" for i in range(states.shape[1])])
             )
+            # Action array — used to compute steps-to-next-maintenance RUL
+            if "action" in f and self.rul_max_horizon > 0:
+                raw_actions = f["action"][:]
+                if raw_actions.ndim > 1:
+                    raw_actions = raw_actions[:, 0]
+                rul_full = self._compute_rul(
+                    raw_actions, ep_offset, ep_len, self.rul_max_horizon
+                )
+                n_maint = int((raw_actions > 0.5).sum())
+                logging.info(
+                    f"[HIProbe] Action-RUL: {n_maint} maintenance events found "
+                    f"(max_horizon={self.rul_max_horizon})"
+                )
+            else:
+                rul_full = None
+                if self.rul_max_horizon > 0:
+                    logging.warning(
+                        "[HIProbe] 'action' key not found in HDF5; "
+                        "Action-RUL probe disabled."
+                    )
 
         N_EP = len(ep_len)
         rng  = np.random.default_rng(self.seed)
@@ -281,16 +355,17 @@ class HIProbeCallback(pl.Callback):
                         idx, size=self.n_subsample, replace=False
                     )
                 ep_ids = np.zeros(len(idx), dtype=np.int32)   # ep id unused for seq_len=1
-                return pixels[idx], states[idx], ep_ids
+                rul_sub = rul_full[idx] if rul_full is not None else None
+                return pixels[idx], states[idx], ep_ids, rul_sub
 
-            obs_tr, hi_tr, ep_tr = gather_random(tr_eps)
-            obs_te, hi_te, ep_te = gather_random(te_eps)
+            obs_tr, hi_tr, ep_tr, rul_tr = gather_random(tr_eps)
+            obs_te, hi_te, ep_te, rul_te = gather_random(te_eps)
         else:
             # Whole-episode gathering to preserve temporal continuity for windows
             def gather_episodes(eps):
                 rng2 = np.random.default_rng(self.seed + 99)
                 order = rng2.permutation(len(eps))
-                all_obs, all_states, all_ep_ids = [], [], []
+                all_obs, all_states, all_ep_ids, all_rul = [], [], [], []
                 total = 0
                 for local_i, ei in enumerate(order):
                     e = eps[ei]
@@ -301,20 +376,26 @@ class HIProbeCallback(pl.Callback):
                     all_obs.append(pixels[start : start + length])
                     all_states.append(states[start : start + length])
                     all_ep_ids.append(np.full(length, local_i, dtype=np.int32))
+                    if rul_full is not None:
+                        all_rul.append(rul_full[start : start + length])
                     total += length
                     if total >= self.n_subsample:
                         break
+                rul_out = np.concatenate(all_rul) if all_rul else None
                 return (
                     np.concatenate(all_obs),
                     np.concatenate(all_states),
                     np.concatenate(all_ep_ids),
+                    rul_out,
                 )
 
-            obs_tr, hi_tr, ep_tr = gather_episodes(tr_eps)
-            obs_te, hi_te, ep_te = gather_episodes(te_eps)
+            obs_tr, hi_tr, ep_tr, rul_tr = gather_episodes(tr_eps)
+            obs_te, hi_te, ep_te, rul_te = gather_episodes(te_eps)
 
         self._obs_tr, self._hi_tr, self._ep_ids_tr = obs_tr, hi_tr, ep_tr
         self._obs_te, self._hi_te, self._ep_ids_te = obs_te, hi_te, ep_te
+        self._rul_tr = rul_tr
+        self._rul_te = rul_te
 
         # CSV
         log_dir = Path(trainer.log_dir) if trainer.log_dir else Path(".")
@@ -323,8 +404,8 @@ class HIProbeCallback(pl.Callback):
         if not self._csv_path.exists():
             with open(self._csv_path, "w", newline="") as fh:
                 csv.writer(fh).writerow(
-                    ["epoch", "global_step", "seq_len", "component",
-                     "r2", "rmse", "pearson_r"]
+                    ["epoch", "global_step", "seq_len", "task", "component",
+                     "r2", "rmse", "pearson_r", "mae"]
                 )
         logging.info(f"[HIProbe] CSV → {self._csv_path}")
         logging.info(
@@ -454,6 +535,120 @@ class HIProbeCallback(pl.Callback):
 
         return {"r2": r2s, "rmse": rmses, "pearson_r": pearson_rs}
 
+    # ── Action-RUL probe ───────────────────────────────────────────────────
+
+    def _train_and_eval_rul_probe(
+        self,
+        X_tr: np.ndarray, rul_tr: np.ndarray,   # (N_tr, D), (N_tr,)
+        X_te: np.ndarray, rul_te: np.ndarray,   # (N_te, D), (N_te,)
+        ep_ids_tr: np.ndarray,
+        ep_ids_te: np.ndarray,
+        device: torch.device,
+    ) -> dict[str, float]:
+        """Train a single-output TransformerProbe to predict steps-to-next-action.
+
+        The RUL target is log1p-transformed and StandardScaler-normalised before
+        training.  Predictions are de-normalised (inverse_transform + expm1) to
+        report metrics in original units (timesteps).
+
+        Returns
+        -------
+        dict with keys: rmse, mae, r2, pearson_r  (all in original timestep units)
+        """
+        # ── 1. normalise embeddings ───────────────────────────────────────
+        scaler_X = StandardScaler()
+        X_tr_s   = scaler_X.fit_transform(X_tr)
+        X_te_s   = scaler_X.transform(X_te)
+
+        # ── 2. log1p-transform + scale RUL targets ────────────────────────
+        rul_tr_log = np.log1p(rul_tr).reshape(-1, 1).astype(np.float32)
+        rul_te_log = np.log1p(rul_te).reshape(-1, 1).astype(np.float32)
+        scaler_y   = StandardScaler()
+        rul_tr_s   = scaler_y.fit_transform(rul_tr_log)          # (N, 1)
+        rul_te_s   = scaler_y.transform(rul_te_log)
+
+        # ── 3. build temporal windows ─────────────────────────────────────
+        Xw_tr, yw_tr = self._build_windows(X_tr_s, rul_tr_s, ep_ids_tr, self.probe_seq_len)
+        Xw_te, yw_te = self._build_windows(X_te_s, rul_te_s, ep_ids_te, self.probe_seq_len)
+
+        input_dim = Xw_tr.shape[2]
+        logging.info(
+            f"[HIProbe] Action-RUL probe dataset: train={len(Xw_tr):,}, "
+            f"test={len(Xw_te):,} windows"
+        )
+
+        # ── 4. build probe (n_outputs=1) ──────────────────────────────────
+        probe = _TransformerProbe(
+            input_dim  = input_dim,
+            n_outputs  = 1,
+            d_model    = self.d_model,
+            nhead      = self.nhead,
+            num_layers = self.num_layers,
+            dropout    = self.probe_dropout,
+        ).to(device)
+        opt = torch.optim.Adam(probe.parameters(), lr=self.probe_lr)
+
+        Xtr_t = torch.from_numpy(Xw_tr).float().to(device)
+        ytr_t = torch.from_numpy(yw_tr).float().to(device)
+        Xte_t = torch.from_numpy(Xw_te).float().to(device)
+
+        ds = torch.utils.data.TensorDataset(Xtr_t, ytr_t)
+        dl = torch.utils.data.DataLoader(
+            ds, batch_size=self.probe_batch_size, shuffle=True
+        )
+
+        # ── 5. train with early stopping ──────────────────────────────────
+        best_rmse  = float("inf")
+        best_state = None
+        patience_counter = 0
+
+        with torch.enable_grad():
+            for epoch_p in range(self.n_probe_epochs):
+                probe.train()
+                for xb, yb in dl:
+                    opt.zero_grad()
+                    F.mse_loss(probe(xb), yb).backward()
+                    opt.step()
+
+                probe.eval()
+                with torch.no_grad():
+                    preds_s = probe(Xte_t).cpu().numpy()   # normalised space
+                rmse_s = float(np.sqrt(np.mean((yw_te - preds_s) ** 2)))
+
+                if rmse_s < best_rmse:
+                    best_rmse    = rmse_s
+                    best_state   = copy.deepcopy(probe.state_dict())
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+                if patience_counter >= self.probe_patience:
+                    logging.info(
+                        f"[HIProbe] RUL early stop at probe epoch {epoch_p + 1}"
+                    )
+                    break
+
+        # ── 6. eval — de-normalise back to timesteps ──────────────────────
+        if best_state is not None:
+            probe.load_state_dict(best_state)
+        probe.eval()
+        with torch.no_grad():
+            preds_s = probe(Xte_t).cpu().numpy()   # (M, 1) normalised
+
+        # De-normalise predictions: inverse_transform -> expm1 -> clip
+        # yw_te (M, 1) is in normalised log1p space; recover ground truth the same way.
+        preds_log = scaler_y.inverse_transform(preds_s)          # log1p space  (M, 1)
+        preds_raw = np.expm1(preds_log).clip(min=0).ravel()      # timesteps    (M,)
+        gt_log    = scaler_y.inverse_transform(yw_te)            # log1p space  (M, 1)
+        gt_raw    = np.expm1(gt_log).clip(min=0).ravel()         # timesteps    (M,)
+
+        rmse      = float(np.sqrt(np.mean((gt_raw - preds_raw) ** 2)))
+        mae       = float(np.mean(np.abs(gt_raw - preds_raw)))
+        r2        = float(r2_score(gt_raw, preds_raw))
+        r_val, _  = pearsonr(gt_raw, preds_raw)
+        pearson_r = float(r_val)
+
+        return {"rmse": rmse, "mae": mae, "r2": r2, "pearson_r": pearson_r}
+
     # ── main hook ──────────────────────────────────────────────────────────
 
     def on_validation_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
@@ -518,20 +713,53 @@ class HIProbeCallback(pl.Callback):
         )
         logging.info(sep)
 
+        # ── Action-RUL probe ──────────────────────────────────────────────
+        rul_metrics: dict[str, float] | None = None
+        if self._rul_tr is not None and self._rul_te is not None:
+            logging.info(
+                f"[HIProbe] Training Action-RUL probe "
+                f"(max_horizon={self.rul_max_horizon}) ..."
+            )
+            try:
+                rul_metrics = self._train_and_eval_rul_probe(
+                    X_tr, self._rul_tr, X_te, self._rul_te,
+                    self._ep_ids_tr, self._ep_ids_te, device,
+                )
+                logging.info(
+                    f"[HIProbe] Action-RUL — "
+                    f"RMSE={rul_metrics['rmse']:.2f} steps  "
+                    f"MAE={rul_metrics['mae']:.2f} steps  "
+                    f"R2={rul_metrics['r2']:.4f}  "
+                    f"Pearson={rul_metrics['pearson_r']:.4f}"
+                )
+            except Exception as exc:
+                logging.warning(f"[HIProbe] Action-RUL probe failed: {exc}")
+
         # ── CSV (wandb-independent, always written) ───────────────────────
         if self._csv_path is not None:
             with open(self._csv_path, "a", newline="") as fh:
                 w = csv.writer(fh)
                 for name, r2, rmse, pr in zip(short, r2s, rmses, pearson_rs):
-                    w.writerow([epoch, trainer.global_step, sl, name,
-                                f"{r2:.6f}", f"{rmse:.6f}", f"{pr:.6f}"])
-                w.writerow([epoch, trainer.global_step, sl, "MEAN",
-                            f"{mean_r2:.6f}", f"{mean_rmse:.6f}", f"{mean_pearson:.6f}"])
+                    w.writerow([epoch, trainer.global_step, sl, "hi", name,
+                                f"{r2:.6f}", f"{rmse:.6f}", f"{pr:.6f}", ""])
+                w.writerow([epoch, trainer.global_step, sl, "hi", "MEAN",
+                            f"{mean_r2:.6f}", f"{mean_rmse:.6f}",
+                            f"{mean_pearson:.6f}", ""])
+                if rul_metrics is not None:
+                    w.writerow([
+                        epoch, trainer.global_step, sl, "rul", "steps-to-action",
+                        f"{rul_metrics['r2']:.6f}",
+                        f"{rul_metrics['rmse']:.6f}",
+                        f"{rul_metrics['pearson_r']:.6f}",
+                        f"{rul_metrics['mae']:.6f}",
+                    ])
             logging.info(f"[HIProbe] Appended to {self._csv_path}")
 
         # ── wandb (direct .log bypasses Lightning metric aggregation) ─────
         prefix = f"hi_probe/sl{sl}"
         log_dict: dict[str, float] = {}
+
+        # HI per-dimension metrics
         for name, r2, rmse, pr in zip(short, r2s, rmses, pearson_rs):
             log_dict[f"{prefix}/{name}/r2"]        = r2
             log_dict[f"{prefix}/{name}/rmse"]      = rmse
@@ -539,6 +767,13 @@ class HIProbeCallback(pl.Callback):
         log_dict[f"{prefix}/mean_r2"]        = mean_r2
         log_dict[f"{prefix}/mean_rmse"]      = mean_rmse
         log_dict[f"{prefix}/mean_pearson_r"] = mean_pearson
+
+        # Action-RUL metrics
+        if rul_metrics is not None:
+            log_dict[f"{prefix}/rul/rmse"]      = rul_metrics["rmse"]
+            log_dict[f"{prefix}/rul/mae"]       = rul_metrics["mae"]
+            log_dict[f"{prefix}/rul/r2"]        = rul_metrics["r2"]
+            log_dict[f"{prefix}/rul/pearson_r"] = rul_metrics["pearson_r"]
 
         if trainer.logger is not None:
             try:
