@@ -641,13 +641,43 @@ class HIProbeCallback(pl.Callback):
         gt_log    = scaler_y.inverse_transform(yw_te)            # log1p space  (M, 1)
         gt_raw    = np.expm1(gt_log).clip(min=0).ravel()         # timesteps    (M,)
 
-        rmse      = float(np.sqrt(np.mean((gt_raw - preds_raw) ** 2)))
-        mae       = float(np.mean(np.abs(gt_raw - preds_raw)))
-        r2        = float(r2_score(gt_raw, preds_raw))
-        r_val, _  = pearsonr(gt_raw, preds_raw)
+        # ── Censoring mask ────────────────────────────────────────────────
+        # Timesteps where τ = max_horizon are censored: the episode ended before
+        # the next action, so the true RUL is unknown (only a lower bound of
+        # max_horizon).  Evaluating RMSE/R² on these samples is misleading
+        # (we penalise the probe for not predicting a meaningless cap value).
+        # Restrict evaluation to uncensored samples where the action actually
+        # occurred within the horizon.
+        uncensored = gt_raw < self.rul_max_horizon
+        n_total     = len(gt_raw)
+        n_uncens    = int(uncensored.sum())
+        frac_uncens = n_uncens / max(n_total, 1)
+        logging.info(
+            f"[HIProbe] Action-RUL evaluation: {n_uncens}/{n_total} "
+            f"({frac_uncens:.1%}) uncensored test samples (tau < {self.rul_max_horizon})"
+        )
+
+        if n_uncens >= 20:
+            gt_eval    = gt_raw[uncensored]
+            preds_eval = preds_raw[uncensored]
+        else:
+            logging.warning(
+                "[HIProbe] Too few uncensored samples (<20); "
+                "evaluating on all (censored+uncensored) — metrics may be unreliable."
+            )
+            gt_eval    = gt_raw
+            preds_eval = preds_raw
+
+        rmse      = float(np.sqrt(np.mean((gt_eval - preds_eval) ** 2)))
+        mae       = float(np.mean(np.abs(gt_eval - preds_eval)))
+        r2        = float(r2_score(gt_eval, preds_eval))
+        r_val, _  = pearsonr(gt_eval, preds_eval)
         pearson_r = float(r_val)
 
-        return {"rmse": rmse, "mae": mae, "r2": r2, "pearson_r": pearson_r}
+        return {
+            "rmse": rmse, "mae": mae, "r2": r2, "pearson_r": pearson_r,
+            "frac_uncensored": frac_uncens,
+        }
 
     # ── main hook ──────────────────────────────────────────────────────────
 
@@ -768,12 +798,13 @@ class HIProbeCallback(pl.Callback):
         log_dict[f"{prefix}/mean_rmse"]      = mean_rmse
         log_dict[f"{prefix}/mean_pearson_r"] = mean_pearson
 
-        # Action-RUL metrics
+        # Action-RUL metrics (evaluated on uncensored samples only)
         if rul_metrics is not None:
-            log_dict[f"{prefix}/rul/rmse"]      = rul_metrics["rmse"]
-            log_dict[f"{prefix}/rul/mae"]       = rul_metrics["mae"]
-            log_dict[f"{prefix}/rul/r2"]        = rul_metrics["r2"]
-            log_dict[f"{prefix}/rul/pearson_r"] = rul_metrics["pearson_r"]
+            log_dict[f"{prefix}/rul/rmse"]           = rul_metrics["rmse"]
+            log_dict[f"{prefix}/rul/mae"]            = rul_metrics["mae"]
+            log_dict[f"{prefix}/rul/r2"]             = rul_metrics["r2"]
+            log_dict[f"{prefix}/rul/pearson_r"]      = rul_metrics["pearson_r"]
+            log_dict[f"{prefix}/rul/frac_uncensored"] = rul_metrics["frac_uncensored"]
 
         if trainer.logger is not None:
             try:
