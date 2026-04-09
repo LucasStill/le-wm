@@ -13,7 +13,7 @@ import torch
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import OmegaConf, open_dict
 
-from jepa import JEPA
+from jepa import JEPA, TemporalAggregator
 from hi_probe import HIProbeCallback
 from module import ARPredictor, Embedder, MLP, SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
@@ -151,12 +151,29 @@ def run(cfg):
         norm_fn=torch.nn.BatchNorm1d,
     )
 
+    obs_window_size = cfg.get("obs_window_size", 1)
+    temporal_agg = None
+    if obs_window_size > 1:
+        temporal_agg = TemporalAggregator(
+            embed_dim=embed_dim,
+            max_window=obs_window_size + 4,     # small margin above window size
+            nhead=4,
+            num_layers=1,
+            dropout=0.1,
+        )
+        logging.info(
+            f"[ObsWindow] obs_window_size={obs_window_size} — "
+            f"TemporalAggregator created (embed_dim={embed_dim})"
+        )
+
     world_model = JEPA(
         encoder=encoder,
         predictor=predictor,
         action_encoder=action_encoder,
         projector=projector,
         pred_proj=predictor_proj,
+        temporal_agg=temporal_agg,
+        obs_window_size=obs_window_size,
     )
 
     optimizers = {
@@ -216,6 +233,7 @@ def run(cfg):
                 n_subsample      = hi_probe_cfg.get("n_subsample", 30_000),
                 enc_batch_size   = hi_probe_cfg.get("enc_batch_size", 2048),
                 rul_max_horizon  = hi_probe_cfg.get("rul_max_horizon", 300),
+                obs_window_size  = obs_window_size,
             ))
             logging.info(
                 f"[HIProbe] ✓ Registered — evaluating every "

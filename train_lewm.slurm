@@ -43,22 +43,33 @@ export WANDB_MODE=offline
 DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
 
 # -----------------------------------------------------------------------
-# SEQ_LEN controls the downstream HI probe window size:
-#   1  = single-snapshot probe (fast, baseline)
-#   10 = 10-step trajectory window probe (slower setup, richer context)
-# Change SEQ_LEN and RUN_NAME to switch between the two variants.
+# SEQ_LEN  — downstream HI probe temporal window (probe head only).
+#            Does NOT affect the encoder. The encoder always produces one
+#            z_t per timestep regardless of SEQ_LEN.
+#              1  = single-snapshot probe (baseline)
+#              10 = 10-step trajectory window probe (richer context)
+#
+# WIN_SIZE — encoder input window (architecture-level temporal depth).
+#            obs_window_size=w: the ViT encodes w consecutive frames with
+#            shared weights, then a TemporalAggregator compresses the window
+#            of embeddings into a single trajectory-aware embedding.
+#              1  = snapshot encoder (baseline, no temporal aggregation)
+#              5  = 5-step encoder window
+#              10 = 10-step encoder window
 # -----------------------------------------------------------------------
 SEQ_LEN=10
-RUN_NAME=lewm_turbo_v4_sl${SEQ_LEN}
+WIN_SIZE=1
+RUN_NAME=lewm_turbo_v5b_sl${SEQ_LEN}_w${WIN_SIZE}
 
 srun python -u train.py \
     data=turbofan \
     num_workers=16 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan_v3_sl${SEQ_LEN} \
+    subdir=turbofan_v5b_sl${SEQ_LEN}_w${WIN_SIZE} \
     output_model_name=${RUN_NAME} \
     data.dataset.cache_dir=${DATA_DIR} \
+    obs_window_size=${WIN_SIZE} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${SEQ_LEN}
 

@@ -155,6 +155,11 @@ class HIProbeCallback(pl.Callback):
         Cap on steps-to-next-action for the Action-RUL probe (default 300).
         Timesteps beyond this horizon are clipped to rul_max_horizon.
         Set to 0 to disable the RUL probe entirely.
+    obs_window_size : int
+        Encoder input window (default 1).  When > 1, the JEPA encoder
+        aggregates w consecutive observations into each embedding.  The
+        probe must build w-frame windows before encoding and skip the
+        first w-1 timesteps of each episode (no full window available).
     """
 
     def __init__(
@@ -176,6 +181,7 @@ class HIProbeCallback(pl.Callback):
         n_subsample: int = 30_000,
         enc_batch_size: int = 2048,
         rul_max_horizon: int = 300,
+        obs_window_size: int = 1,
         # legacy alias kept for config backward compat (ignored)
         hidden_dim: int = 256,
     ):
@@ -197,6 +203,7 @@ class HIProbeCallback(pl.Callback):
         self.n_subsample      = n_subsample
         self.enc_batch_size   = enc_batch_size
         self.rul_max_horizon  = rul_max_horizon
+        self.obs_window_size  = obs_window_size
 
         # Filled in setup()
         self._obs_tr:    np.ndarray | None = None
@@ -303,7 +310,7 @@ class HIProbeCallback(pl.Callback):
 
         logging.info(
             f"[HIProbe] Loading dataset from {self.data_path}  "
-            f"(seq_len={self.probe_seq_len})"
+            f"(seq_len={self.probe_seq_len}, obs_window={self.obs_window_size})"
         )
         with h5py.File(self.data_path, "r") as f:
             ep_len    = f["ep_len"][:]
@@ -344,8 +351,10 @@ class HIProbeCallback(pl.Callback):
         tr_eps = perm[:n_tr]
         te_eps = perm[n_tr:]
 
-        if self.probe_seq_len == 1:
-            # Random timestep subsampling — fast, order-independent
+        if self.probe_seq_len == 1 and self.obs_window_size <= 1:
+            # Random timestep subsampling — fast, order-independent.
+            # Only valid when both probe_seq_len=1 AND obs_window_size=1
+            # (no temporal context needed at either stage).
             def gather_random(eps):
                 idx = np.concatenate([
                     np.arange(ep_offset[e], ep_offset[e] + ep_len[e]) for e in eps
@@ -415,26 +424,98 @@ class HIProbeCallback(pl.Callback):
 
     # ── encoding ───────────────────────────────────────────────────────────
 
+    def _preprocess_frame(self, frame_np: np.ndarray,
+                          device: torch.device,
+                          mean: torch.Tensor,
+                          std: torch.Tensor) -> torch.Tensor:
+        """Preprocess a batch of raw frames for the ViT.
+
+        Input:  (B, H, W) or (B, C, H, W) numpy
+        Output: (B, C, H, W) torch, resized and ImageNet-normalised
+        """
+        t = torch.from_numpy(frame_np).float().to(device)
+        if t.ndim == 3:                                   # (B, H, W) → (B, 3, H, W)
+            t = t.unsqueeze(1).expand(-1, 3, -1, -1)
+        t = F.interpolate(t, size=(self.img_size, self.img_size), mode="nearest")
+        t = (t - mean) / std
+        return t
+
     @torch.no_grad()
-    def _encode(self, pl_module: pl.LightningModule, obs: np.ndarray) -> np.ndarray:
-        """Encode raw observations → (N, D) embedding array."""
+    def _encode(
+        self,
+        pl_module: pl.LightningModule,
+        obs: np.ndarray,
+        ep_ids: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Encode raw observations -> (N_out, D) embedding array.
+
+        Returns
+        -------
+        embeddings : (N_out, D) numpy array
+        valid_idx  : (N_out,) int array — indices into the original ``obs``
+                     array.  When obs_window_size=1 this is np.arange(N).
+                     When obs_window_size=w, the first w-1 timesteps of each
+                     episode are skipped (no full window), so N_out < N.
+        """
         device = next(pl_module.model.parameters()).device
         mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
         std  = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
 
-        all_emb = []
-        for start in range(0, len(obs), self.enc_batch_size):
-            chunk = obs[start : start + self.enc_batch_size]
-            t = torch.from_numpy(chunk).float().to(device)
-            if t.ndim == 3:                               # (B, H, W) → (B, 3, H, W)
-                t = t.unsqueeze(1).repeat(1, 3, 1, 1)
-            t = F.interpolate(t, size=(self.img_size, self.img_size), mode="nearest")
-            t = (t - mean) / std
-            t = t.unsqueeze(1)                            # (B, T=1, C, H, W)
-            out = pl_module.model.encode({"pixels": t})
-            all_emb.append(out["emb"][:, 0, :].cpu().numpy())
+        w = self.obs_window_size
 
-        return np.concatenate(all_emb, axis=0)            # (N, D)
+        if w <= 1:
+            # ── Single-frame encoding (original path) ─────────────────────
+            all_emb = []
+            for start in range(0, len(obs), self.enc_batch_size):
+                chunk = obs[start : start + self.enc_batch_size]
+                t = self._preprocess_frame(chunk, device, mean, std)
+                t = t.unsqueeze(1)                        # (B, T=1, C, H, W)
+                out = pl_module.model.encode({"pixels": t})
+                all_emb.append(out["emb"][:, 0, :].cpu().numpy())
+            return np.concatenate(all_emb, axis=0), np.arange(len(obs))
+
+        # ── Windowed encoding (obs_window_size > 1) ───────────────────────
+        assert ep_ids is not None, (
+            "Episode IDs required for obs_window_size > 1"
+        )
+        all_emb: list[np.ndarray] = []
+        valid_indices: list[int] = []
+
+        # Reduce effective batch size to keep GPU memory comparable
+        eff_batch = max(self.enc_batch_size // w, 16)
+
+        for ep_id in np.unique(ep_ids):
+            mask = ep_ids == ep_id
+            ep_obs = obs[mask]                            # (T_ep, H, W)
+            ep_global = np.where(mask)[0]                 # original indices
+
+            if len(ep_obs) < w:
+                continue                                  # episode too short
+
+            n_win = len(ep_obs) - w + 1
+
+            for b_start in range(0, n_win, eff_batch):
+                b_end = min(b_start + eff_batch, n_win)
+
+                # Build window batch: (B_win, w, H, W)
+                win_batch = np.stack([
+                    ep_obs[i : i + w] for i in range(b_start, b_end)
+                ])                                        # (B_win, w, H, W)
+
+                # Preprocess all frames at once
+                B_win = win_batch.shape[0]
+                flat = win_batch.reshape(B_win * w, *win_batch.shape[2:])
+                t_flat = self._preprocess_frame(flat, device, mean, std)
+                t = t_flat.view(B_win, w, *t_flat.shape[1:])  # (B_win, w, C, H, W)
+
+                out = pl_module.model.encode({"pixels": t})
+                all_emb.append(out["emb"][:, 0, :].cpu().numpy())
+
+                # Map each window to its last-frame index in the original array
+                for i in range(b_start, b_end):
+                    valid_indices.append(ep_global[i + w - 1])
+
+        return np.concatenate(all_emb, axis=0), np.array(valid_indices)
 
     # ── probe training ─────────────────────────────────────────────────────
 
@@ -688,11 +769,30 @@ class HIProbeCallback(pl.Callback):
 
         device = next(pl_module.model.parameters()).device
 
-        logging.info(f"[HIProbe] Epoch {epoch} (seq_len={self.probe_seq_len}): encoding …")
+        logging.info(
+            f"[HIProbe] Epoch {epoch} "
+            f"(seq_len={self.probe_seq_len}, obs_window={self.obs_window_size}): "
+            f"encoding ..."
+        )
         pl_module.model.eval()
-        X_tr = self._encode(pl_module, self._obs_tr)
-        X_te = self._encode(pl_module, self._obs_te)
+        X_tr, vi_tr = self._encode(pl_module, self._obs_tr, self._ep_ids_tr)
+        X_te, vi_te = self._encode(pl_module, self._obs_te, self._ep_ids_te)
         pl_module.model.train()
+
+        # ── align labels with valid encoded timesteps ─────────────────────
+        hi_tr     = self._hi_tr[vi_tr]
+        hi_te     = self._hi_te[vi_te]
+        ep_ids_tr = self._ep_ids_tr[vi_tr]
+        ep_ids_te = self._ep_ids_te[vi_te]
+        rul_tr    = self._rul_tr[vi_tr] if self._rul_tr is not None else None
+        rul_te    = self._rul_te[vi_te] if self._rul_te is not None else None
+
+        if self.obs_window_size > 1:
+            logging.info(
+                f"[HIProbe] Windowed encoding: {len(vi_tr):,} train / "
+                f"{len(vi_te):,} test valid timesteps "
+                f"(skipped first {self.obs_window_size - 1} per episode)"
+            )
 
         # ── embedding health check ────────────────────────────────────────
         emb_std = X_te.std(axis=0)
@@ -713,11 +813,11 @@ class HIProbeCallback(pl.Callback):
 
         logging.info(
             f"[HIProbe] Training TransformerProbe "
-            f"(max {self.n_probe_epochs} epochs, patience={self.probe_patience}) …"
+            f"(max {self.n_probe_epochs} epochs, patience={self.probe_patience}) ..."
         )
         metrics = self._train_and_eval_probe(
-            X_tr, self._hi_tr, X_te, self._hi_te,
-            self._ep_ids_tr, self._ep_ids_te, device,
+            X_tr, hi_tr, X_te, hi_te,
+            ep_ids_tr, ep_ids_te, device,
         )
         r2s        = metrics["r2"]
         rmses      = metrics["rmse"]
@@ -745,15 +845,15 @@ class HIProbeCallback(pl.Callback):
 
         # ── Action-RUL probe ──────────────────────────────────────────────
         rul_metrics: dict[str, float] | None = None
-        if self._rul_tr is not None and self._rul_te is not None:
+        if rul_tr is not None and rul_te is not None:
             logging.info(
                 f"[HIProbe] Training Action-RUL probe "
                 f"(max_horizon={self.rul_max_horizon}) ..."
             )
             try:
                 rul_metrics = self._train_and_eval_rul_probe(
-                    X_tr, self._rul_tr, X_te, self._rul_te,
-                    self._ep_ids_tr, self._ep_ids_te, device,
+                    X_tr, rul_tr, X_te, rul_te,
+                    ep_ids_tr, ep_ids_te, device,
                 )
                 logging.info(
                     f"[HIProbe] Action-RUL — "
