@@ -215,6 +215,7 @@ def run(cfg):
                 probe_seq_len    = hi_probe_cfg.get("probe_seq_len", 1),
                 n_subsample      = hi_probe_cfg.get("n_subsample", 30_000),
                 enc_batch_size   = hi_probe_cfg.get("enc_batch_size", 2048),
+                rul_max_horizon  = hi_probe_cfg.get("rul_max_horizon", 300),
             ))
             logging.info(
                 f"[HIProbe] ✓ Registered — evaluating every "
