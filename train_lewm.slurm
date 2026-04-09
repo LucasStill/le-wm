@@ -49,7 +49,7 @@ DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/d
 # Change SEQ_LEN and RUN_NAME to switch between the two variants.
 # -----------------------------------------------------------------------
 SEQ_LEN=10
-RUN_NAME=lewm_turbo_v4_sl${SEQ_LEN}
+RUN_NAME=lewm_turbo_v5_sl${SEQ_LEN}
 
 srun python -u train.py \
     data=turbofan \
