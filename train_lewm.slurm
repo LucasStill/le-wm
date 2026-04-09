@@ -46,7 +46,7 @@ export WANDB_MODE=offline
 
 # ── Training ──────────────────────────────────────────────────────────────────
 # num_workers=8  — overrides the yaml default of 0; use ~CPUs/GPUs on the node.
-# loader.persistent_workers=True — required when num_workers > 0 in Lightning.
+<# loader.persistent_workers=True — required when num_workers > 0 in Lightning.
 # loader.pin_memory=True — speeds up host→GPU transfers.
 srun python -u train.py \
     data=turbofan \
@@ -54,10 +54,19 @@ srun python -u train.py \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     subdir=turbofan_v2 \
-    output_model_name=lewm_turbo_v2 \
+    output_model_name=lewm_turbo_v2_sl10 \
     data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data \
     hi_probe.enabled=true \
-    hi_probe.probe_seq_len=1
+    hi_probe.probe_seq_len=10
+
+#=======
+#    subdir=turbofan_probe \
+#    output_model_name=lewm_turbo_sl10 \
+#    data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data \
+#    hi_probe.enabled=true \
+#    hi_probe.eval_interval=1 \
+#    hi_probe.probe_seq_len=10
+#>>>>>>> Stashed changes
 
 
 echo "========================================"
