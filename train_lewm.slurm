@@ -48,7 +48,7 @@ DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/d
 #   10 = 10-step trajectory window probe (slower setup, richer context)
 # Change SEQ_LEN and RUN_NAME to switch between the two variants.
 # -----------------------------------------------------------------------
-SEQ_LEN=30
+SEQ_LEN=10
 RUN_NAME=lewm_turbo_v3_sl${SEQ_LEN}
 
 srun python -u train.py \
