@@ -55,11 +55,12 @@ srun python -u train.py \
     num_workers=16 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan1_2 \
-    output_model_name=lewm_turbo1_3_1 \
+    subdir=turbofan_probe \
+    output_model_name=lewm_turbo_sl1 \
     data.dataset.cache_dir=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data \
     hi_probe.enabled=true \
-    hi_probe.eval_interval=1
+    hi_probe.eval_interval=1 \
+    hi_probe.seq_len=1
 
 
 echo "========================================"
