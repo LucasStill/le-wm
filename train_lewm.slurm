@@ -56,7 +56,7 @@ srun python -u train.py \
     num_workers=16 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan_v2_sl \ #${SEQ_LEN} \
+    subdir=turbofan_v2_sl${SEQ_LEN} \
     output_model_name=${RUN_NAME} \
     data.dataset.cache_dir=${DATA_DIR} \
     hi_probe.enabled=true \
