@@ -18,7 +18,7 @@ trainer:
   devices: auto
   accelerator: gpu
   precision: bf16
-  gradient_clip_val: 1.0
+  gradient_clip_val: 0.5  # tighter clipping to prevent sigreg spikes
 
 loader:
   batch_size: 128
@@ -29,7 +29,7 @@ loader:
 
 optimizer:
   type: AdamW
-  lr: 3e-4    # was 5e-5 — higher LR to sustain learning past epoch 1
+  lr: 1e-4    # 5e-5 plateaued, 3e-4 diverged with sigreg=0.5 — middle ground
   weight_decay: 1e-3
 
 wandb:
@@ -58,7 +58,7 @@ predictor:
 
 loss:
   sigreg:
-    weight: 0.5   # was 0.09 — stronger push for isotropic embedding geometry
+    weight: 0.15  # 0.09 plateaued, 0.5 diverged — calibrated middle ground
     kwargs:
       knots: 17
       num_proj: 1024
