@@ -317,12 +317,21 @@ class HIProbeCallback(pl.Callback):
         with h5py.File(self.data_path, "r") as f:
             ep_len    = f["ep_len"][:]
             ep_offset = f["ep_offset"][:]
-            # Sensor encoder uses raw 28-D vectors; ViT uses fake-image pixels.
-            if self.encoder_type == "sensor":
-                obs_key = "observation.sensors" if "observation.sensors" in f else "pixels"
+            # Load observations.
+            # The HDF5 stores sensor data under 'pixels' (not 'observation.sensors')
+            # regardless of encoder_type.  We flatten to (N, n_sensors) for sensor enc.
+            if "pixels" in f:
+                obs_key = "pixels"
+            elif "observation.sensors" in f:
+                obs_key = "observation.sensors"
             else:
-                obs_key = "pixels" if "pixels" in f else "observation.sensors"
-            pixels    = f[obs_key][:]
+                raise KeyError(
+                    "HDF5 file has neither 'pixels' nor 'observation.sensors' key."
+                )
+            pixels = f[obs_key][:]
+            # For sensor encoder: flatten spatial dims → (N, n_sensors)
+            if self.encoder_type == "sensor" and pixels.ndim > 2:
+                pixels = pixels.reshape(len(pixels), -1)
             logging.info(f"[HIProbe] Loading observations from key '{obs_key}' "
                          f"(encoder_type={self.encoder_type}, shape={pixels.shape})")
             states    = f["observation.state"][:]
@@ -482,8 +491,11 @@ class HIProbeCallback(pl.Callback):
         def to_tensor_single(frames):
             """Convert single-frame batch to encoder input tensor."""
             if is_sensor:
-                # frames: (B, 28) → (B, 1, 28)
-                return torch.from_numpy(frames).float().to(device).unsqueeze(1)
+                # frames: (B, n_sensors) — already flat after setup() reshape
+                t = torch.from_numpy(frames).float().to(device)
+                if t.ndim == 2:
+                    t = t.unsqueeze(1)     # (B, 28) → (B, 1, 28)
+                return t
             else:
                 # frames: (B, H, W) → (B, 1, C, H, W)
                 return self._preprocess_vit(frames, device, mean, std).unsqueeze(1)
@@ -491,7 +503,7 @@ class HIProbeCallback(pl.Callback):
         def to_tensor_window(win_batch):
             """Convert window batch (B_win, w, ...) to encoder input tensor."""
             if is_sensor:
-                # win_batch: (B_win, w, 28) — already the right shape
+                # win_batch: (B_win, w, n_sensors) — already flat after setup() reshape
                 return torch.from_numpy(win_batch).float().to(device)
             else:
                 # win_batch: (B_win, w, H, W) → (B_win, w, C, H, W)
@@ -501,7 +513,8 @@ class HIProbeCallback(pl.Callback):
                 return t_flat.view(B_win, w_, *t_flat.shape[1:])
 
         def encode_batch(t):
-            key = "observation.sensors" if is_sensor else "pixels"
+            # Use 'pixels' key — JEPA._encode_sensor() accepts pixels and reshapes
+            key = "pixels"
             out = pl_module.model.encode({key: t})
             return out["emb"][:, 0, :].cpu().numpy()
 

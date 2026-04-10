@@ -16,15 +16,16 @@
 # Alternatively, set STABLEWM_HOME to the data dir and drop cache_dir.
 #
 # ENCODER NOTES:
-#   • encoder_type=sensor (default on this branch):
-#     Loads observation.sensors (28 float values = 4 contexts × 7 sensor channels).
-#     z-normalised at runtime — no image preprocessing required.
+#   Both encoder_type=vit and encoder_type=sensor use the 'pixels' key.
+#   The HDF5 stores sensor data under 'pixels' (created by prepare_lewm_dataset.py).
+#   It does NOT have an 'observation.sensors' key.
 #
-#   • encoder_type=vit (legacy comparison):
-#     Override keys_to_load to [pixels, action] and set encoder_type=vit via CLI:
-#       python train.py data=turbofan encoder_type=vit \
-#           "data.dataset.keys_to_load=[pixels,action]"
-#     img_size=28, patch_size=7  →  16 patches (fast).
+#   encoder_type=sensor: JEPA._encode_sensor() loads 'pixels', flattens the
+#     spatial dims to (B, T, n_sensors), and feeds them to SensorEncoder.
+#     No image preprocessing is applied.
+#
+#   encoder_type=vit: uses the img_preprocessor to resize to (3, img_size, img_size)
+#     and ImageNet-normalise before passing to the ViT.
 #
 # frameskip=1: turbofan degrades slowly, consecutive steps are informative.
 # action is discrete {0: do nothing, 1: repair}. Z-normalised at runtime.
@@ -37,11 +38,10 @@ dataset:
   name: opendeck_2000_lewm
   cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
   keys_to_load:
-    - observation.sensors  # raw sensor vector (28 values = 4 contexts × 7 channels)
-    - action               # discrete {0: nothing, 1: repair} — z-normalised at runtime
+    - pixels   # sensor data stored as fake image by prepare_lewm_dataset.py
+    - action   # discrete {0: nothing, 1: repair} — z-normalised at runtime
   keys_to_cache:
     - action
-    - observation.sensors
 
 # NOTE: hi_probe config lives in lewm.yaml (top-level), not here,
 # because Hydra loads this file under cfg.data.* and train.py reads

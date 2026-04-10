@@ -44,13 +44,16 @@ class SensorEncoder(nn.Module):
         nhead: int = 4,
         num_layers: int = 2,
         dropout: float = 0.1,
+        max_sensors: int = 128,
     ):
         super().__init__()
         # Compat attribute — replaces encoder.config.hidden_size used in train.py
         self.hidden_size = d_model
 
         self.value_proj = nn.Linear(1, d_model)
-        self.pos_emb    = nn.Parameter(torch.randn(1, n_sensors, d_model) * 0.02)
+        # Positional embedding sized to max_sensors so the encoder handles any
+        # input length up to max_sensors (covers both 28 and 84 token counts).
+        self.pos_emb = nn.Parameter(torch.randn(1, max_sensors, d_model) * 0.02)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model        = d_model,
             nhead          = nhead,
@@ -63,10 +66,11 @@ class SensorEncoder(nn.Module):
         self.norm = nn.LayerNorm(d_model)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (N, n_sensors)
-        tokens = self.value_proj(x.unsqueeze(-1)) + self.pos_emb   # (N, n_sensors, d_model)
-        out    = self.transformer(tokens)                           # (N, n_sensors, d_model)
-        return self.norm(out.mean(dim=1))                           # (N, d_model)
+        # x: (N, n_sensors) — n_sensors can vary; slices positional embeddings to fit
+        n = x.size(1)
+        tokens = self.value_proj(x.unsqueeze(-1)) + self.pos_emb[:, :n]  # (N, n, d_model)
+        out    = self.transformer(tokens)                                  # (N, n, d_model)
+        return self.norm(out.mean(dim=1))                                  # (N, d_model)
 
 
 # ── Temporal aggregator for obs_window_size > 1 ──────────────────────────────
@@ -169,8 +173,19 @@ class JEPA(nn.Module):
         return info
 
     def _encode_sensor(self, info):
-        """Sensor-native path: info['observation.sensors'] (B, T_raw, n_sensors)."""
-        sensors = info['observation.sensors'].float()           # (B, T_raw, n_sensors)
+        """Sensor-native path: info['observation.sensors'] OR info['pixels'] → (B, T_raw, n_sensors).
+
+        The HDF5 file stores sensor data under the 'pixels' key (created by
+        prepare_lewm_dataset.py).  We accept both key names and flatten any
+        spatial dimensions to (B, T_raw, n_sensors) automatically.
+        """
+        if 'observation.sensors' in info:
+            sensors = info['observation.sensors'].float()       # (B, T_raw, n_sensors)
+        else:
+            # Fallback: 'pixels' key — reshape (B, T, ...) → (B, T, n_sensors)
+            pixels = info['pixels'].float()                     # (B, T_raw, ...)
+            b_tmp, t_tmp = pixels.shape[:2]
+            sensors = pixels.reshape(b_tmp, t_tmp, -1)         # (B, T_raw, n_sensors)
         b = sensors.size(0)
         w = self.obs_window_size
 
