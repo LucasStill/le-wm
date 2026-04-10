@@ -57,16 +57,19 @@ DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/d
 #              5  = 5-step encoder window
 #              10 = 10-step encoder window
 # -----------------------------------------------------------------------
-SEQ_LEN=10
-WIN_SIZE=1
-RUN_NAME=lewm_turbo_v5b_sl${SEQ_LEN}_w${WIN_SIZE}
+# Set SEQ_LEN=1 to measure encoder temporal depth directly (probe sees 1 embedding).
+# Set SEQ_LEN=10 only to compensate for snapshot encoder (w=1 baseline).
+# For w>1 runs, SEQ_LEN=1 is the informative comparison.
+SEQ_LEN=1
+WIN_SIZE=10
+RUN_NAME=lewm_turbo_v6_sl${SEQ_LEN}_w${WIN_SIZE}
 
 srun python -u train.py \
     data=turbofan \
     num_workers=16 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
-    subdir=turbofan_v5b_sl${SEQ_LEN}_w${WIN_SIZE} \
+    subdir=turbofan_v6_sl${SEQ_LEN}_w${WIN_SIZE} \
     output_model_name=${RUN_NAME} \
     data.dataset.cache_dir=${DATA_DIR} \
     obs_window_size=${WIN_SIZE} \

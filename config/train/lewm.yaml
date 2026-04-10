@@ -106,7 +106,9 @@ hi_probe:
   num_layers: 2           # transformer encoder layers
   probe_dropout: 0.1      # dropout in transformer + output head
   probe_batch_size: 256   # batch size for probe training
-  probe_seq_len: 1        # 1 = single-step; >1 = temporal window (episode-aware)
+  probe_seq_len: 1        # keep at 1 to measure what the *encoder* encodes
+                          # (seq_len>1 lets the probe compensate for lack of encoder
+                          #  temporal depth, masking the benefit of obs_window_size>1)
   n_subsample: 30000      # max timesteps per split (for seq_len>1: whole episodes)
   enc_batch_size: 2048    # JEPA encoding batch size
   rul_max_horizon: 300    # cap (steps) for Action-RUL probe; 0 = disabled
