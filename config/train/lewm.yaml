@@ -8,25 +8,38 @@ subdir: ${hydra:job.id}
 num_workers: 6
 train_split: 0.9
 seed: 3072
+
+# ── Encoder type ───────────────────────────────────────────────────────────────
+# "vit"    : ViT-on-fake-image (legacy, for comparison runs)
+# "sensor" : SensorEncoder — 28 scalar tokens, no fake image, native sensors
+encoder_type: sensor
+
+# ── ViT encoder params (only used when encoder_type=vit) ──────────────────────
 img_size: 28
 patch_size: 7    # 28/7 = 16 patches (was patch_size=14 -> 4 patches, too coarse)
+encoder_scale: tiny
+
+# ── Sensor encoder params (only used when encoder_type=sensor) ────────────────
+# Processes n_sensors scalar values as n_sensors individual tokens.
+#   n_sensors = 4 flight-phase contexts × 7 sensor channels = 28
+# d_model should equal wm.embed_dim to avoid an unnecessary projection bottleneck.
+n_sensors: 28
+sensor_encoder:
+  d_model: 64      # match wm.embed_dim — direct pass-through, no bottleneck
+  nhead: 4
+  num_layers: 2
+  dropout: 0.1
 
 # ── Encoder input window ───────────────────────────────────────────────────────
-# A single observation o_t has shape (4 contexts) x (7 sensors) = 28 values.
-# The 4 contexts are flight phases (takeoff, climb1, climb2, cruise) describing
-# the same degradation state — they are NOT consecutive timesteps.
-#
 # obs_window_size=1 (default): encoder sees only o_t -> pure snapshot encoder.
-# obs_window_size=w: encoder sees [o_{t-w+1}, ..., o_t], i.e. w*(4*7)=w*28 values.
-#   This gives the encoder genuine temporal depth: it can encode degradation rate,
-#   trend direction, and time-since-last-maintenance alongside the current state.
-#   The ViT / sensor-native transformer input must be adapted accordingly.
+# obs_window_size=w: encoder sees [o_{t-w+1}, ..., o_t] as a sequence.
+#   w consecutive sensor snapshots are encoded independently, then a
+#   TemporalAggregator (1-layer transformer, last-token) fuses the window
+#   into a single trajectory-aware embedding.
 #
-# Compare e.g. w=1 (baseline), w=5, w=10.
-# Note: probe_seq_len is a DOWNSTREAM-only parameter (probe head temporal context).
-#       obs_window_size is an ENCODER-level parameter (architecture change).
+# Compare: w=1 (snapshot baseline), w=5, w=10.
 obs_window_size: 1   # 1 = snapshot encoder; >1 = TemporalAggregator active
-encoder_scale: tiny
+
 dump_object: True
 
 trainer:

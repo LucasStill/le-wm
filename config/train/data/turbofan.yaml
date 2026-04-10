@@ -15,13 +15,19 @@
 # The file loaded will be: {cache_dir}/opendeck_2000_lewm.h5
 # Alternatively, set STABLEWM_HOME to the data dir and drop cache_dir.
 #
-# NOTES ON ARCHITECTURE:
-#   • img_size=224, patch_size=14  →  256 patches per observation (standard ViT-tiny).
-#     The 3×7×4 "image" is upsampled to 3×224×224 via nearest-neighbor.
-#     For a lighter model try: img_size=28 patch_size=14  (4 patches, much faster).
-#   • frameskip=1: turbofan degrades slowly, consecutive steps are informative.
-#   • action is discrete {0: do nothing, 1: repair}. It is z-normalized by
-#     get_column_normalizer at training time (same as pushT's continuous actions).
+# ENCODER NOTES:
+#   • encoder_type=sensor (default on this branch):
+#     Loads observation.sensors (28 float values = 4 contexts × 7 sensor channels).
+#     z-normalised at runtime — no image preprocessing required.
+#
+#   • encoder_type=vit (legacy comparison):
+#     Override keys_to_load to [pixels, action] and set encoder_type=vit via CLI:
+#       python train.py data=turbofan encoder_type=vit \
+#           "data.dataset.keys_to_load=[pixels,action]"
+#     img_size=28, patch_size=7  →  16 patches (fast).
+#
+# frameskip=1: turbofan degrades slowly, consecutive steps are informative.
+# action is discrete {0: do nothing, 1: repair}. Z-normalised at runtime.
 
 dataset:
   # With obs_window_size=w the encoder needs w-1 extra frames to build
@@ -29,12 +35,13 @@ dataset:
   num_steps: ${eval:'${wm.num_preds} + ${wm.history_size} + ${obs_window_size} - 1'}
   frameskip: 1
   name: opendeck_2000_lewm
-  cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data   # set via CLI or env STABLEWM_HOME
+  cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
   keys_to_load:
-    - pixels        # observation.sensors (3×7×4), normalized, created by prepare_lewm_dataset.py
-    - action        # discrete {0: nothing, 1: repair} — z-normalized at runtime
+    - observation.sensors  # raw sensor vector (28 values = 4 contexts × 7 channels)
+    - action               # discrete {0: nothing, 1: repair} — z-normalised at runtime
   keys_to_cache:
     - action
+    - observation.sensors
 
 # NOTE: hi_probe config lives in lewm.yaml (top-level), not here,
 # because Hydra loads this file under cfg.data.* and train.py reads

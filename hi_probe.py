@@ -182,6 +182,7 @@ class HIProbeCallback(pl.Callback):
         enc_batch_size: int = 2048,
         rul_max_horizon: int = 300,
         obs_window_size: int = 1,
+        encoder_type: str = "vit",
         # legacy alias kept for config backward compat (ignored)
         hidden_dim: int = 256,
     ):
@@ -204,6 +205,7 @@ class HIProbeCallback(pl.Callback):
         self.enc_batch_size   = enc_batch_size
         self.rul_max_horizon  = rul_max_horizon
         self.obs_window_size  = obs_window_size
+        self.encoder_type     = encoder_type
 
         # Filled in setup()
         self._obs_tr:    np.ndarray | None = None
@@ -315,8 +317,14 @@ class HIProbeCallback(pl.Callback):
         with h5py.File(self.data_path, "r") as f:
             ep_len    = f["ep_len"][:]
             ep_offset = f["ep_offset"][:]
-            obs_key   = "pixels" if "pixels" in f else "observation.sensors"
+            # Sensor encoder uses raw 28-D vectors; ViT uses fake-image pixels.
+            if self.encoder_type == "sensor":
+                obs_key = "observation.sensors" if "observation.sensors" in f else "pixels"
+            else:
+                obs_key = "pixels" if "pixels" in f else "observation.sensors"
             pixels    = f[obs_key][:]
+            logging.info(f"[HIProbe] Loading observations from key '{obs_key}' "
+                         f"(encoder_type={self.encoder_type}, shape={pixels.shape})")
             states    = f["observation.state"][:]
             self._hi_names = list(
                 f.attrs.get("state_label_names",
@@ -424,10 +432,10 @@ class HIProbeCallback(pl.Callback):
 
     # ── encoding ───────────────────────────────────────────────────────────
 
-    def _preprocess_frame(self, frame_np: np.ndarray,
-                          device: torch.device,
-                          mean: torch.Tensor,
-                          std: torch.Tensor) -> torch.Tensor:
+    def _preprocess_vit(self, frame_np: np.ndarray,
+                        device: torch.device,
+                        mean: torch.Tensor,
+                        std: torch.Tensor) -> torch.Tensor:
         """Preprocess a batch of raw frames for the ViT.
 
         Input:  (B, H, W) or (B, C, H, W) numpy
@@ -440,6 +448,9 @@ class HIProbeCallback(pl.Callback):
         t = (t - mean) / std
         return t
 
+    # Keep legacy name as alias for backward compat
+    _preprocess_frame = _preprocess_vit
+
     @torch.no_grad()
     def _encode(
         self,
@@ -448,6 +459,9 @@ class HIProbeCallback(pl.Callback):
         ep_ids: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Encode raw observations -> (N_out, D) embedding array.
+
+        Dispatches to the ViT path (image pixels) or the sensor-native path
+        (flat 28-D vectors) based on ``self.encoder_type``.
 
         Returns
         -------
@@ -458,26 +472,49 @@ class HIProbeCallback(pl.Callback):
                      episode are skipped (no full window), so N_out < N.
         """
         device = next(pl_module.model.parameters()).device
-        mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
-        std  = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
-
         w = self.obs_window_size
+        is_sensor = (self.encoder_type == "sensor")
+
+        if not is_sensor:
+            mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
+            std  = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
+
+        def to_tensor_single(frames):
+            """Convert single-frame batch to encoder input tensor."""
+            if is_sensor:
+                # frames: (B, 28) → (B, 1, 28)
+                return torch.from_numpy(frames).float().to(device).unsqueeze(1)
+            else:
+                # frames: (B, H, W) → (B, 1, C, H, W)
+                return self._preprocess_vit(frames, device, mean, std).unsqueeze(1)
+
+        def to_tensor_window(win_batch):
+            """Convert window batch (B_win, w, ...) to encoder input tensor."""
+            if is_sensor:
+                # win_batch: (B_win, w, 28) — already the right shape
+                return torch.from_numpy(win_batch).float().to(device)
+            else:
+                # win_batch: (B_win, w, H, W) → (B_win, w, C, H, W)
+                B_win, w_ = win_batch.shape[:2]
+                flat = win_batch.reshape(B_win * w_, *win_batch.shape[2:])
+                t_flat = self._preprocess_vit(flat, device, mean, std)
+                return t_flat.view(B_win, w_, *t_flat.shape[1:])
+
+        def encode_batch(t):
+            key = "observation.sensors" if is_sensor else "pixels"
+            out = pl_module.model.encode({key: t})
+            return out["emb"][:, 0, :].cpu().numpy()
 
         if w <= 1:
-            # ── Single-frame encoding (original path) ─────────────────────
+            # ── Single-frame encoding ──────────────────────────────────────
             all_emb = []
             for start in range(0, len(obs), self.enc_batch_size):
                 chunk = obs[start : start + self.enc_batch_size]
-                t = self._preprocess_frame(chunk, device, mean, std)
-                t = t.unsqueeze(1)                        # (B, T=1, C, H, W)
-                out = pl_module.model.encode({"pixels": t})
-                all_emb.append(out["emb"][:, 0, :].cpu().numpy())
+                all_emb.append(encode_batch(to_tensor_single(chunk)))
             return np.concatenate(all_emb, axis=0), np.arange(len(obs))
 
         # ── Windowed encoding (obs_window_size > 1) ───────────────────────
-        assert ep_ids is not None, (
-            "Episode IDs required for obs_window_size > 1"
-        )
+        assert ep_ids is not None, "Episode IDs required for obs_window_size > 1"
         all_emb: list[np.ndarray] = []
         valid_indices: list[int] = []
 
@@ -486,32 +523,19 @@ class HIProbeCallback(pl.Callback):
 
         for ep_id in np.unique(ep_ids):
             mask = ep_ids == ep_id
-            ep_obs = obs[mask]                            # (T_ep, H, W)
+            ep_obs = obs[mask]                            # (T_ep, ...) — image or sensor
             ep_global = np.where(mask)[0]                 # original indices
 
             if len(ep_obs) < w:
                 continue                                  # episode too short
 
             n_win = len(ep_obs) - w + 1
-
             for b_start in range(0, n_win, eff_batch):
                 b_end = min(b_start + eff_batch, n_win)
-
-                # Build window batch: (B_win, w, H, W)
                 win_batch = np.stack([
                     ep_obs[i : i + w] for i in range(b_start, b_end)
-                ])                                        # (B_win, w, H, W)
-
-                # Preprocess all frames at once
-                B_win = win_batch.shape[0]
-                flat = win_batch.reshape(B_win * w, *win_batch.shape[2:])
-                t_flat = self._preprocess_frame(flat, device, mean, std)
-                t = t_flat.view(B_win, w, *t_flat.shape[1:])  # (B_win, w, C, H, W)
-
-                out = pl_module.model.encode({"pixels": t})
-                all_emb.append(out["emb"][:, 0, :].cpu().numpy())
-
-                # Map each window to its last-frame index in the original array
+                ])
+                all_emb.append(encode_batch(to_tensor_window(win_batch)))
                 for i in range(b_start, b_end):
                     valid_indices.append(ep_global[i + w - 1])
 

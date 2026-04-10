@@ -13,7 +13,7 @@ import torch
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import OmegaConf, open_dict
 
-from jepa import JEPA, TemporalAggregator
+from jepa import JEPA, SensorEncoder, TemporalAggregator
 from hi_probe import HIProbeCallback
 from module import ARPredictor, Embedder, MLP, SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
@@ -87,18 +87,34 @@ def run(cfg):
     ##       dataset       ##
     #########################
 
+    # ── encoder_type dispatch ─────────────────────────────────────────────────
+    # "vit"    : ViT-on-fake-image (legacy, keeps backward compat)
+    # "sensor" : SensorEncoder — 28 scalar tokens, no image preprocessing
+    encoder_type = cfg.get("encoder_type", "vit")
+
     dataset = swm.data.HDF5Dataset(**cfg.data.dataset, transform=None)
-    transforms = [get_img_preprocessor(source='pixels', target='pixels', img_size=cfg.img_size)]
+
+    # Build transforms. ViT needs the img_preprocessor; sensor encoder just
+    # uses a StandardScaler normaliser (applied via get_column_normalizer).
+    transforms = []
+    if encoder_type == "vit":
+        transforms.append(
+            get_img_preprocessor(source='pixels', target='pixels', img_size=cfg.img_size)
+        )
 
     with open_dict(cfg):
         for col in cfg.data.dataset.keys_to_load:
+            # 'pixels' handled by img_preprocessor above (vit only)
             if col.startswith("pixels"):
                 continue
 
             normalizer = get_column_normalizer(dataset, col, col)
             transforms.append(normalizer)
 
-            setattr(cfg.wm, f"{col}_dim", dataset.get_dim(col))
+            # Set column dims on cfg.wm for downstream use.
+            # Skip observation.* keys — their shape is fixed by the encoder.
+            if not col.startswith("observation."):
+                setattr(cfg.wm, f"{col}_dim", dataset.get_dim(col))
 
     transform = spt.data.transforms.Compose(*transforms)
     dataset.transform = transform
@@ -115,15 +131,38 @@ def run(cfg):
     ##       model / optim      ##
     ##############################
 
-    encoder = spt.backbone.utils.vit_hf(
-        cfg.encoder_scale,
-        patch_size=cfg.patch_size,
-        image_size=cfg.img_size,
-        pretrained=False,
-        use_mask_token=False,
-    )
+    if encoder_type == "sensor":
+        # ── Sensor-native encoder ─────────────────────────────────────────
+        sen_cfg = cfg.get("sensor_encoder", {})
+        embed_dim = cfg.wm.get("embed_dim", 64)
+        encoder = SensorEncoder(
+            n_sensors  = cfg.get("n_sensors", 28),
+            d_model    = sen_cfg.get("d_model", embed_dim),
+            nhead      = sen_cfg.get("nhead", 4),
+            num_layers = sen_cfg.get("num_layers", 2),
+            dropout    = sen_cfg.get("dropout", 0.1),
+        )
+        hidden_dim = encoder.hidden_size
+        logging.info(
+            f"[Encoder] SensorEncoder — n_sensors={cfg.get('n_sensors', 28)}, "
+            f"d_model={hidden_dim}"
+        )
+    else:
+        # ── ViT encoder (original) ────────────────────────────────────────
+        encoder = spt.backbone.utils.vit_hf(
+            cfg.encoder_scale,
+            patch_size=cfg.patch_size,
+            image_size=cfg.img_size,
+            pretrained=False,
+            use_mask_token=False,
+        )
+        hidden_dim = encoder.config.hidden_size
+        embed_dim  = cfg.wm.get("embed_dim", hidden_dim)
+        logging.info(
+            f"[Encoder] ViT-{cfg.encoder_scale} — hidden_dim={hidden_dim}, "
+            f"embed_dim={embed_dim}"
+        )
 
-    hidden_dim = encoder.config.hidden_size
     embed_dim = cfg.wm.get("embed_dim", hidden_dim)
     effective_act_dim = cfg.data.dataset.frameskip * cfg.wm.action_dim
 
@@ -174,6 +213,7 @@ def run(cfg):
         pred_proj=predictor_proj,
         temporal_agg=temporal_agg,
         obs_window_size=obs_window_size,
+        encoder_type=encoder_type,
     )
 
     optimizers = {
@@ -234,6 +274,7 @@ def run(cfg):
                 enc_batch_size   = hi_probe_cfg.get("enc_batch_size", 2048),
                 rul_max_horizon  = hi_probe_cfg.get("rul_max_horizon", 300),
                 obs_window_size  = obs_window_size,
+                encoder_type     = encoder_type,
             ))
             logging.info(
                 f"[HIProbe] ✓ Registered — evaluating every "
