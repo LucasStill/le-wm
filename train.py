@@ -176,17 +176,21 @@ def run(cfg):
 
     action_encoder = Embedder(input_dim=effective_act_dim, emb_dim=embed_dim)
 
+    # Scale projector hidden dim proportionally to input/output dims.
+    # Avoids a 64→2048→64 bottleneck (32× over-expansion) for sensor encoder
+    # while keeping a reasonable 192→768→64 expansion for ViT.
+    proj_hidden = max(hidden_dim * 4, embed_dim * 4)
     projector = MLP(
         input_dim=hidden_dim,
         output_dim=embed_dim,
-        hidden_dim=2048,
+        hidden_dim=proj_hidden,
         norm_fn=torch.nn.BatchNorm1d,
     )
 
     predictor_proj = MLP(
         input_dim=hidden_dim,
         output_dim=embed_dim,
-        hidden_dim=2048,
+        hidden_dim=proj_hidden,
         norm_fn=torch.nn.BatchNorm1d,
     )
 
