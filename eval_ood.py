@@ -620,10 +620,21 @@ def task4_ood(
     logging.info("  Fitting Mahalanobis model on training embeddings …")
     mu, prec = fit_mahalanobis(Z_tr)
 
+    # Subsample training set for k-NN index to keep memory / compute manageable.
+    # 50 K points is enough for a reliable density estimate with D=64.
+    KNN_INDEX_SIZE = 50_000
+    if len(Z_tr) > KNN_INDEX_SIZE:
+        rng_idx = np.random.default_rng(42)
+        idx = rng_idx.choice(len(Z_tr), KNN_INDEX_SIZE, replace=False)
+        Z_tr_knn = Z_tr[idx]
+        logging.info(f"  k-NN index subsampled: {KNN_INDEX_SIZE:,} / {len(Z_tr):,} training points")
+    else:
+        Z_tr_knn = Z_tr
+
     # ── Step 3: ID baseline scores (evaluated on test embeddings) ─────────────
     logging.info("  Computing ID baseline scores (test set) …")
     id_mahal   = mahal_score(Z_te, mu, prec)
-    id_knn     = knn_score(Z_te, Z_tr, k=knn_k)
+    id_knn     = knn_score(Z_te, Z_tr_knn, k=knn_k)
 
     # ID surprise scores (test episodes)
     id_obs_list = _split_to_obs_list(te_data, ep_offset_all, ep_len_all, hdf5_path, encoder_type)
@@ -661,7 +672,7 @@ def task4_ood(
             device=device,
             history_size=history_size,
             mu=mu, prec=prec,
-            Z_tr=Z_tr,
+            Z_tr_knn=Z_tr_knn,
             knn_k=knn_k,
             id_surprise=id_surprise,
             id_mahal=id_mahal,
@@ -693,7 +704,7 @@ def task4_ood(
                 device=device,
                 history_size=history_size,
                 mu=mu, prec=prec,
-                Z_tr=Z_tr,
+                Z_tr_knn=Z_tr_knn,
                 knn_k=knn_k,
                 id_surprise=id_surprise,
                 id_mahal=id_mahal,
@@ -714,7 +725,7 @@ def _eval_one_scenario(
     history_size: int,
     mu: np.ndarray,
     prec: np.ndarray,
-    Z_tr: np.ndarray,
+    Z_tr_knn: np.ndarray,
     knn_k: int,
     id_surprise: np.ndarray,
     id_mahal: np.ndarray,
@@ -731,7 +742,7 @@ def _eval_one_scenario(
         model, ood_obs_list, None, encoder_type, device, history_size=history_size
     )
     ood_mahal = mahal_score(Z_ood, mu, prec)
-    ood_knn   = knn_score(Z_ood, Z_tr, k=knn_k)
+    ood_knn   = knn_score(Z_ood, Z_tr_knn, k=knn_k)
 
     logging.info(
         f"  [{name}]  surprise={ood_surprise.mean():.4f}  "

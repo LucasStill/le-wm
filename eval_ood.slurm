@@ -42,7 +42,7 @@
 # Common options
 # --------------------------------------------------------------------------- #
 #SBATCH --job-name=lewm_ood
-#SBATCH --time=04:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=logs/ood_%j.out
 #SBATCH --error=logs/ood_%j.out
 
@@ -60,22 +60,22 @@ export PYTHONUNBUFFERED=1
 
 mkdir -p logs
 
-# ── Resolve node hostnames from packjob environment ───────────────────────────
-# Pack 0 (GPU) runs the batch script, so its nodelist is $SLURM_JOB_NODELIST.
-# $SLURM_HET_GROUP_0_NODELIST may not be exported by this SLURM version.
+# ── Resolve GPU node hostname ─────────────────────────────────────────────────
+# The batch script always runs on pack 0 (GPU), so SLURM_JOB_NODELIST is safe.
 GPU_NODE=$(scontrol show hostnames "${SLURM_HET_GROUP_0_NODELIST:-$SLURM_JOB_NODELIST}" | head -1)
-CPU_NODE=$(scontrol show hostnames "$SLURM_HET_GROUP_1_NODELIST" | head -1)
 
+# ── CPU node: use a rendezvous file written by the worker srun ────────────────
+# SLURM_HET_GROUP_1_NODELIST is not reliably exported on all JZ SLURM versions.
+# Instead the worker srun writes its hostname to a shared GPFS file.
 WORKER_PORT=5555
-WORKER_ADDR="tcp://${CPU_NODE}:${WORKER_PORT}"
-N_PROCESSES=$(( ${SLURM_HET_GROUP_1_CPUS_PER_TASK:-$SLURM_CPUS_PER_TASK} - 2 ))
+CPU_ADDR_FILE="${STABLEWM_HOME}/.ood_worker_addr_${SLURM_JOB_ID}"
+N_PROCESSES=22   # cpu_p1 node has 24 CPUs; leave 2 for OS + ZMQ overhead
 
 echo "============================================================"
 echo "  Task 4 OOD Detection"
 echo "  Job ID     : $SLURM_JOB_ID"
 echo "  GPU node   : $GPU_NODE"
-echo "  CPU node   : $CPU_NODE"
-echo "  Worker addr: $WORKER_ADDR"
+echo "  Addr file  : $CPU_ADDR_FILE"
 echo "  Processes  : $N_PROCESSES"
 echo "  Start time : $(date)"
 echo "============================================================"
@@ -89,28 +89,42 @@ CKPTS=(
 OUT_DIR=${STABLEWM_HOME}/eval_ood/${SLURM_JOB_ID}
 
 # ── Start SimulatorWorker on the CPU pack (background) ────────────────────────
-echo "[$(date +%H:%M:%S)] Starting SimulatorWorker on ${CPU_NODE} …"
+# The worker writes its ZMQ address to CPU_ADDR_FILE so the GPU side can find it
+# without relying on SLURM_HET_GROUP_1_NODELIST.
+echo "[$(date +%H:%M:%S)] Starting SimulatorWorker on CPU pack …"
 
 srun \
     --het-group=1 \
     --nodes=1 \
     --ntasks=1 \
     bash -c "
+        ADDR=tcp://\$(hostname -s):${WORKER_PORT}
+        echo \"\$ADDR\" > ${CPU_ADDR_FILE}
+        echo \"[worker] Address written: \$ADDR\"
         cd ${SIMULATOR_DIR}
-        source .venv/bin/activate
-        python -m hpc.simulator_worker \
+        uv run --no-dev --offline python -m hpc.simulator_worker \
             --port ${WORKER_PORT} \
             --sim-root ${ODSMR_ROOT} \
             --n-processes ${N_PROCESSES}
+        rm -f ${CPU_ADDR_FILE}
     " &
 WORKER_PID=$!
 
-echo "[$(date +%H:%M:%S)] Worker PID: ${WORKER_PID}"
+# Wait for the worker to write its address (up to 60 s)
+echo "[$(date +%H:%M:%S)] Waiting for worker address file …"
+for i in $(seq 1 60); do
+    [[ -f "${CPU_ADDR_FILE}" ]] && break
+    sleep 1
+done
 
-# Give the ZMQ socket time to bind.
-# eval_ood.py also calls client.wait_until_ready() which retries up to
-# 20 times with 3 s intervals as an additional safety net.
-sleep 10
+if [[ ! -f "${CPU_ADDR_FILE}" ]]; then
+    echo "ERROR: Worker did not write address file within 60 s — aborting."
+    kill "${WORKER_PID}" 2>/dev/null || true
+    exit 1
+fi
+
+WORKER_ADDR=$(cat "${CPU_ADDR_FILE}")
+echo "[$(date +%H:%M:%S)] Worker ready at ${WORKER_ADDR}"
 
 # ── OOD Evaluation on the GPU pack (foreground) ───────────────────────────────
 echo "[$(date +%H:%M:%S)] Starting OOD evaluation on ${GPU_NODE} …"
@@ -120,6 +134,8 @@ srun \
     --nodes=1 \
     --ntasks=1 \
     bash -c "
+        export SIMULATOR_REPO=${SIMULATOR_DIR}
+        export PYTHONPATH=${SIMULATOR_DIR}:\${PYTHONPATH:-}
         cd ${PROJECT_DIR}
         source .venv/bin/activate
         python -u eval_ood.py \
@@ -137,6 +153,7 @@ EXIT_CODE=$?
 echo "[$(date +%H:%M:%S)] Evaluation finished (exit code ${EXIT_CODE}). Stopping worker …"
 kill "${WORKER_PID}" 2>/dev/null || true
 wait "${WORKER_PID}" 2>/dev/null || true
+rm -f "${CPU_ADDR_FILE}"
 
 echo "============================================================"
 echo "  OOD results : ${OUT_DIR}"
