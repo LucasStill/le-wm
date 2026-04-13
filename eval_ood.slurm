@@ -19,14 +19,13 @@
 # --------------------------------------------------------------------------- #
 # Pack 0: GPU evaluation node (H100)
 # --------------------------------------------------------------------------- #
-#SBATCH --partition=gpu_p5
 #SBATCH --account=yil@h100
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
 #SBATCH --hint=nomultithread
-#SBATCH packjob
+#SBATCH -C h100
 
 # --------------------------------------------------------------------------- #
 # Pack 1: CPU simulator node (many-core, no GPU required)
