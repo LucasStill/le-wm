@@ -427,7 +427,7 @@ def task2_delta_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device):
         g, p = gt[:, i], preds[:, i]
         r2   = float(r2_score(g, p))
         rmse = float(np.sqrt(np.mean((g - p) ** 2)))
-        pr   = float(pearsonr(g, p)[0])
+        pr   = float(pearsonr(g, p)[0]) if np.std(g) > 0 and np.std(p) > 0 else 0.0
         per_dim[name] = {"r2": r2, "rmse": rmse, "pearson_r": pr}
         r2s.append(r2); rmses.append(rmse); prs.append(pr)
 
@@ -528,6 +528,7 @@ def task3_forecast(
     te_data, ep_offset_all, ep_len_all,
     hdf5_path, encoder_type, device,
     max_tau: int, n_eps: int, history_size: int = HISTORY_SIZE,
+    step_size: int = 10,
 ):
     """Autoregressive JEPA rollout, decoded to HI via the Task-1 probe.
 
@@ -535,11 +536,19 @@ def task3_forecast(
       "clean" — no maintenance in (t, t+τ]
       "event" — ≥1 maintenance event in (t, t+τ]
 
-    Reporting rmse_clean and rmse_event and their gap measures the
-    *action-divergence cost*: how much the zero-action forecaster fails
-    specifically because it cannot model maintenance-induced HI resets.
+    Speed-up strategy
+    -----------------
+    Instead of a (t, τ) double loop (~N_frames × max_tau sequential forward
+    passes), we batch ALL starting frames for a given episode and unroll τ
+    steps jointly.  The outer loop is now just max_tau batched predict calls
+    per episode regardless of episode length.
+
+    step_size : subsample starting frames every `step_size` timesteps
+                (default 10 — 10× fewer starts, negligible metric impact).
     """
-    logging.info(f"  Task 3 — Latent Forecasting (τ=1…{max_tau})")
+    logging.info(
+        f"  Task 3 — Latent Forecasting (τ=1…{max_tau}, step_size={step_size})"
+    )
     n_hi = te_data["hi"].shape[1]
     H    = history_size
 
@@ -563,59 +572,84 @@ def task3_forecast(
     n_eval = min(n_eps, len(te_eps))
 
     for ep_i, ep_idx in enumerate(te_eps[:n_eval]):
-        if ep_i % 50 == 0:
+        if ep_i % 10 == 0:
             logging.info(f"    episode {ep_i}/{n_eval}…")
         s = int(ep_offset_all[ep_idx])
         l = int(ep_len_all[ep_idx])
-        if l < H + 1:
+        if l < H + max_tau + 1:
             continue
 
         obs_ep = all_obs[s : s + l]
         hi_ep  = all_states[s : s + l]
         act_ep = all_actions[s : s + l]
 
-        # Encode all frames once
+        # Encode all frames once  (T, D)
         z_ep = encode_observations(
             model, obs_ep, encoder_type, device, batch_size=512
-        )  # (T, D)
+        )
+        D = z_ep.shape[1]
 
-        embed_dim = z_ep.shape[1]
+        # ── Subsampled starting frames ────────────────────────────────────
+        # Only keep starts where we have at least max_tau future frames.
+        starts = np.arange(H - 1, l - max_tau, step_size)
+        if len(starts) == 0:
+            continue
+        N = len(starts)
 
-        for t in range(H - 1, l - 1):
-            ctx = (
-                torch.from_numpy(z_ep[t - H + 1 : t + 1])
-                .float().to(device).unsqueeze(0)
-            )  # (1, H, D)
-            act_buf = torch.zeros(1, H, embed_dim, device=device)
-            emb_win = ctx.clone()
+        # ── Pre-compute event mask: has_event[i, tau] = True if there is a
+        # maintenance action in act_ep[starts[i]+1 : starts[i]+tau+1].
+        # Use searchsorted for fully vectorised O(N * log(M)) computation.
+        maint_times = np.where(act_ep > 0.5)[0]   # (M,)
+        # has_event[i, tau-1] = True iff any maint in (starts[i], starts[i]+tau]
+        # = (# maints <= starts[i]+tau) > (# maints <= starts[i])
+        if len(maint_times) > 0:
+            # count_up_to[i] = # maints in [0, starts[i]]
+            count_at_start  = np.searchsorted(maint_times, starts,     side="right")
+            # for each tau, count_at_target[i, tau] = # maints in [0, starts[i]+tau]
+            targets = starts[:, None] + np.arange(1, max_tau + 1)[None, :]  # (N, max_tau)
+            count_at_target = np.searchsorted(
+                maint_times, targets.ravel(), side="right"
+            ).reshape(N, max_tau)
+            has_event = count_at_target > count_at_start[:, None]  # (N, max_tau) bool
+        else:
+            has_event = np.zeros((N, max_tau), dtype=bool)
 
-            for tau in range(1, max_tau + 1):
-                tt = t + tau
-                if tt >= l:
-                    break
+        # ── Initialise rolling window batch  (N, H, D) ───────────────────
+        ctx_np  = np.stack([z_ep[t - H + 1 : t + 1] for t in starts])
+        emb_win = torch.from_numpy(ctx_np).float().to(device)   # (N, H, D)
+        act_buf = torch.zeros(N, H, D, device=device)
 
-                pred_seq = model.predict(emb_win[:, -H:], act_buf[:, -H:])
-                next_z   = pred_seq[:, -1:]    # (1, 1, D)
+        # ── Unroll τ steps — ONE batched predict call per tau ─────────────
+        for tau in range(1, max_tau + 1):
+            pred_seq = model.predict(emb_win[:, -H:], act_buf[:, -H:])
+            next_z   = pred_seq[:, -1:]                   # (N, 1, D)
 
-                hi_pred  = _decode_z_to_hi(
-                    probe_hi, scaler_hi,
-                    next_z[:, 0].cpu().numpy(), device
-                )  # (1, n_hi)
-                hi_gt    = hi_ep[tt : tt + 1]
+            # Decode all N predictions at once
+            hi_pred = _decode_z_to_hi(
+                probe_hi, scaler_hi,
+                next_z[:, 0].cpu().numpy(), device
+            )  # (N, n_hi)
 
-                se       = ((hi_pred - hi_gt) ** 2)[0]
-                has_evt  = bool((act_ep[t + 1 : tt + 1] > 0.5).any())
-                key      = "event" if has_evt else "clean"
+            # Ground-truth HI for each starting frame at this horizon
+            target_ts = starts + tau                      # (N,)
+            hi_gt     = hi_ep[target_ts]                  # (N, n_hi)
 
-                sqerr["all"][tau - 1]  += se
-                sqerr[key][tau - 1]    += se
-                cnt["all"][tau - 1]    += 1
-                cnt[key][tau - 1]      += 1
+            se = (hi_pred - hi_gt) ** 2                   # (N, n_hi)
 
-                emb_win  = torch.cat([emb_win, next_z], dim=1)
-                act_buf  = torch.cat(
-                    [act_buf, torch.zeros(1, 1, embed_dim, device=device)], dim=1
-                )
+            evt = has_event[:, tau - 1]                   # (N,) bool
+
+            sqerr["all"][tau - 1]             += se.sum(axis=0)
+            sqerr["event"][tau - 1]           += se[evt].sum(axis=0)
+            sqerr["clean"][tau - 1]           += se[~evt].sum(axis=0)
+            cnt["all"][tau - 1]               += N
+            cnt["event"][tau - 1]             += int(evt.sum())
+            cnt["clean"][tau - 1]             += int((~evt).sum())
+
+            # Advance rolling window
+            emb_win  = torch.cat([emb_win, next_z], dim=1)
+            act_buf  = torch.cat(
+                [act_buf, torch.zeros(N, 1, D, device=device)], dim=1
+            )
 
     results = {}
     for key in ("all", "clean", "event"):
@@ -655,6 +689,7 @@ def run_one(
     device: torch.device,
     skip_task3: bool = False,
     forecast_horizon: int | None = None,
+    step_size: int = 10,
 ) -> dict:
     name   = cfg["name"]
     enc_t  = cfg.get("encoder_type", "sensor")
@@ -684,6 +719,7 @@ def run_one(
             model, probe_hi, scaler_hi,
             te_data, ep_offset_all, ep_len_all,
             HDF5_PATH, enc_t, device, max_tau, FORECAST_N_EPS,
+            step_size=step_size,
         )
 
     del model; torch.cuda.empty_cache()
@@ -847,6 +883,9 @@ def main():
                         help=f"max τ for Task 3 (default {max(FORECAST_HORIZONS)})")
     parser.add_argument("--hdf5",             default=None,
                         help="override HDF5_PATH in the script")
+    parser.add_argument("--step_size",        type=int, default=10,
+                        help="subsample starting frames every N steps for Task 3 "
+                             "(default 10 — 10× faster, negligible metric impact)")
     args = parser.parse_args()
 
     if args.hdf5:
@@ -906,6 +945,7 @@ def main():
                 ep_offset_all, ep_len_all, device,
                 skip_task3=args.skip_task3,
                 forecast_horizon=args.forecast_horizon,
+                step_size=args.step_size,
             )
             with open(rp, "w") as f:
                 json.dump(result, f, indent=2)

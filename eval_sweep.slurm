@@ -43,7 +43,7 @@ OUT_DIR=${STABLEWM_HOME}/eval/${SLURM_JOB_ID}
 # ── Optional flags ────────────────────────────────────────────────────────────
 # --skip_task3        skip the slow autoregressive rollout
 # --forecast_horizon  max τ for Task 3 (default 50)
-EXTRA_FLAGS="--forecast_horizon 50"
+EXTRA_FLAGS="--forecast_horizon 50 --step_size 10"
 
 echo "Checkpoints:"
 for c in "${CKPTS[@]}"; do echo "  $c"; done
