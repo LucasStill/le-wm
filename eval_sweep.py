@@ -112,7 +112,8 @@ SEED            = 3072
 IMG_SIZE        = 28         # ViT encoder only
 
 # Probe
-PROBE_SEQ_LEN   = 1
+PROBE_SEQ_LEN        = 1          # seq_len for Task 1 (HI state estimation)
+DELTA_HI_SEQ_LENS    = [1, 10, 50]  # seq_lens to evaluate for Task 2 (ΔHI velocity)
 N_PROBE_EPOCHS  = 150
 PROBE_LR        = 1e-3
 PROBE_PATIENCE  = 20
@@ -389,17 +390,26 @@ def task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device):
 #  TASK 2 — DEGRADATION VELOCITY  ΔHI = HI(t) − HI(t−1)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def task2_delta_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device):
-    """Predict the instantaneous degradation rate from a single embedding.
+def task2_delta_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device,
+                   seq_lens=None):
+    """Predict the instantaneous degradation rate from encoder embeddings.
 
     Target: ΔHI(t) = HI(t) − HI(t−1), computed within each episode and
     restricted to non-maintenance steps (pure degradation drift, no jumps).
 
-    A good R² here means the encoder has captured not just *where* on the
-    degradation curve the engine is, but *how fast* it is degrading — a
-    strictly harder quantity than absolute HI.
+    The probe is evaluated for each value of seq_len in seq_lens:
+      seq_len=1  : predict rate from a single snapshot z_t.
+      seq_len>1  : predict rate from a window [z_{t-w+1},...,z_t], giving the
+                   probe access to the trajectory's local slope.  This is the
+                   natural setting for a velocity prediction task.
+
+    Returns dict keyed by seq_len string (e.g. "sl1", "sl10") containing
+    per-dimension metrics, plus "alarm" from the best (last-trained) probe.
     """
-    logging.info("  Task 2 — Degradation Velocity (ΔHI)")
+    if seq_lens is None:
+        seq_lens = DELTA_HI_SEQ_LENS
+
+    logging.info(f"  Task 2 — Degradation Velocity (ΔHI)  seq_lens={seq_lens}")
 
     def _prep(data):
         delta, valid = compute_delta_hi(
@@ -415,49 +425,56 @@ def task2_delta_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device):
         f"  ΔHI samples  train={len(Z_tr_v):,}  test={len(Z_te_v):,}"
     )
 
-    preds, gt, probe_v, scaler_v = train_probe(
-        Z_tr_v, delta_tr, Z_te_v, delta_te,
-        ep_tr, ep_te,
-        n_outputs=delta_tr.shape[1],
-        device=device, task_name="ΔHI",
-    )
+    all_results = {}
+    last_probe_v = None
+    last_scaler_v = None
 
-    per_dim, r2s, rmses, prs = {}, [], [], []
-    for i, name in enumerate(hi_names):
-        g, p = gt[:, i], preds[:, i]
-        r2   = float(r2_score(g, p))
-        rmse = float(np.sqrt(np.mean((g - p) ** 2)))
-        pr   = float(pearsonr(g, p)[0]) if np.std(g) > 0 and np.std(p) > 0 else 0.0
-        per_dim[name] = {"r2": r2, "rmse": rmse, "pearson_r": pr}
-        r2s.append(r2); rmses.append(rmse); prs.append(pr)
+    for sl in seq_lens:
+        tag = f"sl{sl}"
+        logging.info(f"  ΔHI seq_len={sl}")
+        preds, gt, probe_v, scaler_v = train_probe(
+            Z_tr_v, delta_tr, Z_te_v, delta_te,
+            ep_tr, ep_te,
+            n_outputs=delta_tr.shape[1],
+            device=device, task_name=f"ΔHI(sl={sl})",
+            seq_len=sl,
+        )
 
-    per_dim["__mean__"] = {
-        "r2": float(np.mean(r2s)),
-        "rmse": float(np.mean(rmses)),
-        "pearson_r": float(np.mean(prs)),
-    }
-    logging.info(
-        f"  Task 2  mean R²={np.mean(r2s):.3f}  "
-        f"RMSE={np.mean(rmses):.7f}  Pearson={np.mean(prs):.3f}"
-    )
+        per_dim, r2s, rmses, prs = {}, [], [], []
+        for i, name in enumerate(hi_names):
+            g, p = gt[:, i], preds[:, i]
+            r2   = float(r2_score(g, p))
+            rmse = float(np.sqrt(np.mean((g - p) ** 2)))
+            pr   = float(pearsonr(g, p)[0]) if np.std(g) > 0 and np.std(p) > 0 else 0.0
+            per_dim[name] = {"r2": r2, "rmse": rmse, "pearson_r": pr}
+            r2s.append(r2); rmses.append(rmse); prs.append(pr)
+
+        per_dim["__mean__"] = {
+            "r2": float(np.mean(r2s)),
+            "rmse": float(np.mean(rmses)),
+            "pearson_r": float(np.mean(prs)),
+        }
+        logging.info(
+            f"  Task 2 (sl={sl})  mean R²={np.mean(r2s):.3f}  "
+            f"RMSE={np.mean(rmses):.7f}  Pearson={np.mean(prs):.3f}"
+        )
+        all_results[tag] = per_dim
+        last_probe_v  = probe_v
+        last_scaler_v = scaler_v
 
     # ── Task 2b: maintenance alarm via predicted ΔHI magnitude ────────────
-    # Intuition: at a maintenance event the HI jumps upward (restoration).
-    # If the encoder implicitly encodes "about to be serviced", the predicted
-    # ΔHI will be an anomalously large positive value right before the event.
-    # We score each timestep by max(predicted_delta) and measure AUC vs the
-    # binary alarm label "maintenance within K steps".
+    # Use the longest seq_len probe as the alarm scorer (best trajectory context).
     logging.info("  Task 2b — Maintenance Alarm (AUC via ΔHI score)")
     alarm_results = _alarm_from_delta(
         Z_te_full=Z_te,
         te_data=te_data,
-        probe_v=probe_v,
-        scaler_v=scaler_v,
+        probe_v=last_probe_v,
+        scaler_v=last_scaler_v,
         device=device,
         hi_names=hi_names,
     )
 
-    return per_dim, alarm_results
+    return all_results, alarm_results
 
 
 def _alarm_from_delta(Z_te_full, te_data, probe_v, scaler_v, device, hi_names):
@@ -782,9 +799,10 @@ def write_flat_csv(all_results, hi_names, path):
         for comp, m in res.get("task1_hi", {}).items():
             for metric, val in m.items():
                 rows.append([name, w, "task1_hi", comp, metric, val])
-        for comp, m in res.get("task2_delta_hi", {}).items():
-            for metric, val in m.items():
-                rows.append([name, w, "task2_delta_hi", comp, metric, val])
+        for sl_tag, sl_metrics in res.get("task2_delta_hi", {}).items():
+            for comp, m in sl_metrics.items():
+                for metric, val in m.items():
+                    rows.append([name, w, f"task2_delta_hi_{sl_tag}", comp, metric, val])
         for k_str, m in res.get("task2b_alarm", {}).items():
             for metric, val in (m or {}).items():
                 if val is not None:
@@ -833,7 +851,13 @@ def print_summary(all_results):
             print(f"  {res['name']:<32}  ERROR: {res['error'][:40]}")
             continue
         t1   = res.get("task1_hi", {}).get("__mean__", {})
-        t2   = res.get("task2_delta_hi", {}).get("__mean__", {})
+        # Show best (highest R²) seq_len for Task 2
+        t2_all = res.get("task2_delta_hi", {})
+        t2 = max(
+            (v.get("__mean__", {}) for v in t2_all.values()),
+            key=lambda d: d.get("r2", -999),
+            default={},
+        ) if t2_all else {}
         alrm = res.get("task2b_alarm", {}).get("K20", {}) or {}
         t3   = res.get("task3_forecast") or {}
         mr_all  = t3.get("mean_rmse_all", [float("nan")] * 50)
