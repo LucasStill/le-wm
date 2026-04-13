@@ -26,6 +26,10 @@
 #SBATCH --gres=gpu:1
 #SBATCH --hint=nomultithread
 #SBATCH -C h100
+#SBATCH --job-name=lewm_ood
+#SBATCH --time=06:00:00
+#SBATCH --output=logs/ood_%j.out
+#SBATCH --error=logs/ood_%j.out
 #SBATCH hetjob
 
 # --------------------------------------------------------------------------- #
@@ -37,14 +41,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=24
 #SBATCH --hint=nomultithread
-
-# --------------------------------------------------------------------------- #
-# Common options
-# --------------------------------------------------------------------------- #
-#SBATCH --job-name=lewm_ood
 #SBATCH --time=06:00:00
-#SBATCH --output=logs/ood_%j.out
-#SBATCH --error=logs/ood_%j.out
 
 set -eo pipefail
 
