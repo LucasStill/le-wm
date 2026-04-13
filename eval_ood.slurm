@@ -46,7 +46,7 @@
 #SBATCH --output=logs/ood_%j.out
 #SBATCH --error=logs/ood_%j.out
 
-set -euo pipefail
+set -eo pipefail
 
 source ~/.bashrc
 
@@ -61,12 +61,14 @@ export PYTHONUNBUFFERED=1
 mkdir -p logs
 
 # ── Resolve node hostnames from packjob environment ───────────────────────────
-GPU_NODE=$(scontrol show hostnames "$SLURM_HET_GROUP_0_NODELIST" | head -1)
+# Pack 0 (GPU) runs the batch script, so its nodelist is $SLURM_JOB_NODELIST.
+# $SLURM_HET_GROUP_0_NODELIST may not be exported by this SLURM version.
+GPU_NODE=$(scontrol show hostnames "${SLURM_HET_GROUP_0_NODELIST:-$SLURM_JOB_NODELIST}" | head -1)
 CPU_NODE=$(scontrol show hostnames "$SLURM_HET_GROUP_1_NODELIST" | head -1)
 
 WORKER_PORT=5555
 WORKER_ADDR="tcp://${CPU_NODE}:${WORKER_PORT}"
-N_PROCESSES=$(( SLURM_HET_GROUP_1_CPUS_PER_TASK - 2 ))
+N_PROCESSES=$(( ${SLURM_HET_GROUP_1_CPUS_PER_TASK:-$SLURM_CPUS_PER_TASK} - 2 ))
 
 echo "============================================================"
 echo "  Task 4 OOD Detection"
