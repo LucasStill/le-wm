@@ -1,0 +1,94 @@
+defaults:
+  - _self_
+  - data: turbofan   # reuse the existing turbofan data config from le-wm
+
+output_model_name: ar_lstm
+subdir: ${hydra:job.id}
+
+num_workers: 6
+train_split: 0.9
+seed: 3072
+
+# ── Encoder (same as JEPA sensor baseline) ───────────────────────────────────
+encoder_type: sensor
+n_sensors: 28
+img_size: 28          # kept for HIProbeCallback compat; unused by sensor encoder
+
+sensor_encoder:
+  d_model: 64         # must equal wm.embed_dim to avoid projection bottleneck
+  nhead: 4
+  num_layers: 2
+  dropout: 0.1
+
+obs_window_size: 1    # 1 = snapshot encoder (matching JEPA baseline)
+
+# ── World model ───────────────────────────────────────────────────────────────
+wm:
+  type: ar_lstm
+  history_size: 3     # context window fed to the LSTM (same as JEPA)
+  num_preds: 1        # predict 1 step ahead
+  embed_dim: 64       # latent dimension
+
+# ── LSTM predictor hyperparameters ───────────────────────────────────────────
+# These replace the transformer predictor.depth / heads / mlp_dim params.
+lstm:
+  hidden_dim: 256     # LSTM hidden state size (comparable param count to JEPA transformer)
+  num_layers: 2       # stacked LSTM layers
+  dropout: 0.1
+
+# ── Training ──────────────────────────────────────────────────────────────────
+trainer:
+  max_epochs: 100
+  devices: auto
+  accelerator: gpu
+  precision: 16-mixed   # fp16 works on V100 (bf16 requires A100/H100)
+  gradient_clip_val: 0.3
+
+loader:
+  batch_size: 128
+  num_workers: ${num_workers}
+  persistent_workers: True
+  prefetch_factor: 3
+  pin_memory: True
+
+optimizer:
+  type: AdamW
+  lr: 7e-5
+  weight_decay: 1e-3
+
+# ── Regularization (same as JEPA) ─────────────────────────────────────────────
+loss:
+  sigreg:
+    weight: 0.15
+    kwargs:
+      knots: 17
+      num_proj: 1024
+
+# ── WandB ─────────────────────────────────────────────────────────────────────
+wandb:
+  enabled: True
+  config:
+    entity: thil-ecole-polytechnique
+    project: turbofan
+    name: ${output_model_name}
+    resume: never
+    log_model: False
+
+# ── Downstream HI probe (identical to JEPA config) ───────────────────────────
+# Trains a TransformerProbe on frozen encoder embeddings every eval_interval epochs.
+# Directly comparable to JEPA Task 1 results.
+hi_probe:
+  enabled: false          # override via CLI: hi_probe.enabled=true
+  eval_interval: 5
+  n_probe_epochs: 150
+  probe_lr: 1e-3
+  probe_patience: 20
+  d_model: 64
+  nhead: 4
+  num_layers: 2
+  probe_dropout: 0.1
+  probe_batch_size: 256
+  probe_seq_len: 1        # 1 = measure encoder only; >1 lets probe compensate
+  n_subsample: 30000
+  enc_batch_size: 2048
+  rul_max_horizon: 300
