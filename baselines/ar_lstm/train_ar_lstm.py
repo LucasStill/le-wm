@@ -92,7 +92,7 @@ def ar_lstm_forward(self, batch, stage, cfg):
 
 @hydra.main(
     version_base=None,
-    config_path="config",
+    config_path=str(Path(__file__).parent / "config"),  # absolute → no CLI doubling
     config_name="train_ar_lstm",
 )
 def run(cfg):

@@ -68,8 +68,6 @@ echo "Run name : ${RUN_NAME}"
 echo "========================================"
 
 srun python -u baselines/ar_lstm/train_ar_lstm.py \
-    --config-path baselines/ar_lstm/config \
-    --config-name train_ar_lstm \
     output_model_name=${RUN_NAME} \
     subdir=turbofan_ar_lstm_h${H}_hd${HIDDEN}_l${LAYERS} \
     data.dataset.cache_dir=${DATA_DIR} \
