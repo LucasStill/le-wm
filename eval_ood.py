@@ -629,6 +629,30 @@ class ReconstructionDecoder(nn.Module):
         return self.net(z)
 
 
+def _to_sensor_obs(obs: np.ndarray) -> np.ndarray:
+    """Normalise any observation array to flat (N, N_SENSORS * N_CONTEXTS) = (N, 28).
+
+    HDF5 `pixels` may be stored as (N, 3, 7, 4) = 84-dim (3-channel visual
+    representation), while the simulator and OOD pipeline always produce
+    (N, 7, 4) = 28-dim normalised sensor observations.  This function collapses
+    both cases to the canonical 28-dim format so the decoder target is always
+    consistent with what OOD episodes provide.
+    """
+    sensor_dim = N_SENSORS * N_CONTEXTS  # 28
+    flat = obs.reshape(len(obs), -1)     # (N, D) for any D
+    if flat.shape[1] == sensor_dim:
+        return flat.astype(np.float32)
+    if flat.shape[1] % sensor_dim == 0:
+        # e.g. (N, 84) from 3-channel pixels -> average 3 channels -> (N, 28)
+        n_ch = flat.shape[1] // sensor_dim
+        return flat.reshape(len(flat), n_ch, sensor_dim).mean(axis=1).astype(np.float32)
+    # Fallback: truncate (should not happen in normal usage)
+    logging.warning(
+        f"  _to_sensor_obs: unexpected obs dim {flat.shape[1]}, truncating to {sensor_dim}"
+    )
+    return flat[:, :sensor_dim].astype(np.float32)
+
+
 def train_reconstruction_decoder(
     model,
     encoder_type: str,
@@ -642,26 +666,26 @@ def train_reconstruction_decoder(
 
     Parameters
     ----------
-    obs_list : list of (T_i, obs_dim) float32 arrays — training observations
-               (already normalised, from the HDF5 pixels field).
+    obs_list : list of (T_i, *) float32 arrays — training observations.
+               Any shape is normalised to (N, 28) via _to_sensor_obs so the
+               decoder target always matches the 28-dim OOD observation format.
     n_epochs : number of epochs over the training embeddings.
     """
     logging.info("  Training reconstruction decoder …")
 
-    # Encode all training observations once
-    all_obs = np.concatenate(obs_list, axis=0)   # (N, obs_dim)
-    Z_all = []
-    model.eval()
-    with torch.no_grad():
-        for s in range(0, len(all_obs), batch_size):
-            x = torch.from_numpy(all_obs[s : s + batch_size]).float().to(device)
-            z = model.encoder(x) if hasattr(model, "encoder") else model.encode(x)
-            Z_all.append(z.cpu())
-    Z_all = torch.cat(Z_all, dim=0)          # (N, z_dim)
-    X_all = torch.from_numpy(all_obs).float()  # (N, obs_dim)
+    # Normalise all training observations to canonical (N, 28) sensor format
+    all_obs_raw = np.concatenate(obs_list, axis=0)
+    all_obs     = _to_sensor_obs(all_obs_raw)    # (N, 28)
+
+    # Encode with the same encode_observations pipeline used everywhere else
+    Z_all = encode_observations(model, all_obs_raw, encoder_type, device,
+                                batch_size=batch_size)   # (N, z_dim)
+    Z_all = torch.from_numpy(Z_all)
+    X_all = torch.from_numpy(all_obs)                    # (N, 28)
 
     z_dim   = Z_all.shape[1]
-    obs_dim = X_all.shape[1]
+    obs_dim = X_all.shape[1]   # always 28
+    logging.info(f"  Decoder: z_dim={z_dim}, obs_dim={obs_dim}, N={len(Z_all)}")
     decoder = ReconstructionDecoder(z_dim, obs_dim).to(device)
     opt     = torch.optim.Adam(decoder.parameters(), lr=lr)
 
@@ -707,10 +731,14 @@ def reconstruction_scores(
     for obs_ep in obs_list:
         if len(obs_ep) == 0:
             continue
+        # Normalise to canonical (T, 28) sensor format for both encoder and target
+        obs_28 = _to_sensor_obs(obs_ep)   # (T, 28)
+        Z_ep   = encode_observations(model, obs_ep, encoder_type, device,
+                                     batch_size=batch_size)   # (T, z_dim)
         ep_scores = []
-        for s in range(0, len(obs_ep), batch_size):
-            xb = torch.from_numpy(obs_ep[s : s + batch_size]).float().to(device)
-            z  = model.encoder(xb) if hasattr(model, "encoder") else model.encode(xb)
+        for s in range(0, len(obs_28), batch_size):
+            xb = torch.from_numpy(obs_28[s : s + batch_size]).float().to(device)
+            z  = torch.from_numpy(Z_ep[s : s + batch_size]).float().to(device)
             xr = decoder(z)
             err = torch.norm(xb - xr, dim=1).cpu().numpy()
             ep_scores.append(err)
@@ -739,10 +767,13 @@ def reconstruction_scores_per_episode(
         if len(obs_ep) == 0:
             per_ep.append(np.array([], dtype=np.float32))
             continue
+        obs_28 = _to_sensor_obs(obs_ep)   # (T, 28)
+        Z_ep   = encode_observations(model, obs_ep, encoder_type, device,
+                                     batch_size=batch_size)   # (T, z_dim)
         ep_scores = []
-        for s in range(0, len(obs_ep), batch_size):
-            xb = torch.from_numpy(obs_ep[s : s + batch_size]).float().to(device)
-            z  = model.encoder(xb) if hasattr(model, "encoder") else model.encode(xb)
+        for s in range(0, len(obs_28), batch_size):
+            xb = torch.from_numpy(obs_28[s : s + batch_size]).float().to(device)
+            z  = torch.from_numpy(Z_ep[s : s + batch_size]).float().to(device)
             xr = decoder(z)
             err = torch.norm(xb - xr, dim=1).cpu().numpy()
             ep_scores.append(err)
