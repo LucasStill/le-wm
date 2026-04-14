@@ -43,10 +43,11 @@ matplotlib.rcParams.update({
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 SCENARIO_COLORS = {
-    "accel_3x":  "#e07b39",
-    "accel_5x":  "#c0392b",
-    "premaint":  "#8e44ad",
-    "correlated":"#2980b9",
+    "accel_3x":   "#e07b39",
+    "accel_5x":   "#c0392b",
+    "premaint":   "#8e44ad",
+    "correlated": "#2980b9",
+    "spike_fault":"#16a085",
 }
 DETECTOR_COLORS = {
     "surprise": "#e07b39",
@@ -55,10 +56,11 @@ DETECTOR_COLORS = {
     "recon":    "#8e44ad",
 }
 SCENARIO_LABELS = {
-    "accel_3x":  "Accel 3×",
-    "accel_5x":  "Accel 5×",
-    "premaint":  "Pre-maint",
-    "correlated":"Correlated",
+    "accel_3x":   "Accel 3×",
+    "accel_5x":   "Accel 5×",
+    "premaint":   "Pre-maint",
+    "correlated": "Correlated",
+    "spike_fault":"Spike fault",
 }
 DETECTOR_LABELS = {
     "surprise": "Surprise",
@@ -122,6 +124,9 @@ def simulate_trajectory(
     degradation_origins=None,
     speed_probability_distribution=None,
     seed=None,
+    __spike__=False,
+    spike_component="deg_CmpH_s_mapEff_in",
+    spike_fraction=0.5,
 ):
     """Generate a single degradation trajectory.  Returns (T, 10) float32."""
     rng = np.random.default_rng(seed)
@@ -194,12 +199,22 @@ def simulate_trajectory(
         if len(hits):
             cutoff = min(cutoff, int(hits[0]) + 1)
 
-    return traj[:cutoff]
+    traj = traj[:cutoff]
+    if __spike__ and len(traj) > 5:
+        rng_s = np.random.default_rng((seed or 0) + 999)
+        spike_idx = _STATE_LABELS.index(spike_component)
+        spike_bound = _STATE_BOUNDS[spike_component][0]
+        jitter = float(rng_s.uniform(-0.2, 0.2))
+        t_spike = max(1, int(len(traj) * (spike_fraction + jitter)))
+        t_spike = min(t_spike, len(traj) - 3)
+        traj[t_spike:, spike_idx] = spike_bound
+    return traj
 
 
 # OOD scenario kwargs (mirrors OOD_SCENARIOS in eval_ood.py)
 SCENARIO_KWARGS = {
     "id": {},
+    "spike_fault": {"__spike__": True},
     "accel_3x": {
         "speed_params": {
             "slow":   {"mean_slope": -1.5e-2, "std_slope": 3e-3},
@@ -367,11 +382,12 @@ def plot_trajectories(out_dir: Path, n_traj: int = 5, seq_len: int = 500):
 
     all_scenarios = ["id"] + SCENARIOS
     scenario_display = {
-        "id":         ("ID (training distribution)", "#555555"),
-        "accel_3x":   (SCENARIO_LABELS["accel_3x"], SCENARIO_COLORS["accel_3x"]),
-        "accel_5x":   (SCENARIO_LABELS["accel_5x"], SCENARIO_COLORS["accel_5x"]),
-        "premaint":   (SCENARIO_LABELS["premaint"],  SCENARIO_COLORS["premaint"]),
-        "correlated": (SCENARIO_LABELS["correlated"],SCENARIO_COLORS["correlated"]),
+        "id":          ("ID (training dist.)", "#555555"),
+        "accel_3x":    (SCENARIO_LABELS["accel_3x"],   SCENARIO_COLORS["accel_3x"]),
+        "accel_5x":    (SCENARIO_LABELS["accel_5x"],   SCENARIO_COLORS["accel_5x"]),
+        "premaint":    (SCENARIO_LABELS["premaint"],   SCENARIO_COLORS["premaint"]),
+        "correlated":  (SCENARIO_LABELS["correlated"], SCENARIO_COLORS["correlated"]),
+        "spike_fault": (SCENARIO_LABELS["spike_fault"],SCENARIO_COLORS["spike_fault"]),
     }
 
     n_comp = len(SHOW_COMPONENTS)
@@ -763,9 +779,9 @@ def main():
         results = json.load(f)
 
     # Filter SCENARIOS to only those present in results
+    global SCENARIOS
     first_model = list(results.values())[0]
     available_scenarios = [s for s in SCENARIOS if s in first_model]
-    global SCENARIOS
     SCENARIOS = available_scenarios
 
     print(f"\nLoaded results for models: {list(results.keys())}")

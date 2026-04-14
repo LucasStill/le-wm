@@ -123,5 +123,50 @@ This function accepts:
 
 The returned module is in `eval` mode with its PyTorch weights accessible via `.state_dict()`.
 
+## Turbofan Benchmark (Task 4 — OOD Detection)
+
+The repository includes a full evaluation suite for out-of-distribution detection on the OpenDeckSMR turbofan simulator (`eval_ood.py`). This requires a running instance of the ZMQ simulator worker (see `eval_ood.slurm` for the self-contained SLURM job that starts both the worker and the GPU eval on the same H100 node).
+
+**Run OOD evaluation on Jean-Zay (single job, self-contained):**
+```bash
+# From le-wm-vanilla on Jean-Zay:
+sbatch eval_ood.slurm
+# Results are written to $STABLEWM_HOME/eval_ood/<SLURM_JOB_ID>/
+```
+
+**Generate all figures from a completed run:**
+```bash
+python plot_ood.py \
+    --summary_json $STABLEWM_HOME/eval_ood/<JOB_ID>/ood_summary.json \
+    --out_dir      figures/ood
+
+# Or point at the eval/eval directory for the most recent run:
+python plot_ood.py \
+    --summary_json $STABLEWM_HOME/eval/eval/ood_summary.json \
+    --out_dir      figures/ood
+```
+
+This produces 9 figures in both `.pdf` and `.png`:
+
+| File | Content |
+|---|---|
+| `auc_heatmap` | AUC-ROC per detector × scenario (both models) |
+| `score_shift` | Normalised score shift (OOD − ID) / σ_ID |
+| `trajectories` | Example degradation state trajectories per scenario |
+| `episode_lengths` | Episode length distributions |
+| `paper_summary` | Compact two-panel summary for the paper |
+| `correlated_pattern` | HPC+HPT selective degradation pattern |
+| `episode_auc` | Per-timestep vs per-episode AUC comparison |
+| `recon_profile` | Reconstruction error over episode lifetime |
+| `spike_fault` | Spike fault pattern visualisation |
+
+**Run connectivity test (if simulator communication fails):**
+```bash
+# From le-wm venv on any node:
+python test_zmq.py                     # reads $WORK/.simulator_addr
+python test_zmq.py tcp://r1i3n21:5555  # explicit address
+python test_zmq.py --batch 100         # include throughput benchmark
+```
+
 ## Contact & Contributions
 Feel free to open [issues](https://github.com/lucas-maes/le-wm/issues)! For questions or collaborations, please contact `lucas.maes@mila.quebec`

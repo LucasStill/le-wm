@@ -74,7 +74,7 @@ wandb:
 
 wm:
   type: lewm
-  history_size: 3
+  history_size: 3 # predictor hyperparam
   num_preds: 1
   embed_dim: 64 #192
 
