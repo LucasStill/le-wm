@@ -381,14 +381,13 @@ def states_to_obs_zmq(
 
     Returns list of (T_i, 28) float32 arrays.
     """
-    # Import client from the simulator repo
-    _add_sim_repo_to_path()
+    # Import SimulatorClient from the simulator repo (added to PYTHONPATH in slurm script)
     try:
         from hpc.simulator_client import SimulatorClient
     except ImportError as e:
         raise RuntimeError(
-            "Could not import SimulatorClient. Ensure rl_simulator_safran is "
-            "on the path or set SIMULATOR_REPO."
+            "Could not import SimulatorClient. Ensure SIMULATOR_REPO is set and "
+            "rl_simulator_safran is on PYTHONPATH."
         ) from e
 
     client = SimulatorClient(sim_addr)
