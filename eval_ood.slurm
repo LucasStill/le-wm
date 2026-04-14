@@ -86,25 +86,22 @@ CKPTS=(
 OUT_DIR=${STABLEWM_HOME}/eval_ood/${SLURM_JOB_ID}
 
 # ── Start SimulatorWorker on the CPU pack (background) ────────────────────────
-# The worker writes its ZMQ address to CPU_ADDR_FILE so the GPU side can find it
-# without relying on SLURM_HET_GROUP_1_NODELIST.
+# Use a dedicated wrapper script to avoid bash -c quoting issues and give the
+# CPU node's slurmstepd time to initialise before we launch the step.
 echo "[$(date +%H:%M:%S)] Starting SimulatorWorker on CPU pack …"
+sleep 5   # let slurmstepd on pack-1 node finish registering
 
 srun \
     --het-group=1 \
     --nodes=1 \
     --ntasks=1 \
-    bash -c "
-        ADDR=tcp://\$(hostname -s):${WORKER_PORT}
-        echo \"\$ADDR\" > ${CPU_ADDR_FILE}
-        echo \"[worker] Address written: \$ADDR\"
-        cd ${SIMULATOR_DIR}
-        uv run --no-dev --offline python -m hpc.simulator_worker \
-            --port ${WORKER_PORT} \
-            --sim-root ${ODSMR_ROOT} \
-            --n-processes ${N_PROCESSES}
-        rm -f ${CPU_ADDR_FILE}
-    " &
+    bash "${SIMULATOR_DIR}/hpc/slurm/ood_worker_launch.sh" \
+        "${CPU_ADDR_FILE}" \
+        "${WORKER_PORT}" \
+        "${N_PROCESSES}" \
+        "${ODSMR_ROOT}" \
+        "${SIMULATOR_DIR}" \
+    &
 WORKER_PID=$!
 
 # Wait for the worker to write its address (up to 60 s)
