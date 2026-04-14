@@ -64,14 +64,18 @@ class LSTMPredictor(nn.Module):
         dropout: float   = 0.1,
     ):
         super().__init__()
-        self.lstm = nn.LSTM(
-            input_size  = embed_dim + act_emb_dim,
-            hidden_size = hidden_dim,
-            num_layers  = num_layers,
-            batch_first = True,
-            # Dropout only applies between layers — not on the final output
-            dropout = dropout if num_layers > 1 else 0.0,
-        )
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.drop = nn.Dropout(dropout) if (num_layers > 1 and dropout > 0) else nn.Identity()
+
+        # LSTMCell loop instead of nn.LSTM — avoids flatten_parameters() / cuDNN init,
+        # which fails on V100 (SM 7.0) when PyTorch is compiled with cuDNN >= 9.x.
+        # Semantics are identical: same weights, same computation, same gradients.
+        self.cells = nn.ModuleList()
+        for i in range(num_layers):
+            in_dim = (embed_dim + act_emb_dim) if i == 0 else hidden_dim
+            self.cells.append(nn.LSTMCell(in_dim, hidden_dim))
+
         # Map hidden state back to embedding space
         self.output_head = nn.Sequential(
             nn.LayerNorm(hidden_dim),
@@ -89,9 +93,24 @@ class LSTMPredictor(nn.Module):
         -------
         (B, T, embed_dim)  — predicted next-step embeddings (causal)
         """
-        inp = torch.cat([x, c], dim=-1)   # (B, T, embed_dim + act_emb_dim)
-        out, _ = self.lstm(inp)            # (B, T, hidden_dim)
-        return self.output_head(out)       # (B, T, embed_dim)
+        inp = torch.cat([x, c], dim=-1)          # (B, T, embed_dim + act_emb_dim)
+        B, T, _ = inp.shape
+
+        # Initialise hidden + cell states to zero
+        h = [torch.zeros(B, self.hidden_dim, device=inp.device, dtype=inp.dtype)
+             for _ in self.cells]
+        c_state = [torch.zeros_like(h[i]) for i in range(self.num_layers)]
+
+        outs = []
+        for t in range(T):
+            x_t = inp[:, t]                      # (B, input_dim)
+            for i, cell in enumerate(self.cells):
+                h[i], c_state[i] = cell(x_t, (h[i], c_state[i]))
+                x_t = self.drop(h[i])            # inter-layer dropout; Identity if disabled
+            outs.append(h[-1])                   # top-layer hidden state
+
+        out = torch.stack(outs, dim=1)            # (B, T, hidden_dim)
+        return self.output_head(out)              # (B, T, embed_dim)
 
 
 # ── Factory: build a JEPA container with an LSTM predictor ───────────────────
