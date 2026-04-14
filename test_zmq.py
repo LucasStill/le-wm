@@ -109,10 +109,10 @@ def test_simulate_1(addr: str) -> bool:
     except ImportError:
         fail("zmq not installed"); return False
 
-    # Nominal healthy state
-    state = np.ones((1, 10), dtype=np.float64)
-    context = [{"PHASE_TYPE": "climb", "DTAMB": 0.0, "ALT": 10000.0,
-                 "MACH": 0.5, "COMMAND": 1.0}]
+    # Nominal healthy state — all degradation deltas at 0.0
+    state = np.zeros((1, 10), dtype=np.float64)
+    context = [{"PHASE_TYPE": "CR", "DTAMB": 10.0, "ALT": 35000.0,
+                 "MACH": 0.78, "COMMAND": 25000.0}]
     req = {"type": "simulate", "request_id": uuid.uuid4().hex[:8],
            "states": state, "contexts": context}
 
@@ -149,9 +149,9 @@ def test_simulate_batch(addr: str, n: int = 100) -> None:
     except ImportError:
         fail("zmq not installed"); return
 
-    states = np.ones((n, 10), dtype=np.float64)
-    contexts = [{"PHASE_TYPE": "climb", "DTAMB": 0.0, "ALT": 10000.0,
-                  "MACH": 0.5, "COMMAND": 1.0}] * n
+    states = np.zeros((n, 10), dtype=np.float64)
+    contexts = [{"PHASE_TYPE": "CR", "DTAMB": 10.0, "ALT": 35000.0,
+                  "MACH": 0.78, "COMMAND": 25000.0}] * n
     req = {"type": "simulate", "request_id": uuid.uuid4().hex[:8],
            "states": states, "contexts": contexts}
 

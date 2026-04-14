@@ -167,14 +167,14 @@ except ImportError:
     print("  SKIP  zmq not installed")
     sys.exit(0)
 
-# Nominal healthy state — all components at 1.0 (no degradation)
-state = np.ones((1, 10), dtype=np.float64)
+# Nominal healthy state — all degradation deltas at 0.0
+state = np.zeros((1, 10), dtype=np.float64)
 context = [{
-    "PHASE_TYPE": "climb",
-    "DTAMB": 0.0,
-    "ALT": 10000.0,
-    "MACH": 0.5,
-    "COMMAND": 1.0,
+    "PHASE_TYPE": "CR",
+    "DTAMB": 10.0,
+    "ALT": 35000.0,
+    "MACH": 0.78,
+    "COMMAND": 25000.0,
 }]
 
 request = {
