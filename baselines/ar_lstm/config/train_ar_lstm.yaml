@@ -1,6 +1,7 @@
 defaults:
   - _self_
-  - data: turbofan   # reuse the existing turbofan data config from le-wm
+  # No external config dependencies — everything is inlined below.
+  # This makes the baseline self-contained and portable to any cluster.
 
 output_model_name: ar_lstm
 subdir: ${hydra:job.id}
@@ -8,6 +9,21 @@ subdir: ${hydra:job.id}
 num_workers: 6
 train_split: 0.9
 seed: 3072
+
+# ── Data (inlined from config/train/data/turbofan.yaml) ──────────────────────
+# Points at the same HDF5 used by the JEPA runs — no new data prep needed.
+# Override cache_dir via CLI: data.dataset.cache_dir=/path/to/data
+data:
+  dataset:
+    num_steps: ${eval:'${wm.num_preds} + ${wm.history_size} + ${obs_window_size} - 1'}
+    frameskip: 1
+    name: opendeck_2000_lewm
+    cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
+    keys_to_load:
+      - pixels   # sensor data stored under 'pixels' key by prepare_lewm_dataset.py
+      - action   # discrete {0: nothing, 1: repair} — z-normalised at runtime
+    keys_to_cache:
+      - action
 
 # ── Encoder (same as JEPA sensor baseline) ───────────────────────────────────
 encoder_type: sensor
