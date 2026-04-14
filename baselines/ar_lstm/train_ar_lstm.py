@@ -153,8 +153,13 @@ def run(cfg):
         "model_opt": {
             "modules":   "model",
             "optimizer": dict(cfg.optimizer),
-            "scheduler": {"type": "LinearWarmupCosineAnnealingLR"},
-            "interval":  "epoch",
+            "scheduler": {
+                "type": "LinearWarmupCosineAnnealingLR",
+                # spt.Manager normally injects these from dataset size; we compute explicitly.
+                "warmup_steps": max(1, len(train_loader) // 2),          # ~0.5 epoch warmup
+                "max_steps":    cfg.trainer.max_epochs * len(train_loader),
+            },
+            "interval":  "step",
         },
     }
 
