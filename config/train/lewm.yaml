@@ -50,7 +50,7 @@ trainer:
   gradient_clip_val: 0.3  # epoch 7-8 instability: tighter clipping for early stability
 
 loader:
-  batch_size: 128
+  batch_size: 512
   num_workers: ${num_workers}
   persistent_workers: True
   prefetch_factor: 3
@@ -74,7 +74,7 @@ wandb:
 
 wm:
   type: lewm
-  history_size: 3 # predictor hyperparam
+  history_size: 100
   num_preds: 1
   embed_dim: 64 #192
 
@@ -114,9 +114,9 @@ hi_probe:
   n_probe_epochs: 150     # was 50 — more epochs to reach stable convergence
   probe_lr: 1e-3          # Adam lr for the probe
   probe_patience: 20      # was 10 — more patience before early stop
-  d_model: 64             # transformer hidden dim (64 = embed_dim, avoids bottleneck)
+  d_model: 128             # transformer hidden dim (64 = embed_dim, avoids bottleneck)
   nhead: 4                # attention heads (d_model must be divisible by nhead)
-  num_layers: 2           # transformer encoder layers
+  num_layers: 3           # transformer encoder layers
   probe_dropout: 0.1      # dropout in transformer + output head
   probe_batch_size: 256   # batch size for probe training
   probe_seq_len: 1        # keep at 1 to measure what the *encoder* encodes

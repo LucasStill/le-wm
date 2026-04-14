@@ -62,7 +62,8 @@ DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/d
 ENC_TYPE=sensor
 SEQ_LEN=1
 WIN_SIZE=1
-RUN_NAME=lewm_turbo_v6_${ENC_TYPE}_sl${SEQ_LEN}_w${WIN_SIZE}
+HISTORY_LEN=100
+RUN_NAME=lewm_turbo_v6_${ENC_TYPE}_sl${SEQ_LEN}_w${WIN_SIZE}_H${HISTORY_LEN}
 
 srun python -u train.py \
     data=turbofan \
@@ -70,7 +71,7 @@ srun python -u train.py \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     encoder_type=${ENC_TYPE} \
-    subdir=turbofan_v6_${ENC_TYPE}_sl${SEQ_LEN}_w${WIN_SIZE} \
+    subdir=turbofan_v6_${ENC_TYPE}_sl${SEQ_LEN}_w${WIN_SIZE}_b512_pl3_H${HISTORY_LEN} \
     output_model_name=${RUN_NAME} \
     data.dataset.cache_dir=${DATA_DIR} \
     obs_window_size=${WIN_SIZE} \

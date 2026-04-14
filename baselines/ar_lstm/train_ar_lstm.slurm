@@ -59,7 +59,7 @@ DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/d
 #          Increase to 50 for the long-history ablation.
 HIDDEN=256
 LAYERS=2
-H=3
+H=1
 RUN_NAME=ar_lstm_h${H}_hd${HIDDEN}_l${LAYERS}
 
 echo "Predictor: LSTM(hidden=${HIDDEN}, layers=${LAYERS})"
