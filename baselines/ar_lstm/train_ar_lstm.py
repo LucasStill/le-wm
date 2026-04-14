@@ -110,10 +110,9 @@ def run(cfg):
     with open_dict(cfg):
         cfg.wm.action_dim = 1  # binary maintenance action
 
-    dataset = swm.data.HDF5Dataset(
-        **cfg.data.dataset,
-        num_steps=cfg.wm.history_size + cfg.wm.num_preds,
-    )
+    # num_steps is already computed in the config via ${eval:'...'} interpolation
+    # (history_size + num_preds + obs_window_size - 1), so no need to pass it again.
+    dataset = swm.data.HDF5Dataset(**cfg.data.dataset)
 
     transforms = []
     with open_dict(cfg):
