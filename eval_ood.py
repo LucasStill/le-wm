@@ -202,8 +202,11 @@ _DEFAULT_SPEED_PROB = {
     "deg_TrbL_s_mapWc_in":    [0.4, 0.4, 0.2],
 }
 
-# speed_division mirrors config.yaml: factors=[1,2,3,4], distribution=[0.4,0.2,0.2,0.2]
-_SPEED_DIV_FACTORS = [1, 2, 3, 4]
+# speed_division mirrors config.yaml.
+# The original code computes: division_factor = sequence_length / random_factor
+# where factors=[1,2,3,4]. So for seq_len=500: divisors are 500,250,167,125.
+# This makes per-step slopes very small (order 1e-5), matching the original data.
+_SPEED_DIV_FACTORS = [1, 2, 3, 4]   # denominators for seq_len/factor
 _SPEED_DIV_DIST    = [0.4, 0.2, 0.2, 0.2]
 _SLOPE_NOISE_STD   = 1.5e-2
 
@@ -227,15 +230,18 @@ def _simulate_one_trajectory(
 
     rng = np.random.default_rng(seed)
 
-    # Sample division factor (controls per-step slope magnitude)
-    div_factor = int(rng.choice(_SPEED_DIV_FACTORS, p=_SPEED_DIV_DIST))
+    # Sample division factor: original code uses sequence_length / random_factor
+    # so divisors are e.g. 500, 250, 167, 125 for seq_len=500.
+    # This keeps per-step slopes in the 1e-5 range, matching training data.
+    base_factor = int(rng.choice(_SPEED_DIV_FACTORS, p=_SPEED_DIV_DIST))
+    div_factor  = max(1, sequence_length // base_factor)
 
     # Scale slopes by division factor (same as original)
     sp = _copy.deepcopy(speed_params)
     for cat in sp:
         sp[cat]["mean_slope"] /= div_factor
         sp[cat]["std_slope"]  /= div_factor
-    noise_std = _SLOPE_NOISE_STD / div_factor
+    noise_std = _SLOPE_NOISE_STD / div_factor  # also scaled down, same as original
 
     speed_keys = list(sp.keys())   # ["slow", "normal", "fast"]
 
