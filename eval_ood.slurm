@@ -63,14 +63,8 @@ for i in $(seq 1 60); do
 done
 
 if [[ ! -f "$ADDR_FILE" ]]; then
-    echo "ERROR: Simulator address file not found after 5 minutes."
-    echo "       Please submit the CPU worker first:"
-    echo "       sbatch ${SIMULATOR_DIR}/hpc/slurm/launch_cpu_worker.sh"
-    exit 1
+    echo "[$(date +%H:%M:%S)] No simulator address file found — will use dataset proxy."
 fi
-
-WORKER_ADDR=$(cat "$ADDR_FILE")
-echo "[$(date +%H:%M:%S)] Simulator worker found at: ${WORKER_ADDR}"
 
 # ── Checkpoints to evaluate ───────────────────────────────────────────────────
 CKPTS=(
@@ -81,6 +75,20 @@ CKPTS=(
 OUT_DIR=${STABLEWM_HOME}/eval_ood/${SLURM_JOB_ID}
 mkdir -p "${OUT_DIR}"
 
+# ── Decide simulator mode ─────────────────────────────────────────────────────
+# If USE_SIMULATOR=1 and addr file exists, use the live physics engine.
+# Otherwise fall back to the fast-episode dataset proxy (no external service needed).
+USE_SIMULATOR="${USE_SIMULATOR:-0}"
+SIM_FLAGS="--no_simulator"
+
+if [[ "$USE_SIMULATOR" == "1" && -f "$ADDR_FILE" ]]; then
+    WORKER_ADDR=$(cat "$ADDR_FILE")
+    echo "[$(date +%H:%M:%S)] Simulator worker found at: ${WORKER_ADDR}"
+    SIM_FLAGS="--sim_addr ${WORKER_ADDR}"
+else
+    echo "[$(date +%H:%M:%S)] Running in no-simulator mode (dataset proxy)."
+fi
+
 # ── Run OOD evaluation ────────────────────────────────────────────────────────
 echo "[$(date +%H:%M:%S)] Starting OOD evaluation …"
 
@@ -89,9 +97,9 @@ source .venv/bin/activate
 
 python -u eval_ood.py \
     "${CKPTS[@]}" \
-    --hdf5     "${STABLEWM_HOME}/opendeck_2000_lewm.h5" \
-    --sim_addr "${WORKER_ADDR}" \
-    --out_dir  "${OUT_DIR}" \
+    --hdf5    "${STABLEWM_HOME}/opendeck_2000_lewm.h5" \
+    ${SIM_FLAGS} \
+    --out_dir "${OUT_DIR}" \
     --n_ood_eps 50 \
     --seq_len   500
 
