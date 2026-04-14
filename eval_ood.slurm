@@ -1,27 +1,24 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════════════════════
-#  eval_ood.slurm — Task 4 OOD Detection on Jean Zay (heterogeneous job)
+#  eval_ood.slurm — Task 4 OOD Detection (GPU-only job)
 #
-#  Two-pack heterogeneous job:
-#    Pack 0 (gpu_p5): GPU node  -- runs eval_ood.py (JEPA encoder + metrics)
-#    Pack 1 (cpu_p1): CPU node  -- runs simulator_worker.py (ZMQ server)
+#  The turbofan simulator runs as a SEPARATE standalone CPU job submitted
+#  via:  sbatch $SIMULATOR_DIR/hpc/slurm/launch_cpu_worker.sh
+#  That job writes its ZMQ address to $WORK/.simulator_addr.
+#  This script reads that file and connects automatically.
 #
-#  Communication: Pack 0 connects to Pack 1 via ZMQ over InfiniBand.
-#  The job ends when the GPU-side evaluation finishes; the worker is then
-#  cleaned up automatically.
+#  Full workflow:
+#    1.  sbatch $WORK/thesis/rl_opendeck_simulator/hpc/slurm/launch_cpu_worker.sh
+#    2.  Wait until:  cat $WORK/.simulator_addr   # shows tcp://rXiYnZ:5555
+#    3.  sbatch eval_ood.slurm
 #
-#  Usage
-#  -----
-#    sbatch eval_ood.slurm
-#    sbatch eval_ood.slurm --no_simulator   (dataset-proxy mode, single-node)
+#  The eval job will wait up to 5 minutes for the address file to appear,
+#  so steps 1-3 can be submitted back-to-back without manual waiting.
 # ══════════════════════════════════════════════════════════════════════════════
 
-# --------------------------------------------------------------------------- #
-# Pack 0: GPU evaluation node (H100)
-# --------------------------------------------------------------------------- #
 #SBATCH --account=yil@h100
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
 #SBATCH --hint=nomultithread
@@ -30,18 +27,6 @@
 #SBATCH --time=06:00:00
 #SBATCH --output=logs/ood_%j.out
 #SBATCH --error=logs/ood_%j.out
-#SBATCH hetjob
-
-# --------------------------------------------------------------------------- #
-# Pack 1: CPU simulator node (many-core, no GPU required)
-# --------------------------------------------------------------------------- #
-#SBATCH --partition=cpu_p1
-#SBATCH --account=yil@cpu
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=24
-#SBATCH --hint=nomultithread
-#SBATCH --time=06:00:00
 
 set -eo pipefail
 
@@ -52,30 +37,40 @@ PROJECT_DIR=$WORK/thesis/le-wm-vanilla
 SIMULATOR_DIR=$WORK/thesis/rl_opendeck_simulator
 export STABLEWM_HOME=/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
 export SIMULATOR_REPO=${SIMULATOR_DIR}
-export ODSMR_ROOT=${STABLEWM_HOME}/odsmr_bin
+export PYTHONPATH=${SIMULATOR_DIR}:${PYTHONPATH:-}
 export PYTHONUNBUFFERED=1
 
 mkdir -p logs
 
-# ── Resolve GPU node hostname ─────────────────────────────────────────────────
-# The batch script always runs on pack 0 (GPU), so SLURM_JOB_NODELIST is safe.
-GPU_NODE=$(scontrol show hostnames "${SLURM_HET_GROUP_0_NODELIST:-$SLURM_JOB_NODELIST}" | head -1)
-
-# ── CPU node: use a rendezvous file written by the worker srun ────────────────
-# SLURM_HET_GROUP_1_NODELIST is not reliably exported on all JZ SLURM versions.
-# Instead the worker srun writes its hostname to a shared GPFS file.
-WORKER_PORT=5555
-CPU_ADDR_FILE="${STABLEWM_HOME}/.ood_worker_addr_${SLURM_JOB_ID}"
-N_PROCESSES=22   # cpu_p1 node has 24 CPUs; leave 2 for OS + ZMQ overhead
+# ── Locate the simulator worker address ───────────────────────────────────────
+ADDR_FILE="${WORK}/.simulator_addr"
 
 echo "============================================================"
 echo "  Task 4 OOD Detection"
 echo "  Job ID     : $SLURM_JOB_ID"
-echo "  GPU node   : $GPU_NODE"
-echo "  Addr file  : $CPU_ADDR_FILE"
-echo "  Processes  : $N_PROCESSES"
+echo "  GPU node   : $(hostname -s)"
+echo "  Addr file  : $ADDR_FILE"
 echo "  Start time : $(date)"
 echo "============================================================"
+
+# Wait up to 5 minutes for the CPU worker to write its address
+echo "[$(date +%H:%M:%S)] Waiting for simulator worker address …"
+for i in $(seq 1 60); do
+    if [[ -f "$ADDR_FILE" ]]; then
+        break
+    fi
+    sleep 5
+done
+
+if [[ ! -f "$ADDR_FILE" ]]; then
+    echo "ERROR: Simulator address file not found after 5 minutes."
+    echo "       Please submit the CPU worker first:"
+    echo "       sbatch ${SIMULATOR_DIR}/hpc/slurm/launch_cpu_worker.sh"
+    exit 1
+fi
+
+WORKER_ADDR=$(cat "$ADDR_FILE")
+echo "[$(date +%H:%M:%S)] Simulator worker found at: ${WORKER_ADDR}"
 
 # ── Checkpoints to evaluate ───────────────────────────────────────────────────
 CKPTS=(
@@ -84,74 +79,22 @@ CKPTS=(
 )
 
 OUT_DIR=${STABLEWM_HOME}/eval_ood/${SLURM_JOB_ID}
+mkdir -p "${OUT_DIR}"
 
-# ── Start SimulatorWorker on the CPU pack (background) ────────────────────────
-# Use a dedicated wrapper script to avoid bash -c quoting issues and give the
-# CPU node's slurmstepd time to initialise before we launch the step.
-echo "[$(date +%H:%M:%S)] Starting SimulatorWorker on CPU pack …"
-sleep 5   # let slurmstepd on pack-1 node finish registering
+# ── Run OOD evaluation ────────────────────────────────────────────────────────
+echo "[$(date +%H:%M:%S)] Starting OOD evaluation …"
 
-srun \
-    --het-group=1 \
-    --nodes=1 \
-    --ntasks=1 \
-    bash "${SIMULATOR_DIR}/hpc/slurm/ood_worker_launch.sh" \
-        "${CPU_ADDR_FILE}" \
-        "${WORKER_PORT}" \
-        "${N_PROCESSES}" \
-        "${ODSMR_ROOT}" \
-        "${SIMULATOR_DIR}" \
-    &
-WORKER_PID=$!
+cd "${PROJECT_DIR}"
+source .venv/bin/activate
 
-# Wait for the worker to write its address (up to 60 s)
-echo "[$(date +%H:%M:%S)] Waiting for worker address file …"
-for i in $(seq 1 60); do
-    [[ -f "${CPU_ADDR_FILE}" ]] && break
-    sleep 1
-done
-
-if [[ ! -f "${CPU_ADDR_FILE}" ]]; then
-    echo "ERROR: Worker did not write address file within 60 s — aborting."
-    kill "${WORKER_PID}" 2>/dev/null || true
-    exit 1
-fi
-
-WORKER_ADDR=$(cat "${CPU_ADDR_FILE}")
-echo "[$(date +%H:%M:%S)] Worker ready at ${WORKER_ADDR}"
-
-# ── OOD Evaluation on the GPU pack (foreground) ───────────────────────────────
-echo "[$(date +%H:%M:%S)] Starting OOD evaluation on ${GPU_NODE} …"
-
-srun \
-    --het-group=0 \
-    --nodes=1 \
-    --ntasks=1 \
-    bash -c "
-        export SIMULATOR_REPO=${SIMULATOR_DIR}
-        export PYTHONPATH=${SIMULATOR_DIR}:\${PYTHONPATH:-}
-        cd ${PROJECT_DIR}
-        source .venv/bin/activate
-        python -u eval_ood.py \
-            ${CKPTS[*]} \
-            --hdf5     ${STABLEWM_HOME}/opendeck_2000_lewm.h5 \
-            --sim_addr ${WORKER_ADDR} \
-            --out_dir  ${OUT_DIR} \
-            --n_ood_eps 50 \
-            --seq_len   500
-    "
-
-EXIT_CODE=$?
-
-# ── Cleanup ───────────────────────────────────────────────────────────────────
-echo "[$(date +%H:%M:%S)] Evaluation finished (exit code ${EXIT_CODE}). Stopping worker …"
-kill "${WORKER_PID}" 2>/dev/null || true
-wait "${WORKER_PID}" 2>/dev/null || true
-rm -f "${CPU_ADDR_FILE}"
+python -u eval_ood.py \
+    "${CKPTS[@]}" \
+    --hdf5     "${STABLEWM_HOME}/opendeck_2000_lewm.h5" \
+    --sim_addr "${WORKER_ADDR}" \
+    --out_dir  "${OUT_DIR}" \
+    --n_ood_eps 50 \
+    --seq_len   500
 
 echo "============================================================"
 echo "  OOD results : ${OUT_DIR}"
-echo "  Logs        : logs/ood_${SLURM_JOB_ID}.out"
 echo "============================================================"
-
-exit "${EXIT_CODE}"
