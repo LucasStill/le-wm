@@ -57,7 +57,7 @@ trainer:
   max_epochs: 100
   devices: auto
   accelerator: gpu
-  precision: 16-mixed   # fp16 works on V100 (bf16 requires A100/H100)
+  precision: 16-mixed   # fp16; safe on all GPUs (bf16 can overflow SIGReg at early epochs)
   gradient_clip_val: 0.3
 
 loader:

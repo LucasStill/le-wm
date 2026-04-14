@@ -1,17 +1,20 @@
 #!/bin/bash
 # ──────────────────────────────────────────────────────────────────────────────
-#  AR-LSTM Baseline — TurboSens (Jean-Zay, V100)
+#  AR-LSTM Baseline — TurboSens (Jean-Zay, H100)
 #
 #  Trains the AR-LSTM world model on the TurboSens dataset.
 #  Uses the same data, HI probe, and WandB setup as the JEPA baseline.
 #  The only difference: the predictor is an LSTM instead of a transformer.
 #
-#  Partition: V100-32GB (gpu_p2 / yil@v100)
-#  Estimated runtime: ~3h for 100 epochs (vs ~2.5h on H100 for JEPA)
+#  NOTE: V100 (SM 7.0) is not supported by the installed PyTorch build
+#  (requires SM >= 7.5). Using H100 which is confirmed working with this env.
+#
+#  Partition: H100 (yil@h100)
+#  Estimated runtime: ~2h for 100 epochs
 #
 #  Submit: sbatch baselines/ar_lstm/train_ar_lstm.slurm
 # ──────────────────────────────────────────────────────────────────────────────
-#SBATCH --account=yil@v100
+#SBATCH --account=yil@h100
 #SBATCH --job-name=ar_lstm_turbofan
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -20,9 +23,7 @@
 #SBATCH --time=06:00:00
 #SBATCH --output=logs/ar_lstm_%j.out
 #SBATCH --error=logs/ar_lstm_%j.out
-#SBATCH -C v100-32g
-# NOTE: fp16 precision is used (bf16 requires A100/H100).
-#       V100-32GB has 32 GB HBM2 — sufficient for batch_size=128.
+#SBATCH -C h100
 
 set -e
 
