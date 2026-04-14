@@ -1,25 +1,25 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════════════════════
-#  eval_ood.slurm — Task 4 OOD Detection (GPU-only job)
+#  eval_ood.slurm — Task 4 OOD Detection (single H100 node, self-contained)
 #
-#  The turbofan simulator runs as a SEPARATE standalone CPU job submitted
-#  via:  sbatch $SIMULATOR_DIR/hpc/slurm/launch_cpu_worker.sh
-#  That job writes its ZMQ address to $WORK/.simulator_addr.
-#  This script reads that file and connects automatically.
+#  The turbofan simulator worker runs as a BACKGROUND PROCESS on the same H100
+#  node as the GPU eval. This sidesteps the Jean-Zay cross-partition network
+#  isolation (gpu_p6 cannot reach cpu_p1 over TCP).
 #
-#  Full workflow:
-#    1.  sbatch $WORK/thesis/rl_opendeck_simulator/hpc/slurm/launch_cpu_worker.sh
-#    2.  Wait until:  cat $WORK/.simulator_addr   # shows tcp://rXiYnZ:5555
-#    3.  sbatch eval_ood.slurm
+#  H100 nodes have 48 physical CPUs. We request 24 for the simulator worker
+#  and leave the rest for the GPU eval / data loading.
 #
-#  The eval job will wait up to 5 minutes for the address file to appear,
-#  so steps 1-3 can be submitted back-to-back without manual waiting.
+#  Workflow (single sbatch, no manual steps):
+#    sbatch eval_ood.slurm
+#
+#  To skip the simulator (dataset-proxy mode):
+#    USE_SIMULATOR=0 sbatch eval_ood.slurm
 # ══════════════════════════════════════════════════════════════════════════════
 
 #SBATCH --account=yil@h100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=32
 #SBATCH --gres=gpu:1
 #SBATCH --hint=nomultithread
 #SBATCH -C h100
@@ -42,29 +42,12 @@ export PYTHONUNBUFFERED=1
 
 mkdir -p logs
 
-# ── Locate the simulator worker address ───────────────────────────────────────
-ADDR_FILE="${WORK}/.simulator_addr"
-
 echo "============================================================"
 echo "  Task 4 OOD Detection"
 echo "  Job ID     : $SLURM_JOB_ID"
-echo "  GPU node   : $(hostname -s)"
-echo "  Addr file  : $ADDR_FILE"
+echo "  Node       : $(hostname -s)  (CPUs: $SLURM_CPUS_PER_TASK)"
 echo "  Start time : $(date)"
 echo "============================================================"
-
-# Wait up to 5 minutes for the CPU worker to write its address
-echo "[$(date +%H:%M:%S)] Waiting for simulator worker address …"
-for i in $(seq 1 60); do
-    if [[ -f "$ADDR_FILE" ]]; then
-        break
-    fi
-    sleep 5
-done
-
-if [[ ! -f "$ADDR_FILE" ]]; then
-    echo "[$(date +%H:%M:%S)] No simulator address file found — will use dataset proxy."
-fi
 
 # ── Checkpoints to evaluate ───────────────────────────────────────────────────
 CKPTS=(
@@ -76,24 +59,97 @@ OUT_DIR=${STABLEWM_HOME}/eval_ood/${SLURM_JOB_ID}
 mkdir -p "${OUT_DIR}"
 
 # ── Decide simulator mode ─────────────────────────────────────────────────────
-# If USE_SIMULATOR=1 and addr file exists, use the live physics engine.
-# Otherwise fall back to the fast-episode dataset proxy (no external service needed).
-USE_SIMULATOR="${USE_SIMULATOR:-0}"
-SIM_FLAGS="--no_simulator"
+USE_SIMULATOR="${USE_SIMULATOR:-1}"   # default ON — worker runs on same node
 
-if [[ "$USE_SIMULATOR" == "1" && -f "$ADDR_FILE" ]]; then
-    WORKER_ADDR=$(cat "$ADDR_FILE")
-    echo "[$(date +%H:%M:%S)] Simulator worker found at: ${WORKER_ADDR}"
+SIM_FLAGS="--no_simulator"
+WORKER_PID=""
+
+if [[ "$USE_SIMULATOR" == "1" ]]; then
+    # ── Start the simulator worker as a background process on this node ───────
+    # Port scoped to this job to avoid collisions if two OOD jobs overlap.
+    WORKER_PORT=$(( 5555 + (SLURM_JOB_ID % 1000) ))
+    WORKER_ADDR="tcp://localhost:${WORKER_PORT}"
+    ODSMR_ROOT="${SIMULATOR_DIR}/OpenDeckSMR/src/odsmr/bin/DeckSMR"
+
+    # Leave 8 CPUs for the GPU eval process; give the rest to DeckSMR workers.
+    N_SIM_PROCS=$(( SLURM_CPUS_PER_TASK - 8 ))
+    [[ $N_SIM_PROCS -lt 1 ]] && N_SIM_PROCS=1
+
+    echo "[$(date +%H:%M:%S)] Starting simulator worker (port=${WORKER_PORT}, n_proc=${N_SIM_PROCS}) …"
+
+    cd "${SIMULATOR_DIR}"
+    uv run --no-dev --offline python -m hpc.simulator_worker \
+        --port        "${WORKER_PORT}"  \
+        --sim-root    "${ODSMR_ROOT}"   \
+        --n-processes "${N_SIM_PROCS}"  \
+        &
+    WORKER_PID=$!
+
+    echo "[$(date +%H:%M:%S)] Worker PID=${WORKER_PID}, waiting up to 60s for it to be ready …"
+
+    # ── Wait for worker to become healthy (poll localhost) ────────────────────
+    cd "${PROJECT_DIR}"
+    source .venv/bin/activate
+
+    python - <<PYEOF
+import pickle, sys, time
+try:
+    import zmq
+except ImportError:
+    print("ERROR: zmq not installed in le-wm venv. Run: pip install pyzmq")
+    sys.exit(1)
+
+addr = "${WORKER_ADDR}"
+ctx  = zmq.Context()
+sock = ctx.socket(zmq.REQ)
+sock.setsockopt(zmq.LINGER, 0)
+sock.connect(addr)
+
+for attempt in range(1, 21):        # up to 60 s (20 × 3s)
+    sock.send(pickle.dumps({"type": "health", "request_id": "startup"}))
+    if sock.poll(3_000):
+        resp = pickle.loads(sock.recv())
+        if resp.get("status") == "ok":
+            print(f"[$(date +%H:%M:%S)] Worker ready after {attempt} attempts")
+            sock.close(); ctx.term()
+            sys.exit(0)
+    else:
+        print(f"  [startup] attempt {attempt}/20 — not ready yet …")
+        # Must recreate socket after a missed REP
+        sock.close()
+        sock = ctx.socket(zmq.REQ)
+        sock.setsockopt(zmq.LINGER, 0)
+        sock.connect(addr)
+
+print("ERROR: Worker did not become ready after 60s")
+sock.close(); ctx.term()
+sys.exit(1)
+PYEOF
+
     SIM_FLAGS="--sim_addr ${WORKER_ADDR}"
+    echo "[$(date +%H:%M:%S)] Simulator worker ready at ${WORKER_ADDR}"
 else
-    echo "[$(date +%H:%M:%S)] Running in no-simulator mode (dataset proxy)."
+    echo "[$(date +%H:%M:%S)] USE_SIMULATOR=0 — running in dataset-proxy mode."
+    cd "${PROJECT_DIR}"
+    source .venv/bin/activate
 fi
+
+# ── Cleanup: kill the worker when this script exits ───────────────────────────
+cleanup() {
+    if [[ -n "$WORKER_PID" ]]; then
+        echo "[$(date +%H:%M:%S)] Stopping simulator worker (PID=${WORKER_PID}) …"
+        kill "${WORKER_PID}" 2>/dev/null || true
+        wait "${WORKER_PID}" 2>/dev/null || true
+        echo "[$(date +%H:%M:%S)] Worker stopped."
+    fi
+}
+trap cleanup EXIT
 
 # ── Run OOD evaluation ────────────────────────────────────────────────────────
 echo "[$(date +%H:%M:%S)] Starting OOD evaluation …"
+echo ""
 
 cd "${PROJECT_DIR}"
-source .venv/bin/activate
 
 python -u eval_ood.py \
     "${CKPTS[@]}" \
@@ -103,6 +159,8 @@ python -u eval_ood.py \
     --n_ood_eps 50 \
     --seq_len   500
 
+echo ""
 echo "============================================================"
 echo "  OOD results : ${OUT_DIR}"
+echo "  End time    : $(date)"
 echo "============================================================"
