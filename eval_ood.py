@@ -79,6 +79,8 @@ from eval_sweep import (
 warnings.filterwarnings("ignore", category=UserWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 
+import torch.nn as nn
+
 # ── Simulator contexts (same as Scenario2) ────────────────────────────────────
 CONTEXTS_PARAMS = [
     {"PHASE_TYPE": "CR",  "DTAMB": 10.0, "ALT": 35000, "MACH": 0.78,  "COMMAND": 25000},
@@ -151,6 +153,17 @@ OOD_SCENARIOS = [
                 "deg_TrbL_s_mapEff_in":   [0.95, 0.05, 0.0],
                 "deg_TrbL_s_mapWc_in":    [0.95, 0.05, 0.0],
             },
+        },
+    ),
+    (
+        "spike_fault",
+        "Sudden spike fault (step jump in HPC at random time)",
+        {
+            # spike_fault is handled specially in generate_ood_state_trajectory
+            # via the __spike__ marker — see below
+            "__spike__": True,
+            "spike_component": "deg_CmpH_s_mapEff_in",
+            "spike_fraction":  0.5,   # fault arrives at 50% ± 20% of episode
         },
     ),
 ]
@@ -338,6 +351,16 @@ def generate_ood_state_trajectory(
 
     rng_master = np.random.default_rng(seed if seed is not None else 42)
 
+    # ── Spike fault: handled separately ───────────────────────────────────────
+    if scenario_overrides.get("__spike__"):
+        return _generate_spike_trajectories(
+            n_episodes=n_episodes,
+            seq_len=seq_len,
+            spike_component=scenario_overrides.get("spike_component", "deg_CmpH_s_mapEff_in"),
+            spike_fraction=scenario_overrides.get("spike_fraction", 0.5),
+            rng=rng_master,
+        )
+
     states_list, maint_list = [], []
     for _ in range(n_episodes):
         ep_seed = int(rng_master.integers(0, 2**31))
@@ -365,6 +388,58 @@ def generate_ood_state_trajectory(
         maint_list.append(maint_occ)
 
     logging.info(f"  Generated {len(states_list)} OOD episodes, "
+                 f"mean length {np.mean([len(s) for s in states_list]):.0f}")
+    return states_list, maint_list
+
+
+def _generate_spike_trajectories(
+    n_episodes: int,
+    seq_len: int,
+    spike_component: str,
+    spike_fraction: float,
+    rng: np.random.Generator,
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    """Generate trajectories with a sudden step-fault in one component.
+
+    The engine degrades normally up to spike_time, then the spike_component
+    jumps instantly to its lower bound (catastrophic failure), and keeps
+    degrading from there. This creates a genuinely novel step-discontinuity
+    that is absent from all training data.
+    """
+    import copy as _copy
+    spike_idx = _STATE_LABELS.index(spike_component)
+    spike_bound = _STATE_BOUNDS[spike_component][0]  # lower bound = worst degradation
+
+    states_list, maint_list = [], []
+    for _ in range(n_episodes):
+        ep_seed = int(rng.integers(0, 2**31))
+        # Normal trajectory up to seq_len
+        traj, maint_occ = _simulate_one_trajectory(
+            speed_params=_DEFAULT_SPEED_PARAMS,
+            speed_prob=_DEFAULT_SPEED_PROB,
+            sequence_length=seq_len,
+            maintenance_interval=(10000, 10001),
+            maintenance_coeff=0.4,
+            change_speed_occurrence=100,
+            seed=ep_seed,
+        )
+        if len(traj) == 0:
+            continue
+
+        T = len(traj)
+        # Spike arrives at a random time around spike_fraction of the episode
+        spike_rng = np.random.default_rng(ep_seed + 999)
+        jitter = float(spike_rng.uniform(-0.2, 0.2))
+        spike_t = max(1, int(T * (spike_fraction + jitter)))
+        spike_t = min(spike_t, T - 5)  # leave at least 5 steps post-fault
+
+        # Inject: snap the component to its lower bound at spike_t
+        traj[spike_t:, spike_idx] = spike_bound
+
+        states_list.append(traj)
+        maint_list.append(maint_occ)
+
+    logging.info(f"  Generated {len(states_list)} spike-fault episodes, "
                  f"mean length {np.mean([len(s) for s in states_list]):.0f}")
     return states_list, maint_list
 
@@ -529,6 +604,152 @@ def knn_score(
     return np.concatenate(scores)
 
 
+# ═════════════════════════════════════════════════════════════════════════════
+#  RECONSTRUCTION DECODER
+# ═════════════════════════════════════════════════════════════════════════════
+
+class ReconstructionDecoder(nn.Module):
+    """Shallow MLP that maps z (latent) → x (flattened sensor observation).
+
+    Trained on frozen encoder representations from the training split.
+    At test time, reconstruction error R(t) = ||x_t - D(E(x_t))||_2 rises
+    as inputs deviate from regions seen during training.
+    """
+    def __init__(self, z_dim: int, obs_dim: int, hidden: int = 256):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(z_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, obs_dim),
+        )
+
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        return self.net(z)
+
+
+def train_reconstruction_decoder(
+    model,
+    encoder_type: str,
+    device: torch.device,
+    obs_list: List[np.ndarray],
+    n_epochs: int = 30,
+    lr: float = 3e-4,
+    batch_size: int = 512,
+) -> ReconstructionDecoder:
+    """Train a decoder head on frozen JEPA encoder representations.
+
+    Parameters
+    ----------
+    obs_list : list of (T_i, obs_dim) float32 arrays — training observations
+               (already normalised, from the HDF5 pixels field).
+    n_epochs : number of epochs over the training embeddings.
+    """
+    logging.info("  Training reconstruction decoder …")
+
+    # Encode all training observations once
+    all_obs = np.concatenate(obs_list, axis=0)   # (N, obs_dim)
+    Z_all = []
+    model.eval()
+    with torch.no_grad():
+        for s in range(0, len(all_obs), batch_size):
+            x = torch.from_numpy(all_obs[s : s + batch_size]).float().to(device)
+            z = model.encoder(x) if hasattr(model, "encoder") else model.encode(x)
+            Z_all.append(z.cpu())
+    Z_all = torch.cat(Z_all, dim=0)          # (N, z_dim)
+    X_all = torch.from_numpy(all_obs).float()  # (N, obs_dim)
+
+    z_dim   = Z_all.shape[1]
+    obs_dim = X_all.shape[1]
+    decoder = ReconstructionDecoder(z_dim, obs_dim).to(device)
+    opt     = torch.optim.Adam(decoder.parameters(), lr=lr)
+
+    N = len(Z_all)
+    perm = torch.randperm(N)
+    Z_all, X_all = Z_all[perm], X_all[perm]
+
+    decoder.train()
+    for epoch in range(n_epochs):
+        epoch_loss = 0.0
+        n_batches  = 0
+        for s in range(0, N, batch_size):
+            zb = Z_all[s : s + batch_size].to(device)
+            xb = X_all[s : s + batch_size].to(device)
+            loss = ((decoder(zb) - xb) ** 2).mean()
+            opt.zero_grad(); loss.backward(); opt.step()
+            epoch_loss += loss.item(); n_batches += 1
+        if (epoch + 1) % 10 == 0:
+            logging.info(f"    Decoder epoch {epoch+1}/{n_epochs}  "
+                         f"loss={epoch_loss/n_batches:.6f}")
+
+    decoder.eval()
+    logging.info("  Decoder training done.")
+    return decoder
+
+
+@torch.no_grad()
+def reconstruction_scores(
+    decoder: ReconstructionDecoder,
+    model,
+    obs_list: List[np.ndarray],
+    encoder_type: str,
+    device: torch.device,
+    batch_size: int = 512,
+) -> np.ndarray:
+    """Compute per-timestep reconstruction error ||x - D(E(x))||_2.
+
+    Returns flat (M,) array across all episodes.
+    Also returns per-episode mean error as a list for timeline plotting.
+    """
+    all_scores = []
+    decoder.eval()
+    for obs_ep in obs_list:
+        if len(obs_ep) == 0:
+            continue
+        ep_scores = []
+        for s in range(0, len(obs_ep), batch_size):
+            xb = torch.from_numpy(obs_ep[s : s + batch_size]).float().to(device)
+            z  = model.encoder(xb) if hasattr(model, "encoder") else model.encode(xb)
+            xr = decoder(z)
+            err = torch.norm(xb - xr, dim=1).cpu().numpy()
+            ep_scores.append(err)
+        all_scores.append(np.concatenate(ep_scores))
+    if not all_scores:
+        return np.array([], dtype=np.float32)
+    return np.concatenate(all_scores).astype(np.float32)
+
+
+@torch.no_grad()
+def reconstruction_scores_per_episode(
+    decoder: ReconstructionDecoder,
+    model,
+    obs_list: List[np.ndarray],
+    encoder_type: str,
+    device: torch.device,
+    batch_size: int = 512,
+) -> List[np.ndarray]:
+    """Return list of per-timestep reconstruction error arrays, one per episode.
+
+    Useful for plotting how reconstruction error evolves over time within an episode.
+    """
+    per_ep = []
+    decoder.eval()
+    for obs_ep in obs_list:
+        if len(obs_ep) == 0:
+            per_ep.append(np.array([], dtype=np.float32))
+            continue
+        ep_scores = []
+        for s in range(0, len(obs_ep), batch_size):
+            xb = torch.from_numpy(obs_ep[s : s + batch_size]).float().to(device)
+            z  = model.encoder(xb) if hasattr(model, "encoder") else model.encode(xb)
+            xr = decoder(z)
+            err = torch.norm(xb - xr, dim=1).cpu().numpy()
+            ep_scores.append(err)
+        per_ep.append(np.concatenate(ep_scores).astype(np.float32))
+    return per_ep
+
+
 @torch.no_grad()
 def surprise_scores(
     model,
@@ -618,7 +839,7 @@ def evaluate_detector(
 ) -> dict:
     """Compute AUC-ROC and Average Precision for one detector.
 
-    ID label = 0, OOD label = 1.
+    ID label = 0, OOD label = 1.  Operates at the per-timestep level.
     """
     y_true = np.concatenate([
         np.zeros(len(scores_id), dtype=int),
@@ -646,6 +867,43 @@ def evaluate_detector(
     }
 
 
+def evaluate_detector_episode(
+    ep_scores_id: List[np.ndarray],
+    ep_scores_ood: List[np.ndarray],
+    detector_name: str,
+    agg: str = "mean",
+) -> dict:
+    """Episode-level AUC: aggregate per-timestep scores into one score per episode.
+
+    Aggregation options
+    -------------------
+    'mean'   : mean score over the episode (good for persistent drift)
+    'max'    : max score (good for spike faults — one bad timestep suffices)
+    'p90'    : 90th percentile (robust mean, ignores short spikes in ID)
+
+    Returns the same dict schema as evaluate_detector, plus 'agg' key.
+    """
+    agg_fn = {
+        "mean": np.mean,
+        "max":  np.max,
+        "p90":  lambda x: np.percentile(x, 90),
+    }[agg]
+
+    def _agg_list(ep_list):
+        scores = []
+        for ep in ep_list:
+            if len(ep) > 0:
+                scores.append(float(agg_fn(ep)))
+        return np.array(scores, dtype=np.float32)
+
+    scores_id  = _agg_list(ep_scores_id)
+    scores_ood = _agg_list(ep_scores_ood)
+
+    result = evaluate_detector(scores_id, scores_ood, f"{detector_name}[ep-{agg}]")
+    result["agg"] = agg
+    return result
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 #  MAIN TASK 4 RUNNER
 # ═════════════════════════════════════════════════════════════════════════════
@@ -671,25 +929,31 @@ def task4_ood(
 
     Steps
     -----
-    1.  Build ID reference from test-set embeddings.
-    2.  Fit Mahalanobis and pre-index k-NN on training embeddings.
-    3.  Compute ID baseline surprise, Mahal, and kNN scores.
+    1.  Build ID reference embeddings from train and test splits.
+    2.  Fit detectors on training embeddings:
+           - Mahalanobis (mu, precision matrix)
+           - k-NN index (subsampled to 50K)
+           - Reconstruction decoder (trained on frozen encoder output)
+    3.  Compute ID baseline scores on test set.
     4.  For each OOD scenario:
-           a. Generate state trajectories.
-           b. Simulate sensor observations (ZMQ client) OR use dataset proxy.
-           c. Compute surprise / Mahal / kNN scores.
-           d. Evaluate detectors: AUC-ROC, AP.
+           a. Generate state trajectories (pure numpy).
+           b. Simulate sensor observations via ZMQ worker OR dataset proxy.
+           c. Compute per-timestep scores: surprise / Mahal / k-NN / recon.
+           d. Compute episode-level scores (mean & max aggregation).
+           e. Evaluate detectors: AUC-ROC, AP at timestep and episode level.
     5.  Return consolidated results dict.
     """
     logging.info("Task 4 -- OOD Detection")
 
     # ── Step 1: ID embeddings ──────────────────────────────────────────────────
-    logging.info("  Encoding ID (train) embeddings for Mahal / k-NN …")
-    Z_tr = embedding_scores(model, _split_to_list(tr_data, ep_offset_all, ep_len_all, hdf5_path, encoder_type), encoder_type, device)
+    logging.info("  Encoding ID (train) embeddings for Mahal / k-NN / decoder …")
+    tr_obs_list = _split_to_list(tr_data, ep_offset_all, ep_len_all, hdf5_path, encoder_type)
+    Z_tr = embedding_scores(model, tr_obs_list, encoder_type, device)
     logging.info(f"  ID train embeddings: {Z_tr.shape}")
 
     logging.info("  Encoding ID (test) embeddings …")
-    Z_te = embedding_scores(model, _split_to_list(te_data, ep_offset_all, ep_len_all, hdf5_path, encoder_type), encoder_type, device)
+    te_obs_list = _split_to_list(te_data, ep_offset_all, ep_len_all, hdf5_path, encoder_type)
+    Z_te = embedding_scores(model, te_obs_list, encoder_type, device)
     logging.info(f"  ID test embeddings: {Z_te.shape}")
 
     # ── Step 2: Fit detectors on training embeddings ───────────────────────────
@@ -697,7 +961,6 @@ def task4_ood(
     mu, prec = fit_mahalanobis(Z_tr)
 
     # Subsample training set for k-NN index to keep memory / compute manageable.
-    # 50 K points is enough for a reliable density estimate with D=64.
     KNN_INDEX_SIZE = 50_000
     if len(Z_tr) > KNN_INDEX_SIZE:
         rng_idx = np.random.default_rng(42)
@@ -707,21 +970,41 @@ def task4_ood(
     else:
         Z_tr_knn = Z_tr
 
+    # Train reconstruction decoder on frozen encoder
+    decoder = train_reconstruction_decoder(
+        model, encoder_type, device, tr_obs_list,
+        n_epochs=30, lr=3e-4,
+    )
+
     # ── Step 3: ID baseline scores (evaluated on test embeddings) ─────────────
     logging.info("  Computing ID baseline scores (test set) …")
     id_mahal   = mahal_score(Z_te, mu, prec)
     id_knn     = knn_score(Z_te, Z_tr_knn, k=knn_k)
+    id_recon   = reconstruction_scores(decoder, model, te_obs_list, encoder_type, device)
 
     # ID surprise scores (test episodes)
-    id_obs_list = _split_to_obs_list(te_data, ep_offset_all, ep_len_all, hdf5_path, encoder_type)
+    id_obs_list = te_obs_list
     id_act_list = _split_to_act_list(te_data, ep_offset_all, ep_len_all, hdf5_path)
     logging.info("  Computing ID surprise scores …")
     id_surprise = surprise_scores(
         model, id_obs_list, id_act_list, encoder_type, device, history_size=history_size
     )
+
+    # ID per-episode scores (for episode-level AUC)
+    id_recon_ep = reconstruction_scores_per_episode(
+        decoder, model, te_obs_list, encoder_type, device
+    )
+    id_mahal_ep  = _per_episode_embedding_scores(model, te_obs_list, encoder_type, device,
+                                                  score_fn=lambda Z: mahal_score(Z, mu, prec))
+    id_knn_ep    = _per_episode_embedding_scores(model, te_obs_list, encoder_type, device,
+                                                  score_fn=lambda Z: knn_score(Z, Z_tr_knn, k=knn_k))
+    id_surprise_ep = _per_episode_surprise(model, te_obs_list, id_act_list, encoder_type,
+                                            device, history_size)
+
     logging.info(
         f"  ID baseline  surprise={id_surprise.mean():.4f}+-{id_surprise.std():.4f}  "
-        f"mahal={id_mahal.mean():.2f}  knn={id_knn.mean():.4f}"
+        f"mahal={id_mahal.mean():.2f}  knn={id_knn.mean():.4f}  "
+        f"recon={id_recon.mean():.4f}"
     )
 
     # ── Step 4: OOD scenarios ──────────────────────────────────────────────────
@@ -730,6 +1013,7 @@ def task4_ood(
         "surprise": {"mean": float(id_surprise.mean()), "std": float(id_surprise.std())},
         "mahal":    {"mean": float(id_mahal.mean()),    "std": float(id_mahal.std())},
         "knn":      {"mean": float(id_knn.mean()),      "std": float(id_knn.std())},
+        "recon":    {"mean": float(id_recon.mean()),    "std": float(id_recon.std())},
     }}
 
     scenarios_to_run = OOD_SCENARIOS
@@ -750,9 +1034,15 @@ def task4_ood(
             mu=mu, prec=prec,
             Z_tr_knn=Z_tr_knn,
             knn_k=knn_k,
+            decoder=decoder,
             id_surprise=id_surprise,
             id_mahal=id_mahal,
             id_knn=id_knn,
+            id_recon=id_recon,
+            id_surprise_ep=id_surprise_ep,
+            id_mahal_ep=id_mahal_ep,
+            id_knn_ep=id_knn_ep,
+            id_recon_ep=id_recon_ep,
         )
         results["extreme_proxy"] = proxy_result
     else:
@@ -782,9 +1072,15 @@ def task4_ood(
                 mu=mu, prec=prec,
                 Z_tr_knn=Z_tr_knn,
                 knn_k=knn_k,
+                decoder=decoder,
                 id_surprise=id_surprise,
                 id_mahal=id_mahal,
                 id_knn=id_knn,
+                id_recon=id_recon,
+                id_surprise_ep=id_surprise_ep,
+                id_mahal_ep=id_mahal_ep,
+                id_knn_ep=id_knn_ep,
+                id_recon_ep=id_recon_ep,
             )
             sc_result["description"] = sc_desc
             results[sc_name] = sc_result
@@ -803,34 +1099,154 @@ def _eval_one_scenario(
     prec: np.ndarray,
     Z_tr_knn: np.ndarray,
     knn_k: int,
+    decoder: "ReconstructionDecoder",
     id_surprise: np.ndarray,
     id_mahal: np.ndarray,
     id_knn: np.ndarray,
+    id_recon: np.ndarray,
+    id_surprise_ep: List[np.ndarray],
+    id_mahal_ep: List[np.ndarray],
+    id_knn_ep: List[np.ndarray],
+    id_recon_ep: List[np.ndarray],
 ) -> dict:
-    """Evaluate all three detectors for a single OOD scenario."""
+    """Evaluate all four detectors for a single OOD scenario.
+
+    Produces both per-timestep and per-episode (mean & max) AUC metrics.
+    """
     logging.info(f"  [{name}] Encoding {len(ood_obs_list)} OOD episodes …")
 
     Z_ood = embedding_scores(model, ood_obs_list, encoder_type, device)
     if len(Z_ood) == 0:
         return {"error": "No valid OOD embeddings"}
 
+    # Per-timestep scores
     ood_surprise = surprise_scores(
         model, ood_obs_list, None, encoder_type, device, history_size=history_size
     )
     ood_mahal = mahal_score(Z_ood, mu, prec)
     ood_knn   = knn_score(Z_ood, Z_tr_knn, k=knn_k)
+    ood_recon = reconstruction_scores(decoder, model, ood_obs_list, encoder_type, device)
 
     logging.info(
         f"  [{name}]  surprise={ood_surprise.mean():.4f}  "
-        f"mahal={ood_mahal.mean():.2f}  knn={ood_knn.mean():.4f}"
+        f"mahal={ood_mahal.mean():.2f}  knn={ood_knn.mean():.4f}  "
+        f"recon={ood_recon.mean():.4f}"
     )
 
-    return {
+    # Per-episode scores
+    ood_surprise_ep = _per_episode_surprise(model, ood_obs_list, None, encoder_type,
+                                             device, history_size)
+    ood_recon_ep    = reconstruction_scores_per_episode(
+        decoder, model, ood_obs_list, encoder_type, device
+    )
+    ood_mahal_ep    = _per_episode_embedding_scores(model, ood_obs_list, encoder_type, device,
+                                                    score_fn=lambda Z: mahal_score(Z, mu, prec))
+    ood_knn_ep      = _per_episode_embedding_scores(model, ood_obs_list, encoder_type, device,
+                                                    score_fn=lambda Z: knn_score(Z, Z_tr_knn, k=knn_k))
+
+    result = {
         "n_ood_timesteps": int(len(Z_ood)),
+        # Per-timestep AUC
         "surprise":  evaluate_detector(id_surprise, ood_surprise, f"{name}/surprise"),
         "mahal":     evaluate_detector(id_mahal,    ood_mahal,    f"{name}/mahal"),
         "knn":       evaluate_detector(id_knn,      ood_knn,      f"{name}/knn"),
+        "recon":     evaluate_detector(id_recon,    ood_recon,    f"{name}/recon"),
+        # Episode-level AUC (mean aggregation)
+        "episode": {
+            "surprise": evaluate_detector_episode(id_surprise_ep, ood_surprise_ep,
+                                                   f"{name}/ep-surprise", agg="mean"),
+            "mahal":    evaluate_detector_episode(id_mahal_ep,    ood_mahal_ep,
+                                                   f"{name}/ep-mahal",    agg="mean"),
+            "knn":      evaluate_detector_episode(id_knn_ep,      ood_knn_ep,
+                                                   f"{name}/ep-knn",      agg="mean"),
+            "recon":    evaluate_detector_episode(id_recon_ep,    ood_recon_ep,
+                                                   f"{name}/ep-recon",    agg="mean"),
+            # Max aggregation (useful for spike faults)
+            "recon_max": evaluate_detector_episode(id_recon_ep,   ood_recon_ep,
+                                                    f"{name}/ep-recon-max", agg="max"),
+            "surprise_max": evaluate_detector_episode(id_surprise_ep, ood_surprise_ep,
+                                                       f"{name}/ep-surprise-max", agg="max"),
+        },
+        # Mean recon profile over episode fraction (for timeline plot)
+        # Average reconstruction error at each 10% quantile of episode length
+        "recon_profile_ood": _mean_recon_profile(ood_recon_ep, n_bins=10),
+        "recon_profile_id":  _mean_recon_profile(id_recon_ep,  n_bins=10),
     }
+    return result
+
+
+# ── Episode-level helper functions ────────────────────────────────────────────
+
+@torch.no_grad()
+def _per_episode_embedding_scores(
+    model,
+    obs_list: List[np.ndarray],
+    encoder_type: str,
+    device: torch.device,
+    score_fn,
+    batch_size: int = 512,
+) -> List[np.ndarray]:
+    """Return list of per-timestep score arrays, one per episode, using score_fn(Z)."""
+    per_ep = []
+    for obs_ep in obs_list:
+        if len(obs_ep) == 0:
+            per_ep.append(np.array([], dtype=np.float32))
+            continue
+        Z_ep = encode_observations(model, obs_ep, encoder_type, device, batch_size=batch_size)
+        per_ep.append(score_fn(Z_ep).astype(np.float32))
+    return per_ep
+
+
+@torch.no_grad()
+def _per_episode_surprise(
+    model,
+    obs_list: List[np.ndarray],
+    act_list: Optional[List[np.ndarray]],
+    encoder_type: str,
+    device: torch.device,
+    history_size: int,
+    batch_encode: int = 512,
+) -> List[np.ndarray]:
+    """Return list of per-timestep surprise score arrays, one per episode."""
+    per_ep = []
+    H = history_size
+    for ep_i, obs_ep in enumerate(obs_list):
+        if len(obs_ep) < H + 2:
+            per_ep.append(np.array([], dtype=np.float32))
+            continue
+        z_ep = encode_observations(model, obs_ep, encoder_type, device, batch_size=batch_encode)
+        T, D = z_ep.shape
+        all_starts = np.arange(H - 1, T - 1)
+        if len(all_starts) == 0:
+            per_ep.append(np.array([], dtype=np.float32))
+            continue
+        ctx_np  = np.stack([z_ep[t - H + 1 : t + 1] for t in all_starts])
+        ctx_t   = torch.from_numpy(ctx_np).float().to(device)
+        act_buf = torch.zeros(len(all_starts), H, D, device=device)
+        pred    = model.predict(ctx_t, act_buf)
+        z_pred  = pred[:, -1, :].cpu().numpy()
+        z_gt    = z_ep[all_starts + 1]
+        scores  = np.linalg.norm(z_pred - z_gt, axis=1).astype(np.float32)
+        per_ep.append(scores)
+    return per_ep
+
+
+def _mean_recon_profile(ep_scores: List[np.ndarray], n_bins: int = 10) -> List[float]:
+    """Average reconstruction error at each fractional position in the episode.
+
+    Each episode is resampled to n_bins evenly-spaced positions (0%, 10%, ..., 100%).
+    Returns list of n_bins mean values — shows how error grows over episode lifetime.
+    """
+    profiles = []
+    for ep in ep_scores:
+        if len(ep) < 2:
+            continue
+        positions = np.linspace(0, len(ep) - 1, n_bins)
+        resampled = np.interp(positions, np.arange(len(ep)), ep)
+        profiles.append(resampled)
+    if not profiles:
+        return [0.0] * n_bins
+    return np.mean(profiles, axis=0).tolist()
 
 
 # ── Dataset helpers ────────────────────────────────────────────────────────────
