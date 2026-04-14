@@ -156,68 +156,151 @@ OOD_SCENARIOS = [
 ]
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  TRAJECTORY GENERATION  (pure numpy, no simulator required)
+#  TRAJECTORY GENERATION  (self-contained pure numpy, zero external imports)
+#  Mirrors exactly the logic in scenarios/OpenDeckGeneration/trajectory_generation.py
+#  but with all constants inlined so we never need to import from the simulator.
 # ═════════════════════════════════════════════════════════════════════════════
 
-def _load_sim_config() -> dict:
-    """Load the base OpenDeckGeneration config.yaml from the simulator repo."""
-    import yaml
+# Component order matches STATE_LABELS in shared/constants.py
+_STATE_LABELS = [
+    "deg_CmpBst_s_mapEff_in", "deg_CmpBst_s_mapWc_in",
+    "deg_CmpFan_s_mapEff_in", "deg_CmpFan_s_mapWc_in",
+    "deg_CmpH_s_mapEff_in",   "deg_CmpH_s_mapWc_in",
+    "deg_TrbH_s_mapEff_in",   "deg_TrbH_s_mapWc_in",
+    "deg_TrbL_s_mapEff_in",   "deg_TrbL_s_mapWc_in",
+]
 
-    candidates = [
-        # Try environment variable
-        os.environ.get("SIMULATOR_REPO", ""),
-        # Common relative locations
-        str(Path(__file__).parent.parent / "rl_simulator_safran"),
-        "/Users/lucas-andreithil/PycharmProjects/rl_simulator_safran",
-        os.environ.get("STABLEWM_HOME", "").replace(".stable_worldmodel", "")
-        + "thesis/rl_opendeck_simulator",
-    ]
-    for base in candidates:
-        cfg_path = Path(base) / "scenarios/OpenDeckGeneration/config.yaml"
-        if cfg_path.exists():
-            with open(cfg_path) as f:
-                return yaml.safe_load(f)
+_STATE_BOUNDS = {
+    "deg_CmpBst_s_mapEff_in": (-0.05, 0.0),
+    "deg_CmpBst_s_mapWc_in":  (-0.05, 0.03),
+    "deg_CmpFan_s_mapEff_in": (-0.05, 0.0),
+    "deg_CmpFan_s_mapWc_in":  (-0.05, 0.03),
+    "deg_CmpH_s_mapEff_in":   (-0.05, 0.0),
+    "deg_CmpH_s_mapWc_in":    (-0.05, 0.03),
+    "deg_TrbH_s_mapEff_in":   (-0.05, 0.0),
+    "deg_TrbH_s_mapWc_in":    (-0.05, 0.05),
+    "deg_TrbL_s_mapEff_in":   (-0.05, 0.0),
+    "deg_TrbL_s_mapWc_in":    (-0.05, 0.05),
+}
 
-    # Fallback: return minimal inline config matching the original paper values
-    logging.warning(
-        "Could not find simulator config.yaml -- using built-in defaults."
-    )
-    return {
-        "speed_params": {
-            "slow":   {"mean_slope": -5e-3,  "std_slope": 1e-3},
-            "normal": {"mean_slope": -1e-2,  "std_slope": 2e-3},
-            "fast":   {"mean_slope": -4e-2,  "std_slope": 5e-3},
-        },
-        "speed_probability_distribution": {
-            "deg_CmpFan_s_mapEff_in": [0.4, 0.4, 0.2],
-            "deg_CmpFan_s_mapWc_in":  [0.4, 0.4, 0.2],
-            "deg_CmpBst_s_mapEff_in": [0.4, 0.4, 0.2],
-            "deg_CmpBst_s_mapWc_in":  [0.4, 0.4, 0.2],
-            "deg_CmpH_s_mapEff_in":   [0.2, 0.2, 0.6],
-            "deg_CmpH_s_mapWc_in":    [0.2, 0.2, 0.6],
-            "deg_TrbH_s_mapEff_in":   [0.4, 0.4, 0.2],
-            "deg_TrbH_s_mapWc_in":    [0.4, 0.4, 0.2],
-            "deg_TrbL_s_mapEff_in":   [0.4, 0.4, 0.2],
-            "deg_TrbL_s_mapWc_in":    [0.4, 0.4, 0.2],
-        },
-        "slope_noise": {"mean": 0, "std": 1.5e-2},
-        "speed_division": {"factors": [1, 2, 3, 4], "distribution": [0.4, 0.2, 0.2, 0.2]},
-    }
+_DEFAULT_SPEED_PARAMS = {
+    "slow":   {"mean_slope": -5e-3,  "std_slope": 1e-3},
+    "normal": {"mean_slope": -1e-2,  "std_slope": 2e-3},
+    "fast":   {"mean_slope": -4e-2,  "std_slope": 5e-3},
+}
+
+_DEFAULT_SPEED_PROB = {
+    "deg_CmpFan_s_mapEff_in": [0.4, 0.4, 0.2],
+    "deg_CmpFan_s_mapWc_in":  [0.4, 0.4, 0.2],
+    "deg_CmpBst_s_mapEff_in": [0.4, 0.4, 0.2],
+    "deg_CmpBst_s_mapWc_in":  [0.4, 0.4, 0.2],
+    "deg_CmpH_s_mapEff_in":   [0.2, 0.2, 0.6],
+    "deg_CmpH_s_mapWc_in":    [0.2, 0.2, 0.6],
+    "deg_TrbH_s_mapEff_in":   [0.4, 0.4, 0.2],
+    "deg_TrbH_s_mapWc_in":    [0.4, 0.4, 0.2],
+    "deg_TrbL_s_mapEff_in":   [0.4, 0.4, 0.2],
+    "deg_TrbL_s_mapWc_in":    [0.4, 0.4, 0.2],
+}
+
+# speed_division mirrors config.yaml: factors=[1,2,3,4], distribution=[0.4,0.2,0.2,0.2]
+_SPEED_DIV_FACTORS = [1, 2, 3, 4]
+_SPEED_DIV_DIST    = [0.4, 0.2, 0.2, 0.2]
+_SLOPE_NOISE_STD   = 1.5e-2
 
 
-def _add_sim_repo_to_path():
-    """Add the simulator repo to sys.path so we can import trajectory_generation."""
-    candidates = [
-        os.environ.get("SIMULATOR_REPO", ""),
-        str(Path(__file__).parent.parent / "rl_simulator_safran"),
-        "/Users/lucas-andreithil/PycharmProjects/rl_simulator_safran",
-    ]
-    for base in candidates:
-        if base and Path(base).exists():
-            if base not in sys.path:
-                sys.path.insert(0, base)
-            return True
-    return False
+def _simulate_one_trajectory(
+    speed_params: dict,
+    speed_prob: dict,
+    sequence_length: int,
+    maintenance_interval: tuple,
+    maintenance_coeff: float,
+    change_speed_occurrence: int,
+    seed: int | None,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Pure-numpy trajectory generation. Returns (traj, maint_occ).
+
+    traj     : (T, 10) float32 -- clipped to STATE_BOUNDS, truncated at first
+                                   bound-crossing (mirrors filter_trajectory)
+    maint_occ: (T,) bool       -- True at maintenance timesteps
+    """
+    import copy as _copy
+
+    rng = np.random.default_rng(seed)
+
+    # Sample division factor (controls per-step slope magnitude)
+    div_factor = int(rng.choice(_SPEED_DIV_FACTORS, p=_SPEED_DIV_DIST))
+
+    # Scale slopes by division factor (same as original)
+    sp = _copy.deepcopy(speed_params)
+    for cat in sp:
+        sp[cat]["mean_slope"] /= div_factor
+        sp[cat]["std_slope"]  /= div_factor
+    noise_std = _SLOPE_NOISE_STD / div_factor
+
+    speed_keys = list(sp.keys())   # ["slow", "normal", "fast"]
+
+    # Maintenance schedule
+    lo, hi = maintenance_interval
+    if hi <= lo:
+        hi = lo + 1
+    n_maints = max(1, sequence_length // lo)
+    intervals = rng.integers(lo, hi, size=n_maints)
+    maint_times = list(np.cumsum(intervals))
+    maint_times = [t - 1 for t in maint_times if t < sequence_length]
+
+    maint_occ = np.zeros(sequence_length, dtype=bool)
+    for t in maint_times:
+        maint_occ[t] = True
+
+    trajectory = []
+    for key in _STATE_LABELS:
+        bounds = _STATE_BOUNDS[key]
+        min_b, max_b = bounds
+        prob = speed_prob.get(key, [1/3, 1/3, 1/3])
+        current_val = 0.0
+        state_maint = list(maint_times)  # per-component copy
+        last_maint  = 0
+        current_state = []
+
+        speed = rng.choice(speed_keys, p=prob)
+
+        for ts in range(sequence_length):
+            # Maintenance recovery
+            if state_maint and ((ts + 1) % state_maint[0]) == 0:
+                maint_t   = state_maint.pop(0)
+                dur       = maint_t - last_maint
+                beg_      = (ts + 1) - dur
+                last_maint = maint_t - 1
+                if len(current_state) > 0 and beg_ >= 0:
+                    current_val += maintenance_coeff * abs(
+                        current_state[-1] - (current_state[beg_] if beg_ < len(current_state) else 0.0)
+                    )
+
+            # Speed change
+            if ts % change_speed_occurrence == 0 and ts > 0:
+                speed = rng.choice(speed_keys, p=prob)
+
+            slope = float(rng.normal(sp[speed]["mean_slope"], sp[speed]["std_slope"]))
+            noise = float(rng.normal(0.0, noise_std))
+            current_val += slope + noise
+            current_val = float(np.clip(current_val, min_b, max_b))
+            current_state.append(current_val)
+
+        trajectory.append(current_state)
+
+    traj = np.array(trajectory, dtype=np.float32).T   # (T, 10)
+
+    # Truncate at first bound crossing (mirrors filter_trajectory)
+    cutoff = sequence_length
+    for idx, key in enumerate(_STATE_LABELS):
+        min_b = _STATE_BOUNDS[key][0]
+        hits  = np.where(traj[:, idx] <= min_b)[0]
+        if len(hits) > 0:
+            cutoff = min(cutoff, int(hits[0]))
+
+    traj      = traj[:cutoff]
+    maint_occ = maint_occ[:cutoff]
+    return traj, maint_occ
 
 
 def generate_ood_state_trajectory(
@@ -228,67 +311,55 @@ def generate_ood_state_trajectory(
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Generate OOD state trajectories using scenario-specific parameters.
 
+    Fully self-contained: no imports from the simulator repo.
+
     Returns
     -------
-    states_list : list of (T_i, 10) arrays -- degradation states per episode
-    maint_list  : list of (T_i,) bool arrays -- maintenance event flags
+    states_list : list of (T_i, 10) float32 arrays
+    maint_list  : list of (T_i,) bool arrays
     """
-    import copy
+    import copy as _copy
 
-    _add_sim_repo_to_path()
-    try:
-        from scenarios.OpenDeckGeneration.trajectory_generation import (
-            simulate_degradation_trajectory,
-        )
-    except ImportError as e:
-        raise RuntimeError(
-            "Could not import simulate_degradation_trajectory. "
-            "Set SIMULATOR_REPO env var to the rl_simulator_safran directory."
-        ) from e
-
-    base_cfg = _load_sim_config()
-
-    # Apply overrides: speed_params, speed_probability_distribution, etc.
-    cfg = copy.deepcopy(base_cfg)
-    if "speed_params" in scenario_overrides:
-        cfg["speed_params"] = scenario_overrides["speed_params"]
-    if "speed_probability_distribution" in scenario_overrides:
-        cfg["speed_probability_distribution"] = scenario_overrides[
-            "speed_probability_distribution"
-        ]
-
+    speed_params = _copy.deepcopy(
+        scenario_overrides.get("speed_params", _DEFAULT_SPEED_PARAMS)
+    )
+    speed_prob = _copy.deepcopy(
+        scenario_overrides.get("speed_probability_distribution", _DEFAULT_SPEED_PROB)
+    )
     maint_interval = scenario_overrides.get("maintenance_interval", (10000, 10001))
     maint_coeff    = scenario_overrides.get("maintenance_coeff", 0.4)
     active_origins = scenario_overrides.get("degradation_origins", None)
 
-    states_list, maint_list = [], []
-    rng = np.random.default_rng(seed if seed is not None else 42)
+    rng_master = np.random.default_rng(seed if seed is not None else 42)
 
-    for i in range(n_episodes):
-        ep_seed = int(rng.integers(0, 2**31))
-        traj, maint_occ, _, _ = simulate_degradation_trajectory(
-            config=cfg,
+    states_list, maint_list = [], []
+    for _ in range(n_episodes):
+        ep_seed = int(rng_master.integers(0, 2**31))
+        traj, maint_occ = _simulate_one_trajectory(
+            speed_params=speed_params,
+            speed_prob=speed_prob,
             sequence_length=seq_len,
-            speed_strategy="random",
-            init_value="zero",
-            change_speed_occurrence=100,
-            maintenance_interaval=maint_interval,
+            maintenance_interval=maint_interval,
             maintenance_coeff=maint_coeff,
+            change_speed_occurrence=100,
             seed=ep_seed,
         )
-        # For correlated scenario: zero out non-active components
+
+        if len(traj) == 0:
+            continue
+
+        # Correlated scenario: zero out non-active components
         if active_origins is not None:
-            from shared.constants import STATE_LABELS as _SL
-            active_idx = set(
-                _SL.index(o) for o in active_origins if o in _SL
-            )
+            active_idx = {_STATE_LABELS.index(o) for o in active_origins if o in _STATE_LABELS}
             for j in range(traj.shape[1]):
                 if j not in active_idx:
                     traj[:, j] = 0.0
 
-        states_list.append(traj.astype(np.float32))
-        maint_list.append(maint_occ[: len(traj)])
+        states_list.append(traj)
+        maint_list.append(maint_occ)
 
+    logging.info(f"  Generated {len(states_list)} OOD episodes, "
+                 f"mean length {np.mean([len(s) for s in states_list]):.0f}")
     return states_list, maint_list
 
 
