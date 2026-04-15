@@ -67,6 +67,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 sys.path.insert(0, str(Path(__file__).parent))
 
 from jepa import JEPA  # noqa  -- required for torch.load to reconstruct the object
+from baselines.ar_lstm.model import LSTMPredictor  # noqa  -- required for torch.load AR-LSTM checkpoints
 from eval_sweep import (
     encode_observations,
     load_dataset,

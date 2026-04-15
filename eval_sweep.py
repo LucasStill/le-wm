@@ -74,6 +74,7 @@ from sklearn.preprocessing import StandardScaler
 
 from hi_probe import _TransformerProbe, HIProbeCallback
 from jepa import JEPA  # noqa: F401 — needed for torch.load
+from baselines.ar_lstm.model import LSTMPredictor  # noqa: F401 — needed for torch.load AR-LSTM checkpoints
 
 warnings.filterwarnings("ignore", category=UserWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
@@ -82,7 +83,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 #  DEFAULT CHECKPOINT LIST
 #  Override at the command line:  python eval_sweep.py /path/a.ckpt /path/b.ckpt
 # ══════════════════════════════════════════════════════════════════════════════
-CHECKPOINTS: list[dict] = [
+OLD_CHECKPOINTS: list[dict] = [
     {
         "path": "/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel/"
                 "turbofan_v6_sensor_sl1_w10/"
@@ -97,6 +98,30 @@ CHECKPOINTS: list[dict] = [
         "name": "v6_sensor_sl1_w1",
         "encoder_type": "sensor",
     },
+    # ── add more entries here ──────────────────────────────────────────────
+]
+
+CHECKPOINTS: list[dict] = [
+    {
+        "path": "/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel/"
+                "turbofan_ar_lstm_h1_hd256_l2/"
+                "ar_lstm_h1_hd256_l2_epoch_20_object.ckpt.ckpt",
+        "name": "ar_lstm_h1_hd256_l2",
+        "encoder_type": "sensor",
+    },
+    {
+        "path": "/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel/turbofan_ar_lstm_h10_hd256_l2"
+                "ar_lstm_h10_hd256_l2_epoch_20_object.ckpt.ckpt.ckpt",
+        "name": "turbofan_ar_lstm_h10_hd256_l2",
+        "encoder_type": "sensor",
+    },
+    {
+        "path": "/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel/turbofan_ar_lstm_h50_hd256_l2"
+                "ar_lstm_h50_hd256_l2_epoch_21_object.ckpt.ckpt",
+        "name": "ar_lstm_h50_hd256_l2",
+        "encoder_type": "sensor",
+    },
+
     # ── add more entries here ──────────────────────────────────────────────
 ]
 
