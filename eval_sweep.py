@@ -309,7 +309,7 @@ def train_probe(
     n_outputs: int,
     device: torch.device,
     task_name: str = "probe",
-    seq_len: int = PROBE_SEQ_LEN,
+    seq_len: int = 1,
     n_epochs: int = N_PROBE_EPOCHS, lr: float = PROBE_LR,
     patience: int = PROBE_PATIENCE, batch_size: int = PROBE_BATCH,
     d_model: int = D_MODEL, nhead: int = NHEAD,
