@@ -137,7 +137,7 @@ SEED            = 3072
 IMG_SIZE        = 28         # ViT encoder only
 
 # Probe
-PROBE_SEQ_LEN        = 1          # seq_len for Task 1 (HI state estimation)
+TASK1_SEQ_LENS       = [1, 10, 50]  # seq_lens for Task 1 (HI state estimation)
 DELTA_HI_SEQ_LENS    = [1, 10, 50]  # seq_lens to evaluate for Task 2 (ΔHI velocity)
 N_PROBE_EPOCHS  = 150
 PROBE_LR        = 1e-3
@@ -383,32 +383,53 @@ def train_probe(
 #  TASK 1 — HI STATE ESTIMATION
 # ══════════════════════════════════════════════════════════════════════════════
 
-def task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device):
-    logging.info("  Task 1 — HI State Estimation")
-    preds, gt, probe, scaler = train_probe(
-        Z_tr, tr_data["hi"], Z_te, te_data["hi"],
-        tr_data["ep_ids"], te_data["ep_ids"],
-        n_outputs=tr_data["hi"].shape[1],
-        device=device, task_name="HI",
-    )
-    per_dim, r2s, rmses, prs = {}, [], [], []
-    for i, name in enumerate(hi_names):
-        g, p = gt[:, i], preds[:, i]
-        r2 = float(r2_score(g, p))
-        rmse = float(np.sqrt(np.mean((g - p) ** 2)))
-        pr = float(pearsonr(g, p)[0])
-        per_dim[name] = {"r2": r2, "rmse": rmse, "pearson_r": pr}
-        r2s.append(r2); rmses.append(rmse); prs.append(pr)
-    per_dim["__mean__"] = {
-        "r2": float(np.mean(r2s)),
-        "rmse": float(np.mean(rmses)),
-        "pearson_r": float(np.mean(prs)),
-    }
-    logging.info(
-        f"  Task 1  mean R²={np.mean(r2s):.3f}  "
-        f"RMSE={np.mean(rmses):.5f}  Pearson={np.mean(prs):.3f}"
-    )
-    return per_dim, probe, scaler
+def task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device, seq_lens=None):
+    """HI State Estimation across multiple probe seq_lens.
+
+    seq_lens=[1]  (default): single snapshot z_t → directly measures encoder quality.
+    seq_lens=[1,10,50]: also evaluates windowed probes, revealing how much temporal
+    context helps — key for comparing AR-LSTM vs JEPA encoder richness.
+
+    Returns dict keyed by "sl{n}" for each seq_len, plus the sl=1 probe/scaler
+    for use in Task 3 forecasting.
+    """
+    if seq_lens is None:
+        seq_lens = TASK1_SEQ_LENS
+
+    results = {}
+    probe_hi, scaler_hi = None, None   # retained from sl=1 for Task 3
+
+    for sl in seq_lens:
+        logging.info(f"  Task 1 — HI State Estimation  (seq_len={sl})")
+        preds, gt, probe, scaler = train_probe(
+            Z_tr, tr_data["hi"], Z_te, te_data["hi"],
+            tr_data["ep_ids"], te_data["ep_ids"],
+            n_outputs=tr_data["hi"].shape[1],
+            device=device, task_name=f"HI_sl{sl}",
+            seq_len=sl,
+        )
+        per_dim, r2s, rmses, prs = {}, [], [], []
+        for i, name in enumerate(hi_names):
+            g, p = gt[:, i], preds[:, i]
+            r2   = float(r2_score(g, p))
+            rmse = float(np.sqrt(np.mean((g - p) ** 2)))
+            pr   = float(pearsonr(g, p)[0])
+            per_dim[name] = {"r2": r2, "rmse": rmse, "pearson_r": pr}
+            r2s.append(r2); rmses.append(rmse); prs.append(pr)
+        per_dim["__mean__"] = {
+            "r2":        float(np.mean(r2s)),
+            "rmse":      float(np.mean(rmses)),
+            "pearson_r": float(np.mean(prs)),
+        }
+        logging.info(
+            f"  Task 1 sl={sl}  mean R²={np.mean(r2s):.3f}  "
+            f"RMSE={np.mean(rmses):.5f}  Pearson={np.mean(prs):.3f}"
+        )
+        results[f"sl{sl}"] = per_dim
+        if sl == 1:
+            probe_hi, scaler_hi = probe, scaler   # used by Task 3
+
+    return results, probe_hi, scaler_hi
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -723,21 +744,34 @@ def task3_forecast(
 #  PER-CHECKPOINT RUNNER  (called in each worker process)
 # ══════════════════════════════════════════════════════════════════════════════
 
+ALL_TASKS = {1, 2, 3}   # valid task numbers
+
+
 def run_one(
     cfg: dict,
     tr_data: dict, te_data: dict,
     hi_names: list,
     ep_offset_all: np.ndarray, ep_len_all: np.ndarray,
     device: torch.device,
-    skip_task3: bool = False,
+    tasks: set | None = None,
     forecast_horizon: int | None = None,
     step_size: int = 10,
 ) -> dict:
-    name   = cfg["name"]
-    enc_t  = cfg.get("encoder_type", "sensor")
+    """Run downstream evaluation for one checkpoint.
+
+    Parameters
+    ----------
+    tasks : set of ints, e.g. {1, 2} to run only Tasks 1 & 2.
+            None (default) runs all tasks.
+    """
+    if tasks is None:
+        tasks = ALL_TASKS
+
+    name    = cfg["name"]
+    enc_t   = cfg.get("encoder_type", "sensor")
     max_tau = forecast_horizon or max(FORECAST_HORIZONS)
 
-    logging.info(f"\n{'='*70}\n  {name}  [{device}]\n{'='*70}")
+    logging.info(f"\n{'='*70}\n  {name}  [{device}]  tasks={sorted(tasks)}\n{'='*70}")
 
     model = torch.load(cfg["path"], map_location=device, weights_only=False)
     model.eval().to(device)
@@ -750,13 +784,27 @@ def run_one(
     Z_te = encode_observations(model, te_data["obs"], enc_t, device)
     logging.info(f"  Z_tr={Z_tr.shape}  Z_te={Z_te.shape}")
 
-    t1, probe_hi, scaler_hi = task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device)
-    t2_vel, t2b_alarm = task2_delta_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device)
+    t1 = t2_vel = t2b_alarm = t3 = None
+    probe_hi = scaler_hi = None
 
-    if skip_task3:
-        t3 = None
-        logging.info("  Task 3 skipped.")
-    else:
+    if 1 in tasks:
+        t1, probe_hi, scaler_hi = task1_hi(
+            Z_tr, Z_te, tr_data, te_data, hi_names, device
+        )
+
+    if 2 in tasks:
+        t2_vel, t2b_alarm = task2_delta_hi(
+            Z_tr, Z_te, tr_data, te_data, hi_names, device
+        )
+
+    if 3 in tasks:
+        if probe_hi is None:
+            # Task 3 needs the Task-1 probe to decode latents → HI space.
+            # Train sl=1 probe silently even if Task 1 was skipped.
+            logging.info("  Task 3 requires Task-1 probe — training sl=1 probe…")
+            _, probe_hi, scaler_hi = task1_hi(
+                Z_tr, Z_te, tr_data, te_data, hi_names, device, seq_lens=[1]
+            )
         t3 = task3_forecast(
             model, probe_hi, scaler_hi,
             te_data, ep_offset_all, ep_len_all,
@@ -784,9 +832,8 @@ def run_one(
 #  MULTIPROCESSING WORKER
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _worker(rank, cfg, gpu_id, shared_data, result_path, skip_task3, forecast_horizon):
+def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon):
     """Subprocess entry point — one checkpoint, one GPU."""
-    # Suppress duplicate log prefixes in child processes
     logging.basicConfig(
         level=logging.INFO,
         format=f"[GPU{gpu_id}] %(levelname)s  %(message)s",
@@ -798,7 +845,7 @@ def _worker(rank, cfg, gpu_id, shared_data, result_path, skip_task3, forecast_ho
         result = run_one(
             cfg, tr_data, te_data, hi_names,
             ep_offset_all, ep_len_all, device,
-            skip_task3=skip_task3,
+            tasks=tasks,
             forecast_horizon=forecast_horizon,
         )
     except Exception as e:
@@ -925,7 +972,9 @@ def main():
              "Omit to use the CHECKPOINTS list at the top of the script.",
     )
     parser.add_argument("--out_dir",          default=None)
-    parser.add_argument("--skip_task3",       action="store_true")
+    parser.add_argument("--tasks",            type=int, nargs="+", default=None,
+                        metavar="N",
+                        help="tasks to run, e.g. --tasks 1 2  (default: all = 1 2 3)")
     parser.add_argument("--no_parallel",      action="store_true",
                         help="force sequential execution even with multiple GPUs")
     parser.add_argument("--forecast_horizon", type=int, default=None,
@@ -936,6 +985,8 @@ def main():
                         help="subsample starting frames every N steps for Task 3 "
                              "(default 10 — 10× faster, negligible metric impact)")
     args = parser.parse_args()
+    # --tasks 1 2 → set {1, 2};  omitted → None (all tasks)
+    tasks = set(args.tasks) if args.tasks else None
 
     if args.hdf5:
         global HDF5_PATH
@@ -977,7 +1028,7 @@ def main():
             p = mp.Process(
                 target=_worker,
                 args=(rank, cfg, gpu_id, shared_data,
-                      str(rp), args.skip_task3, args.forecast_horizon),
+                      str(rp), tasks, args.forecast_horizon),
             )
             p.start()
             procs.append(p)
@@ -992,7 +1043,7 @@ def main():
             result = run_one(
                 cfg, tr_data, te_data, hi_names,
                 ep_offset_all, ep_len_all, device,
-                skip_task3=args.skip_task3,
+                tasks=tasks,
                 forecast_horizon=args.forecast_horizon,
                 step_size=args.step_size,
             )
