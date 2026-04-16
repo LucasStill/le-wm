@@ -863,26 +863,29 @@ def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon
 
 def write_flat_csv(all_results, hi_names, path):
     import csv
-    rows, header = [], ["model", "obs_window", "task", "component", "metric", "value"]
+    rows, header = [], ["model", "obs_window", "task", "seq_len", "component", "metric", "value"]
     for res in all_results:
         if "error" in res:
             continue
         name = res["name"]; w = res["obs_window_size"]
-        for comp, m in res.get("task1_hi", {}).items():
-            for metric, val in m.items():
-                rows.append([name, w, "task1_hi", comp, metric, val])
+        # task1_hi is keyed by sl_tag ("sl1", "sl10", "sl50") → component → metric
+        t1 = res.get("task1_hi") or {}
+        for sl_tag, sl_metrics in t1.items():
+            for comp, m in sl_metrics.items():
+                for metric, val in m.items():
+                    rows.append([name, w, "task1_hi", sl_tag, comp, metric, val])
         for sl_tag, sl_metrics in res.get("task2_delta_hi", {}).items():
             for comp, m in sl_metrics.items():
                 for metric, val in m.items():
-                    rows.append([name, w, f"task2_delta_hi_{sl_tag}", comp, metric, val])
+                    rows.append([name, w, "task2_delta_hi", sl_tag, comp, metric, val])
         for k_str, m in res.get("task2b_alarm", {}).items():
             for metric, val in (m or {}).items():
                 if val is not None:
-                    rows.append([name, w, "task2b_alarm", k_str, metric, val])
+                    rows.append([name, w, "task2b_alarm", "-", k_str, metric, val])
         t3 = res.get("task3_forecast") or {}
         for key in ("all", "clean", "event", "gap"):
             for tau_i, val in enumerate(t3.get(f"mean_rmse_{key}", [])):
-                rows.append([name, w, f"task3_{key}", f"tau_{tau_i+1}", "mean_rmse", val])
+                rows.append([name, w, f"task3_{key}", "-", f"tau_{tau_i+1}", "mean_rmse", val])
     with open(path, "w", newline="") as fh:
         csv.writer(fh).writerows([header] + rows)
     logging.info(f"Flat CSV → {path}")
