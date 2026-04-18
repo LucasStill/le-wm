@@ -226,7 +226,10 @@ def run(cfg):
     # ── Logger ─────────────────────────────────────────────────────────────────
     logger = None
     if cfg.wandb.enabled:
-        logger = WandbLogger(**cfg.wandb.config)
+        wandb_kwargs = dict(cfg.wandb.config)
+        if os.environ.get("WANDB_MODE") == "offline":
+            wandb_kwargs["offline"] = True
+        logger = WandbLogger(**wandb_kwargs)
         logger.log_hyperparams(OmegaConf.to_container(cfg))
 
     # Save config snapshot alongside the checkpoint
@@ -246,7 +249,7 @@ def run(cfg):
         trainer=trainer,
         module=module,
         data=spt.data.DataModule(train=train_loader, val=val_loader),
-        ckpt_path=run_dir / f"{cfg.output_model_name}_weights.ckpt",
+        ckpt_path=None,
     )
 
     # Patch stable_pretraining offline-WandB bug (same fix as train.py)

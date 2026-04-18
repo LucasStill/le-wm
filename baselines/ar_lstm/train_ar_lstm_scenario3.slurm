@@ -52,7 +52,6 @@ srun python -u baselines/ar_lstm/train_ar_lstm.py \
     data.dataset.cache_dir=${DATA_DIR} \
     subdir=scenario3_ar_lstm_h${HISTORY_LEN}_hd256_l2_v2 \
     output_model_name=${RUN_NAME} \
-    wandb.enabled=False \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
 
