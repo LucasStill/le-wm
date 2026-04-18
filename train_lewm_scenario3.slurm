@@ -89,7 +89,6 @@ srun python -u train.py \
     data.dataset.cache_dir=${DATA_DIR} \
     subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v2 \
     output_model_name=${RUN_NAME} \
-    wandb.enabled=False \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
 

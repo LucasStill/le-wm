@@ -317,7 +317,7 @@ def run(cfg):
         trainer=trainer,
         module=world_model,
         data=data_module,
-        ckpt_path=run_dir / f"{cfg.output_model_name}_weights.ckpt",
+        ckpt_path=None,
     )
 
     # Fix stable_pretraining bug: offline mode crashes on first run
