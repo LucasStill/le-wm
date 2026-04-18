@@ -48,4 +48,5 @@ dataset:
     - pixels   # (N, 7, 12) normalised sensor data — see prepare_scenario3_dataset.py
     - action   # scalar float32, values 0–4 — z-normalised at runtime
   keys_to_cache:
+    - pixels   # 4M × 84 × float32 = ~1.3 GB — fits in H100 node RAM, eliminates Lustre I/O
     - action

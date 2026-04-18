@@ -73,6 +73,7 @@ srun python -u train.py \
     obs_window_size=${WIN_SIZE} \
     wm.history_size=${HISTORY_LEN} \
     num_workers=16 \
+    loader.batch_size=1024 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     data.dataset.cache_dir=${DATA_DIR} \
