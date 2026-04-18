@@ -74,7 +74,7 @@ WIN_SIZE=1
 HISTORY_LEN=50
 N_SENSORS=84
 
-RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}
+RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v2
 
 srun python -u train.py \
     data=scenario3 \
