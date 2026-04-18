@@ -49,6 +49,8 @@ export WANDB_MODE=offline
 export WANDB_INIT_TIMEOUT=5
 export WANDB_HTTP_TIMEOUT=5
 # NOTE: do NOT set WANDB_SILENT=true — it hides hangs when wandb can't create a new project
+# Reduce CUDA allocator fragmentation (helps when backward needs a large contiguous chunk)
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # ── Data: copy HDF5 to fast local NVMe ($SCRATCH) ────────────────────────────
 # Jean-Zay best practice: $SCRATCH is per-node NVMe (~3 GB/s reads).
@@ -83,7 +85,7 @@ srun python -u train.py \
     obs_window_size=${WIN_SIZE} \
     wm.history_size=${HISTORY_LEN} \
     num_workers=16 \
-    loader.batch_size=1024 \
+    loader.batch_size=256 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     data.dataset.cache_dir=${DATA_DIR} \
