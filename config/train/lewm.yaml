@@ -21,7 +21,11 @@ encoder_scale: tiny
 
 # ── Sensor encoder params (only used when encoder_type=sensor) ────────────────
 # Processes n_sensors scalar values as n_sensors individual tokens.
-#   n_sensors = 4 flight-phase contexts × 7 sensor channels = 28
+#
+#   turbofan  (opendeck_2000_lewm.h5) : n_sensors = 28  (4 contexts × 7 sensors)
+#   scenario3 (scenario3_*_lewm.h5)   : n_sensors = 84  (12 contexts × 7 sensors)
+#
+# Override via CLI:  n_sensors=84  when using data=scenario3
 # d_model should equal wm.embed_dim to avoid an unnecessary projection bottleneck.
 n_sensors: 28
 sensor_encoder:

@@ -1,0 +1,51 @@
+# Scenario-3 engine degradation dataset for le-wm training.
+#
+# PREREQUISITES — run once from le-wm/:
+#
+#   python prepare_scenario3_dataset.py \
+#       --all_splits \
+#       --data_dir /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
+#
+# This creates three pipeline-ready files:
+#   scenario3_train_400_lewm.h5  — 400 episodes × 10 000 steps (train+val)
+#   scenario3_test_lewm.h5       — 40 episodes (held-out test)
+#   scenario3_test_hard_lewm.h5  — 40 episodes, hard distribution shift (OOD)
+#
+# TRAINING — from le-wm/:
+#
+#   python train.py \
+#       data=scenario3 \
+#       n_sensors=84 \
+#       data.dataset.cache_dir=/abs/path/to/data
+#
+# The file loaded will be: {cache_dir}/scenario3_train_400_lewm.h5
+#
+# DIFFERENCES FROM TURBOFAN (opendeck_2000_lewm.h5)
+# --------------------------------------------------
+#   n_sensors  : 84  (7 sensors × 12 flight-phase contexts, vs 28 = 7×4)
+#   action_dim : 1   (scalar 0–4: 0=do_nothing, 1–4=overhaul types)
+#   n_hi       : 10  (same — 10 health-indicator components)
+#   ep_len     : 10 000 steps (fixed, vs variable in turbofan)
+#   pixels key : (N, 7, 12) — no 3-channel replication (sensor encoder only)
+#
+# ENCODER NOTE:
+#   Use encoder_type=sensor (always) and n_sensors=84 (override via CLI).
+#   The sensor encoder flattens pixels to (B, T, 84) tokens automatically.
+#   ViT mode is NOT supported for this dataset.
+#
+#   Both train and eval scripts use the 'pixels' key (written by
+#   prepare_scenario3_dataset.py).  The eval_sweep.py HDF5_PATH should also
+#   point at the *_lewm.h5 file.
+
+dataset:
+  # With obs_window_size=w the encoder needs w-1 extra frames per sample.
+  # Total frames: history_size + num_preds + (obs_window_size - 1).
+  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size} + ${obs_window_size} - 1'}
+  frameskip: 1
+  name: scenario3_train_400_lewm
+  cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
+  keys_to_load:
+    - pixels   # (N, 7, 12) normalised sensor data — see prepare_scenario3_dataset.py
+    - action   # scalar float32, values 0–4 — z-normalised at runtime
+  keys_to_cache:
+    - action
