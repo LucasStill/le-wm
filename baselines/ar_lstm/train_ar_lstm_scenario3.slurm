@@ -35,7 +35,12 @@ export WANDB_INIT_TIMEOUT=10
 export WANDB_HTTP_TIMEOUT=10
 export WANDB_SILENT=true
 
-DATA_DIR=$STABLEWM_HOME   # scenario3_train_400_lewm.h5 is here after prepare step
+# ── Data: copy HDF5 to fast local NVMe ($SCRATCH) ────────────────────────────
+HDF5_NAME=scenario3_train_400_lewm.h5
+echo "Copying ${HDF5_NAME} to \$SCRATCH ..."
+cp $STABLEWM_HOME/${HDF5_NAME} $SCRATCH/
+echo "Copy done."
+DATA_DIR=$SCRATCH
 
 # Vary history_size to ablate temporal context (matches JEPA experiments)
 HISTORY_LEN=50   # change to 10, 50 for additional runs

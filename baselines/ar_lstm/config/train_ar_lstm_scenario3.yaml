@@ -23,8 +23,7 @@ data:
       - pixels   # (N, 7, 12) normalised sensor data
       - action   # scalar float32, values 0–4 — z-normalised at runtime
     keys_to_cache:
-      - pixels   # ~1.3 GB in RAM — eliminates Lustre I/O bottleneck
-      - action
+      - action   # pixels NOT cached here — copy HDF5 to $SCRATCH in SLURM instead (faster)
 
 # ── Encoder ──────────────────────────────────────────────────────────────────
 # n_sensors = 84 = 7 sensors × 12 flight-phase contexts (scenario3)

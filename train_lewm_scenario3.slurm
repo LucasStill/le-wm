@@ -49,10 +49,15 @@ export WANDB_INIT_TIMEOUT=10      # fail the connection check fast instead of ha
 export WANDB_HTTP_TIMEOUT=10      # same for HTTP calls
 export WANDB_SILENT=true          # suppress retry-loop noise in the log
 
-# ── Data location ─────────────────────────────────────────────────────────────
-# The prepared *_lewm.h5 files live alongside checkpoints in STABLEWM_HOME.
-# Raw *_sensors.h5 source files stay in the simulator data dir.
-DATA_DIR=$STABLEWM_HOME   # scenario3_train_400_lewm.h5 is here after prepare step
+# ── Data: copy HDF5 to fast local NVMe ($SCRATCH) ────────────────────────────
+# Jean-Zay best practice: $SCRATCH is per-node NVMe (~3 GB/s reads).
+# Reading from Lustre ($WORK/$fswork) during training causes I/O hangs.
+# The copy takes ~2s for 1.3 GB and makes all subsequent reads instant.
+HDF5_NAME=scenario3_train_400_lewm.h5
+echo "Copying ${HDF5_NAME} to \$SCRATCH ..."
+cp $STABLEWM_HOME/${HDF5_NAME} $SCRATCH/
+echo "Copy done. Data dir: $SCRATCH"
+DATA_DIR=$SCRATCH
 
 # ── Hyperparameters ───────────────────────────────────────────────────────────
 # WIN_SIZE : encoder input window (obs_window_size)
