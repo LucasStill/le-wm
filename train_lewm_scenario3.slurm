@@ -43,11 +43,12 @@ echo "========================================"
 
 export PYTHONUNBUFFERED=1
 export CUDA_LAUNCH_BLOCKING=0
-# wandb offline config — compute nodes have no internet access
+# wandb: disable on compute nodes (no internet), sync manually on login node afterward:
+#   wandb sync wandb/offline-run-*/
 export WANDB_MODE=offline
-export WANDB_INIT_TIMEOUT=10      # fail the connection check fast instead of hanging
-export WANDB_HTTP_TIMEOUT=10      # same for HTTP calls
-export WANDB_SILENT=true          # suppress retry-loop noise in the log
+export WANDB_INIT_TIMEOUT=5
+export WANDB_HTTP_TIMEOUT=5
+# NOTE: do NOT set WANDB_SILENT=true — it hides hangs when wandb can't create a new project
 
 # ── Data: copy HDF5 to fast local NVMe ($SCRATCH) ────────────────────────────
 # Jean-Zay best practice: $SCRATCH is per-node NVMe (~3 GB/s reads).
@@ -86,8 +87,9 @@ srun python -u train.py \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN} \
+    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v2 \
     output_model_name=${RUN_NAME} \
+    wandb.enabled=False \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
 

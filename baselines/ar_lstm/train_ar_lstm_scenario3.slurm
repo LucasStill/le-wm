@@ -29,11 +29,10 @@ echo "GPU      : $CUDA_VISIBLE_DEVICES"
 echo "========================================"
 
 export PYTHONUNBUFFERED=1
-# wandb offline config — compute nodes have no internet access
 export WANDB_MODE=offline
-export WANDB_INIT_TIMEOUT=10
-export WANDB_HTTP_TIMEOUT=10
-export WANDB_SILENT=true
+export WANDB_INIT_TIMEOUT=5
+export WANDB_HTTP_TIMEOUT=5
+# NOTE: no WANDB_SILENT — see train_lewm_scenario3.slurm comment
 
 # ── Data: copy HDF5 to fast local NVMe ($SCRATCH) ────────────────────────────
 HDF5_NAME=scenario3_train_400_lewm.h5
@@ -51,8 +50,9 @@ srun python -u baselines/ar_lstm/train_ar_lstm.py \
     --config-name train_ar_lstm_scenario3 \
     wm.history_size=${HISTORY_LEN} \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_ar_lstm_h${HISTORY_LEN}_hd256_l2 \
+    subdir=scenario3_ar_lstm_h${HISTORY_LEN}_hd256_l2_v2 \
     output_model_name=${RUN_NAME} \
+    wandb.enabled=False \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
 
