@@ -34,7 +34,11 @@ echo "========================================"
 
 export PYTHONUNBUFFERED=1
 export CUDA_LAUNCH_BLOCKING=0
+# wandb offline config — compute nodes have no internet access
 export WANDB_MODE=offline
+export WANDB_INIT_TIMEOUT=10
+export WANDB_HTTP_TIMEOUT=10
+export WANDB_SILENT=true
 
 # ── Training ──────────────────────────────────────────────────────────────────
 DATA_DIR=/lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data

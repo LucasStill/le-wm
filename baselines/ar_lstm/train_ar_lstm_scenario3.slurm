@@ -29,7 +29,11 @@ echo "GPU      : $CUDA_VISIBLE_DEVICES"
 echo "========================================"
 
 export PYTHONUNBUFFERED=1
+# wandb offline config — compute nodes have no internet access
 export WANDB_MODE=offline
+export WANDB_INIT_TIMEOUT=10
+export WANDB_HTTP_TIMEOUT=10
+export WANDB_SILENT=true
 
 DATA_DIR=$STABLEWM_HOME   # scenario3_train_400_lewm.h5 is here after prepare step
 

@@ -46,7 +46,11 @@ echo "========================================"
 
 export PYTHONUNBUFFERED=1
 export CUDA_LAUNCH_BLOCKING=0
-export WANDB_MODE=offline   # sync manually after job: wandb sync
+# wandb offline config — compute nodes have no internet access
+export WANDB_MODE=offline
+export WANDB_INIT_TIMEOUT=10
+export WANDB_HTTP_TIMEOUT=10
+export WANDB_SILENT=true
 
 # ── Config ────────────────────────────────────────────────────────────────────
 # DATA_DIR points to the same HDF5 used by the JEPA runs — no new data needed.

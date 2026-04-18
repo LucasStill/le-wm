@@ -43,7 +43,11 @@ echo "========================================"
 
 export PYTHONUNBUFFERED=1
 export CUDA_LAUNCH_BLOCKING=0
+# wandb offline config — compute nodes have no internet access
 export WANDB_MODE=offline
+export WANDB_INIT_TIMEOUT=10      # fail the connection check fast instead of hanging
+export WANDB_HTTP_TIMEOUT=10      # same for HTTP calls
+export WANDB_SILENT=true          # suppress retry-loop noise in the log
 
 # ── Data location ─────────────────────────────────────────────────────────────
 # The prepared *_lewm.h5 files live alongside checkpoints in STABLEWM_HOME.
