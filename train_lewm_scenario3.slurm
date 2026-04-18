@@ -76,10 +76,10 @@ srun python -u train.py \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_sensor_w${WIN_SIZE}_b512_H${HISTORY_LEN} \
+    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
-    hi_probe.probe_seq_len=1
+    hi_probe.probe_seq_len=${HISTORY_LEN}
 
 echo "========================================"
 echo "Training complete."

@@ -70,7 +70,7 @@ wandb:
   enabled: True
   config:
     entity: thil-ecole-polytechnique
-    project: turbofan
+    project: turbofan_S3
     name: ${output_model_name}
     #id: ${subdir}
     resume: never

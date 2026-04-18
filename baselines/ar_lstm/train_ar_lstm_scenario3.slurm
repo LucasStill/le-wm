@@ -34,7 +34,7 @@ export WANDB_MODE=offline
 DATA_DIR=$STABLEWM_HOME   # scenario3_train_400_lewm.h5 is here after prepare step
 
 # Vary history_size to ablate temporal context (matches JEPA experiments)
-HISTORY_LEN=3   # change to 10, 50 for additional runs
+HISTORY_LEN=50   # change to 10, 50 for additional runs
 
 RUN_NAME=ar_lstm_s3_h${HISTORY_LEN}_hd256_l2
 
@@ -45,7 +45,7 @@ srun python -u baselines/ar_lstm/train_ar_lstm.py \
     subdir=scenario3_ar_lstm_h${HISTORY_LEN}_hd256_l2 \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
-    hi_probe.probe_seq_len=1
+    hi_probe.probe_seq_len=${HISTORY_LEN}
 
 echo "========================================"
 echo "Training complete."
