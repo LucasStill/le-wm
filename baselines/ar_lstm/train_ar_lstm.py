@@ -19,9 +19,11 @@ Usage (cluster):
     sbatch baselines/ar_lstm/train_ar_lstm.slurm
 """
 
+import json
 import logging
 import os
 import sys
+import types
 from functools import partial
 from pathlib import Path
 
@@ -44,6 +46,36 @@ from utils import (                    # noqa: E402
     get_column_normalizer,
 )
 from baselines.ar_lstm.model import build_ar_lstm  # noqa: E402
+
+
+def _patch_wandb_offline(manager: spt.Manager) -> None:
+    """Patch spt.Manager.init_and_sync_wandb for offline mode.
+
+    Bug in stable_pretraining: when WANDB_MODE=offline and a previous offline
+    run exists, _wandb_previous_dir() returns None (offline runs have no server
+    path), but the original code does `None / "files/wandb-config.json"` →
+    TypeError.  Replace with a version that guards against None.
+    """
+    def _safe_init_and_sync_wandb(self):
+        import lightning
+        if not isinstance(
+            self._trainer.logger, lightning.pytorch.loggers.wandb.WandbLogger
+        ):
+            return
+        logging.info("📈 Using Wandb")
+        exp = self._trainer.logger.experiment
+        if exp.offline:
+            previous_run = self._wandb_previous_dir()
+            if previous_run is None:
+                logging.info("[wandb] Offline mode: first run, no config to reuse.")
+                return
+            logging.info(f"[wandb] Reusing config from previous run: {previous_run}")
+            with open(previous_run / "files/wandb-config.json", "r") as f:
+                last_config = json.load(f)
+            exp.config.update(last_config)
+            logging.info("[wandb] Config reloaded.")
+
+    manager.init_and_sync_wandb = types.MethodType(_safe_init_and_sync_wandb, manager)
 
 
 # ── Training forward pass (identical to train.py: lejepa_forward) ─────────────
@@ -252,13 +284,8 @@ def run(cfg):
         ckpt_path=None,
     )
 
-    # Patch stable_pretraining offline-WandB bug (same fix as train.py)
     if os.environ.get("WANDB_MODE") == "offline":
-        try:
-            from train import _patch_wandb_offline
-            _patch_wandb_offline(manager)
-        except ImportError:
-            pass  # not critical — just means first offline run may crash
+        _patch_wandb_offline(manager)
 
     manager()
 
