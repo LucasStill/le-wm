@@ -20,13 +20,20 @@ seed: 3072
 
 img_size: 28          # unused by sensor encoder; kept for HIProbeCallback compat
 
+# ── Encoder input window ───────────────────────────────────────────────────────
+# obs_window_size=1 : snapshot encoder — each frame encoded independently.
+# obs_window_size=w : TemporalAggregator fuses w consecutive frames into one
+#                     embedding; decoder reconstructs the last frame of the window.
+obs_window_size: 1
+
 # ── Data ─────────────────────────────────────────────────────────────────────
-# num_steps: frames per training sample. The AE treats each frame independently
-# so this only affects batching efficiency, not model behaviour.
-# 10 frames × batch 512 = 5 120 sensor snapshots per gradient step.
+# ae_seq_len: number of output embeddings (= reconstruction targets) per sample.
+# num_steps raw frames are sampled; ae_seq_len = num_steps - obs_window_size + 1.
+# Rearranged: num_steps = ae_seq_len + obs_window_size - 1.
+ae_seq_len: 10        # 10 output frames × batch 512 = 5 120 recon targets per step
 data:
   dataset:
-    num_steps: 10
+    num_steps: ${eval:'${ae_seq_len} + ${obs_window_size} - 1'}
     frameskip: 1
     name: scenario3_train_400_lewm
     cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
@@ -39,7 +46,6 @@ data:
 # ── Encoder (identical to JEPA sensor baseline) ───────────────────────────────
 encoder_type: sensor
 n_sensors: 84            # 7 sensors × 12 flight-phase contexts
-obs_window_size: 1       # AE has no temporal aggregation
 
 sensor_encoder:
   d_model: 64            # must equal wm.embed_dim for probe compatibility

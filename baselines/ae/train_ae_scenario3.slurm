@@ -57,10 +57,16 @@ echo "Copy done."
 DATA_DIR=$SCRATCH
 
 # ── Hyperparameters ───────────────────────────────────────────────────────────
-RUN_NAME=ae_s3_sensor
+# WIN_SIZE : encoder input window (obs_window_size)
+#   1  = snapshot AE — each frame encoded independently
+#   >1 = TemporalAggregator fuses w consecutive frames; decoder reconstructs last frame
+WIN_SIZE=1
+
+RUN_NAME=ae_s3_sensor_w${WIN_SIZE}
 
 srun python -u baselines/ae/train_ae.py \
     --config-name train_ae_scenario3 \
+    obs_window_size=${WIN_SIZE} \
     data.dataset.cache_dir=${DATA_DIR} \
     subdir=${RUN_NAME} \
     output_model_name=${RUN_NAME} \
