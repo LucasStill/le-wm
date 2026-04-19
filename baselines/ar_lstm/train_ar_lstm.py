@@ -89,22 +89,25 @@ def ar_lstm_forward(self, batch, stage, cfg):
     predictors share the same encode()/predict() interface.
     """
     ctx_len = cfg.wm.history_size  # H: number of context embeddings
-    n_preds = cfg.wm.num_preds     # 1: predict 1 step ahead
+    s       = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
     lambd   = cfg.loss.sigreg.weight
 
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
 
     # Step 1: encode all T_raw frames → Z = (B, T, embed_dim)
     output  = self.model.encode(batch)
-    emb     = output["emb"]       # (B, T, D)
+    emb     = output["emb"]       # (B, T, D),  T = H*s + obs_window_size
     act_emb = output["act_emb"]   # (B, T, D)
 
-    # Step 2: slice context and target
-    ctx_emb = emb[:, :ctx_len]    # first H embeddings → LSTM input
-    ctx_act = act_emb[:, :ctx_len]
-    tgt_emb = emb[:, n_preds:]    # shifted by 1 → supervision target
+    # Step 2: strided context and target
+    # Context: z_0, z_s, z_2s, ..., z_{(H-1)*s}  →  (B, H, D)
+    ctx_emb = emb[:, :ctx_len * s : s]
+    # Last action in each stride interval (captures any maintenance event)
+    ctx_act = act_emb[:, s - 1 : ctx_len * s : s]
+    # Target: z_s, z_2s, ..., z_{H*s}  →  predict one stride ahead
+    tgt_emb = emb[:, s : ctx_len * s + 1 : s]
 
-    # Step 3: LSTM predicts ẑ_{t+1} for each context position
+    # Step 3: LSTM predicts ẑ_{t+s} for each context position
     pred_emb = self.model.predict(ctx_emb, ctx_act)  # (B, H, D)
 
     # Step 4: losses (identical to JEPA)

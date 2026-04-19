@@ -33,7 +33,7 @@
 dataset:
   # With obs_window_size=w the encoder needs w-1 extra frames to build
   # sliding windows.  Total frames per sample: history + preds + (w - 1).
-  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size} + ${obs_window_size} - 1'}
+  num_steps: ${eval:'${wm.history_size} * ${wm.h_step} + ${obs_window_size}'}
   frameskip: 1
   name: opendeck_2000_lewm
   cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
