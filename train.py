@@ -309,7 +309,13 @@ def run(cfg):
 
     logger = None
     if cfg.wandb.enabled:
-        logger = WandbLogger(**cfg.wandb.config)
+        wandb_kwargs = dict(cfg.wandb.config)
+        # When running on a no-internet node (WANDB_MODE=offline), pass offline=True
+        # directly to WandbLogger so it never attempts a network connection.
+        # Without this, wandb.init() hangs trying to create a new project on the server.
+        if os.environ.get("WANDB_MODE") == "offline":
+            wandb_kwargs["offline"] = True
+        logger = WandbLogger(**wandb_kwargs)
         logger.log_hyperparams(OmegaConf.to_container(cfg))
 
     with open(run_dir / "config.yaml", "w") as f:
