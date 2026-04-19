@@ -67,16 +67,21 @@ DATA_DIR=$SCRATCH
 #   1  = snapshot encoder (no TemporalAggregator)
 #   >1 = window of w consecutive frames fused by TemporalAggregator
 #
-# HISTORY_LEN : predictor context (transformer history)
+# HISTORY_LEN : predictor context length (number of latent steps)
 #   Reasonable range: 10–100 steps given ep_len=10000
+#
+# H_STEP : temporal stride between history latents
+#   1 = dense (original); 5 = every 5th observation
+#   Effective temporal reach = HISTORY_LEN * H_STEP observations
 #
 # N_SENSORS : MUST be 84 for scenario3 (7 sensors × 12 contexts)
 
 WIN_SIZE=1
 HISTORY_LEN=50
+H_STEP=1
 N_SENSORS=84
 
-RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v3
+RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}
 
 srun python -u train.py \
     data=scenario3 \
@@ -84,13 +89,14 @@ srun python -u train.py \
     n_sensors=${N_SENSORS} \
     obs_window_size=${WIN_SIZE} \
     wm.history_size=${HISTORY_LEN} \
+    wm.h_step=${H_STEP} \
     num_workers=16 \
     loader.batch_size=512 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
     trainer.precision=bf16-mixed \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v3 \
+    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
