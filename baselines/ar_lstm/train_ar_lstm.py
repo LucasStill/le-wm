@@ -23,7 +23,6 @@ import json
 import logging
 import os
 import sys
-import types
 from functools import partial
 from pathlib import Path
 
@@ -75,7 +74,7 @@ def _patch_wandb_offline(manager: spt.Manager) -> None:
             exp.config.update(last_config)
             logging.info("[wandb] Config reloaded.")
 
-    manager.init_and_sync_wandb = types.MethodType(_safe_init_and_sync_wandb, manager)
+    type(manager).init_and_sync_wandb = _safe_init_and_sync_wandb
 
 
 # ── Training forward pass (identical to train.py: lejepa_forward) ─────────────

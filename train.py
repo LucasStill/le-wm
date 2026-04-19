@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import types
 from functools import partial
 from pathlib import Path
 
@@ -81,7 +80,9 @@ def _patch_wandb_offline(manager: spt.Manager) -> None:
             exp.config.update(last_config)
             logging.info("[wandb] Config reloaded.")
 
-    manager.init_and_sync_wandb = types.MethodType(_safe_init_and_sync_wandb, manager)
+    # Patch at class level — instance-level patching is bypassed by the
+    # rank_zero/catch_errors descriptor stack in stable_pretraining.
+    type(manager).init_and_sync_wandb = _safe_init_and_sync_wandb
 
 
 @hydra.main(version_base=None, config_path="./config/train", config_name="lewm")
