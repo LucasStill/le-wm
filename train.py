@@ -23,22 +23,25 @@ def lejepa_forward(self, batch, stage, cfg):
     """encode observations, predict next states, compute losses."""
 
     ctx_len = cfg.wm.history_size
-    n_preds = cfg.wm.num_preds
-    lambd = cfg.loss.sigreg.weight
+    s       = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
+    lambd   = cfg.loss.sigreg.weight
 
     # Replace NaN values with 0 (occurs at sequence boundaries)
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
 
     output = self.model.encode(batch)
 
-    emb = output["emb"]  # (B, T, D)
+    emb     = output["emb"]      # (B, T, D),  T = H*s + obs_window_size
     act_emb = output["act_emb"]
 
-    ctx_emb = emb[:, :ctx_len]
-    ctx_act = act_emb[:, : ctx_len]
+    # Strided context: z_0, z_s, z_2s, ..., z_{(H-1)*s}  →  (B, H, D)
+    ctx_emb = emb[:, :ctx_len * s : s]
+    # Last action in each stride interval (captures any maintenance event)
+    ctx_act = act_emb[:, s - 1 : ctx_len * s : s]
+    # Strided target: z_s, z_2s, ..., z_{H*s}  →  predict one stride ahead
+    tgt_emb = emb[:, s : ctx_len * s + 1 : s]
 
-    tgt_emb = emb[:, n_preds:] # label
-    pred_emb = self.model.predict(ctx_emb, ctx_act) # pred
+    pred_emb = self.model.predict(ctx_emb, ctx_act)
 
     # LeWM loss
     output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()

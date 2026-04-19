@@ -15,7 +15,7 @@ seed: 3072
 # Prerequisite: run prepare_scenario3_dataset.py --all_splits first.
 data:
   dataset:
-    num_steps: ${eval:'${wm.num_preds} + ${wm.history_size} + ${obs_window_size} - 1'}
+    num_steps: ${eval:'${wm.history_size} * ${wm.h_step} + ${obs_window_size}'}
     frameskip: 1
     name: scenario3_train_400_lewm
     cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
@@ -44,6 +44,7 @@ obs_window_size: 1    # 1 = snapshot encoder
 wm:
   type: ar_lstm
   history_size: 3     # context window fed to the LSTM
+  h_step: 1           # stride between history latents; 1 = dense (original)
   num_preds: 1
   embed_dim: 64
 

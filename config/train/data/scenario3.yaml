@@ -40,7 +40,7 @@
 dataset:
   # With obs_window_size=w the encoder needs w-1 extra frames per sample.
   # Total frames: history_size + num_preds + (obs_window_size - 1).
-  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size} + ${obs_window_size} - 1'}
+  num_steps: ${eval:'${wm.history_size} * ${wm.h_step} + ${obs_window_size}'}
   frameskip: 1
   name: scenario3_train_400_lewm
   cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel

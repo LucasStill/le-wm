@@ -15,7 +15,7 @@ seed: 3072
 # Override cache_dir via CLI: data.dataset.cache_dir=/path/to/data
 data:
   dataset:
-    num_steps: ${eval:'${wm.num_preds} + ${wm.history_size} + ${obs_window_size} - 1'}
+    num_steps: ${eval:'${wm.history_size} * ${wm.h_step} + ${obs_window_size}'}
     frameskip: 1
     name: opendeck_2000_lewm
     cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
@@ -42,6 +42,7 @@ obs_window_size: 1    # 1 = snapshot encoder (matching JEPA baseline)
 wm:
   type: ar_lstm
   history_size: 3     # context window fed to the LSTM (same as JEPA)
+  h_step: 1           # stride between history latents; 1 = dense (original)
   num_preds: 1        # predict 1 step ahead
   embed_dim: 64       # latent dimension
 
