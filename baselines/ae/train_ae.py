@@ -128,6 +128,7 @@ def run(cfg):
     if obs_window_size > 1:
         projector = MLP(
             input_dim  = cfg.sensor_encoder.d_model,
+            hidden_dim = max(cfg.sensor_encoder.d_model * 4, embed_dim * 4),
             output_dim = embed_dim,
         )
         temporal_agg = TemporalAggregator(
