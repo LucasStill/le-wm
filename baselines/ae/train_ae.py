@@ -46,7 +46,8 @@ from utils import (                    # noqa: E402
     ModelObjectCallBack,
     get_column_normalizer,
 )
-from jepa import SensorEncoder         # noqa: E402
+from jepa import SensorEncoder, TemporalAggregator  # noqa: E402
+from module import MLP                              # noqa: E402
 from baselines.ae.model import SensorDecoder, SensorAutoencoder  # noqa: E402
 
 
@@ -130,7 +131,10 @@ def run(cfg):
     )
 
     # ── Model ─────────────────────────────────────────────────────────────────
-    n_sensors = cfg.get("n_sensors", 84)
+    n_sensors       = cfg.get("n_sensors", 84)
+    embed_dim       = cfg.wm.embed_dim
+    obs_window_size = cfg.get("obs_window_size", 1)
+
     encoder = SensorEncoder(
         n_sensors  = n_sensors,
         d_model    = cfg.sensor_encoder.d_model,
@@ -139,11 +143,34 @@ def run(cfg):
         dropout    = cfg.sensor_encoder.dropout,
     )
     decoder = SensorDecoder(
-        d_model    = cfg.sensor_encoder.d_model,
+        d_model    = embed_dim,
         n_sensors  = n_sensors,
         hidden_dim = cfg.decoder.hidden_dim,
     )
-    world_model = SensorAutoencoder(encoder=encoder, decoder=decoder)
+
+    # Build TemporalAggregator when obs_window_size > 1 (same as JEPA)
+    projector    = None
+    temporal_agg = None
+    if obs_window_size > 1:
+        projector = MLP(
+            input_dim  = cfg.sensor_encoder.d_model,
+            output_dim = embed_dim,
+        )
+        temporal_agg = TemporalAggregator(
+            embed_dim  = embed_dim,
+            max_window = obs_window_size,
+            nhead      = cfg.sensor_encoder.nhead,
+            num_layers = 1,
+            dropout    = cfg.sensor_encoder.dropout,
+        )
+
+    world_model = SensorAutoencoder(
+        encoder         = encoder,
+        decoder         = decoder,
+        obs_window_size = obs_window_size,
+        temporal_agg    = temporal_agg,
+        projector       = projector,
+    )
 
     param_count = sum(p.numel() for p in world_model.parameters() if p.requires_grad)
     logging.info(f"Total trainable parameters: {param_count:,}")
