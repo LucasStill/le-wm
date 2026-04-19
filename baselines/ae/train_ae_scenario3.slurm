@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=yil@v100
+#SBATCH --account=yil@h100
 #SBATCH --job-name=ae_scenario3
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -8,14 +8,14 @@
 #SBATCH --time=10:00:00
 #SBATCH --output=logs/ae_s3_%j.out
 #SBATCH --error=logs/ae_s3_%j.out
-#SBATCH -C v100-32g
+#SBATCH -C h100
 
 # ── Sensor Autoencoder baseline — Scenario-3 ─────────────────────────────────
 #
 # Reconstruction baseline: SensorEncoder + MLP decoder, trained with MSE loss.
 # No temporal modelling — each frame is encoded/decoded independently.
 #
-# GPU: V100 32 GB (sufficient — no sequence modelling means low VRAM usage)
+# GPU: H100 (same venv as JEPA/AR-LSTM — V100 is incompatible with the compiled kernels)
 #   Estimated: ~4 GB peak at batch_size=512, num_steps=10
 #
 # Compare against:
