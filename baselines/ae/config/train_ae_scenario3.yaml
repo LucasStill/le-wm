@@ -1,0 +1,111 @@
+# Sensor Autoencoder baseline — Scenario-3 dataset.
+#
+# Reconstruction-pressure baseline: the same SensorEncoder used by JEPA is
+# trained to reconstruct sensor inputs via an MLP decoder (MSE loss).
+# No temporal modelling — each timestep is encoded/decoded independently.
+#
+# Compare against:
+#   JEPA       (train_lewm_scenario3.slurm)    — latent prediction
+#   AR-LSTM    (train_ar_lstm_scenario3.slurm) — recurrent latent prediction
+#   AE (this)                                  — reconstruction
+#
+# PREREQUISITES: run prepare_scenario3_dataset.py --all_splits first.
+
+output_model_name: ae_s3
+subdir: ${hydra:job.id}
+
+num_workers: 6
+train_split: 0.9
+seed: 3072
+
+img_size: 28          # unused by sensor encoder; kept for HIProbeCallback compat
+
+# ── Data ─────────────────────────────────────────────────────────────────────
+# num_steps: frames per training sample. The AE treats each frame independently
+# so this only affects batching efficiency, not model behaviour.
+# 10 frames × batch 512 = 5 120 sensor snapshots per gradient step.
+data:
+  dataset:
+    num_steps: 10
+    frameskip: 1
+    name: scenario3_train_400_lewm
+    cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
+    keys_to_load:
+      - pixels   # (N, 7, 12) normalised sensor data
+      - action   # scalar float32, values 0–4
+    keys_to_cache:
+      - action
+
+# ── Encoder (identical to JEPA sensor baseline) ───────────────────────────────
+encoder_type: sensor
+n_sensors: 84            # 7 sensors × 12 flight-phase contexts
+obs_window_size: 1       # AE has no temporal aggregation
+
+sensor_encoder:
+  d_model: 64            # must equal wm.embed_dim for probe compatibility
+  nhead: 4
+  num_layers: 2
+  dropout: 0.1
+
+# ── Decoder (MLP) ─────────────────────────────────────────────────────────────
+decoder:
+  hidden_dim: 256        # d_model → 256 → 256 → n_sensors
+
+# ── World model stub (for HIProbe / embedding dim compatibility) ──────────────
+wm:
+  embed_dim: 64
+
+# ── Training ──────────────────────────────────────────────────────────────────
+trainer:
+  max_epochs: 100
+  devices: auto
+  accelerator: gpu
+  precision: 16-mixed
+  gradient_clip_val: 0.3
+
+loader:
+  batch_size: 512
+  num_workers: ${num_workers}
+  persistent_workers: True
+  prefetch_factor: 3
+  pin_memory: True
+
+optimizer:
+  type: AdamW
+  lr: 7e-5
+  weight_decay: 1e-3
+
+# ── Loss (sigreg passed to spt.Module but NOT called by ae_forward) ───────────
+loss:
+  sigreg:
+    weight: 0.0          # reconstruction-only loss; sigreg is disabled
+    kwargs:
+      knots: 17
+      num_proj: 64       # minimal — unused, but spt.Module requires the object
+
+# ── Wandb ─────────────────────────────────────────────────────────────────────
+wandb:
+  enabled: True
+  config:
+    entity: thil-ecole-polytechnique
+    project: scenario3
+    name: ${output_model_name}
+    resume: never
+    log_model: False
+
+# ── HI probe ──────────────────────────────────────────────────────────────────
+hi_probe:
+  enabled: false
+  eval_interval: 5
+  n_probe_epochs: 150
+  probe_lr: 1e-3
+  probe_patience: 20
+  d_model: 64
+  nhead: 4
+  num_layers: 2
+  probe_dropout: 0.1
+  probe_batch_size: 256
+  probe_seq_len: 1
+  n_subsample: 30000
+  enc_batch_size: 2048
+  rul_max_horizon: 300
