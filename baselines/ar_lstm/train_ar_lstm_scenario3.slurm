@@ -41,16 +41,18 @@ cp $STABLEWM_HOME/${HDF5_NAME} $SCRATCH/
 echo "Copy done."
 DATA_DIR=$SCRATCH
 
-# Vary history_size to ablate temporal context (matches JEPA experiments)
-HISTORY_LEN=50   # change to 10, 50 for additional runs
+# Vary history_size / h_step to ablate temporal context (matches JEPA experiments)
+HISTORY_LEN=50   # number of latent steps in context
+H_STEP=1         # stride between latents; 1=dense, 5=every 5th obs
 
-RUN_NAME=ar_lstm_s3_h${HISTORY_LEN}_hd256_l2
+RUN_NAME=ar_lstm_s3_h${HISTORY_LEN}_S${H_STEP}_hd256_l2
 
 srun python -u baselines/ar_lstm/train_ar_lstm.py \
     --config-name train_ar_lstm_scenario3 \
     wm.history_size=${HISTORY_LEN} \
+    wm.h_step=${H_STEP} \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_ar_lstm_h${HISTORY_LEN}_hd256_l2_v2 \
+    subdir=scenario3_ar_lstm_h${HISTORY_LEN}_S${H_STEP}_hd256_l2 \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
