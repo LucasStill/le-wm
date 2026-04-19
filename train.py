@@ -290,6 +290,12 @@ def run(cfg):
     ##########################
 
     data_module = spt.data.DataModule(train=train, val=val)
+
+    # Optional: TORCH_COMPILE=1 env var enables torch.compile for ~20-40% speedup.
+    # Adds ~2 min warmup on first run (graph compilation). H100 benefits most.
+    if os.environ.get("TORCH_COMPILE", "0") == "1":
+        world_model = torch.compile(world_model)
+
     world_model = spt.Module(
         model=world_model,
         sigreg=SIGReg(**cfg.loss.sigreg.kwargs),
