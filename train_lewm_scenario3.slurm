@@ -76,7 +76,7 @@ WIN_SIZE=1
 HISTORY_LEN=50
 N_SENSORS=84
 
-RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v2
+RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v3
 
 srun python -u train.py \
     data=scenario3 \
@@ -85,11 +85,12 @@ srun python -u train.py \
     obs_window_size=${WIN_SIZE} \
     wm.history_size=${HISTORY_LEN} \
     num_workers=16 \
-    loader.batch_size=256 \
+    loader.batch_size=512 \
     loader.persistent_workers=True \
     loader.pin_memory=True \
+    trainer.precision=bf16-mixed \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v2 \
+    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_v3 \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
