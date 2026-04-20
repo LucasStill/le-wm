@@ -60,7 +60,7 @@ DATA_DIR=$SCRATCH
 # WIN_SIZE : encoder input window (obs_window_size)
 #   1  = snapshot AE — each frame encoded independently
 #   >1 = TemporalAggregator fuses w consecutive frames; decoder reconstructs last frame
-WIN_SIZE=1
+WIN_SIZE=50
 
 RUN_NAME=ae_s3_sensor_w${WIN_SIZE}
 
