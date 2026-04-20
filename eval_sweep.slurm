@@ -48,7 +48,7 @@ export STABLEWM_HOME=/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
 # Format: "display_name:/absolute/path/to/checkpoint.ckpt"
 # AR-LSTM checkpoints are at epoch 20 (training still in progress).
 # Re-run this script pointing at later epoch files once training completes.
-CKPTS=(
+OLDCKPTS=(
     "ar_lstm_h1:${STABLEWM_HOME}/turbofan_ar_lstm_h1_hd256_l2/ar_lstm_h1_hd256_l2_epoch_20_object.ckpt"
     "ar_lstm_h10:${STABLEWM_HOME}/turbofan_ar_lstm_h10_hd256_l2/ar_lstm_h10_hd256_l2_epoch_20_object.ckpt"
     "ar_lstm_h50:${STABLEWM_HOME}/turbofan_ar_lstm_h50_hd256_l2/ar_lstm_h50_hd256_l2_epoch_21_object.ckpt"
@@ -56,6 +56,12 @@ CKPTS=(
     "jepa_w1_h100:${STABLEWM_HOME}/turbofan_v6_sensor_sl1_w1_b512_pl3_H100/lewm_turbo_v6_sensor_sl1_w1_H100_epoch_94_object.ckpt"
     "jepa_w50_h1:${STABLEWM_HOME}/turbofan_v6_sensor_sl1_w50_b512_pl3_H1/lewm_turbo_v6_sensor_sl1_w50_H1_epoch_100_object.ckpt"
     "jepa_w50_h50:${STABLEWM_HOME}/turbofan_v6_sensor_sl1_w50_b512_pl3_H50/lewm_turbo_v6_sensor_sl1_w50_H50_epoch_100_object.ckpt"
+)
+
+CKPTS=(
+	"scenario3_sensor_w1_H50_v3:/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w1_H50_v3_epoch_10_object.ckpt"
+	"scenario3_sensor_w1_H50_S5:/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w1_H50_S5_epoch_10_object.ckpt" 
+	"scenario3_sensor_w5_H50_S5/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w5_H50_S5_epoch_10_object.ckpt"
 )
 
 # ── Output ────────────────────────────────────────────────────────────────────
