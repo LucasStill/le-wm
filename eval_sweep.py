@@ -996,6 +996,9 @@ def main():
                         help=f"max τ for Task 3 (default {max(FORECAST_HORIZONS)})")
     parser.add_argument("--hdf5",             default=None,
                         help="override HDF5_PATH in the script")
+    parser.add_argument("--no_aggregate",      action="store_true",
+                        help="skip CSV/summary writing — use when running one "
+                             "checkpoint per job array task")
     parser.add_argument("--step_size",        type=int, default=10,
                         help="subsample starting frames every N steps for Task 3 "
                              "(default 10 — 10× faster, negligible metric impact)")
@@ -1094,9 +1097,12 @@ def main():
         json.dump(all_results, f, indent=2)
     logging.info(f"Summary JSON → {summary_path}")
 
-    write_flat_csv(all_results, hi_names, out_dir / "metrics_flat.csv")
-    write_curves_csv(all_results, out_dir / "task3_curves.csv")
-    print_summary(all_results)
+    if args.no_aggregate:
+        logging.info("--no_aggregate set: skipping CSV/summary (run aggregate step after all jobs complete)")
+    else:
+        write_flat_csv(all_results, hi_names, out_dir / "metrics_flat.csv")
+        write_curves_csv(all_results, out_dir / "task3_curves.csv")
+        print_summary(all_results)
     print(f"  Results → {out_dir}\n")
 
 
