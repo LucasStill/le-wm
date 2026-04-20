@@ -142,7 +142,7 @@ DELTA_HI_SEQ_LENS    = [1, 10, 50]  # seq_lens to evaluate for Task 2 (ΔHI velo
 N_PROBE_EPOCHS  = 150
 PROBE_LR        = 1e-3
 PROBE_PATIENCE  = 20
-PROBE_BATCH     = 256
+PROBE_BATCH     = 2048
 D_MODEL         = 64
 NHEAD           = 4
 NUM_LAYERS      = 2
@@ -383,7 +383,8 @@ def train_probe(
 #  TASK 1 — HI STATE ESTIMATION
 # ══════════════════════════════════════════════════════════════════════════════
 
-def task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device, seq_lens=None):
+def task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device, seq_lens=None,
+             probe_batch=PROBE_BATCH):
     """HI State Estimation across multiple probe seq_lens.
 
     seq_lens=[1]  (default): single snapshot z_t → directly measures encoder quality.
@@ -406,7 +407,7 @@ def task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device, seq_lens=None):
             tr_data["ep_ids"], te_data["ep_ids"],
             n_outputs=tr_data["hi"].shape[1],
             device=device, task_name=f"HI_sl{sl}",
-            seq_len=sl,
+            seq_len=sl, batch_size=probe_batch,
         )
         per_dim, r2s, rmses, prs = {}, [], [], []
         for i, name in enumerate(hi_names):
@@ -437,7 +438,7 @@ def task1_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device, seq_lens=None):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def task2_delta_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device,
-                   seq_lens=None):
+                   seq_lens=None, probe_batch=PROBE_BATCH):
     """Predict the instantaneous degradation rate from encoder embeddings.
 
     Target: ΔHI(t) = HI(t) − HI(t−1), computed within each episode and
@@ -483,7 +484,7 @@ def task2_delta_hi(Z_tr, Z_te, tr_data, te_data, hi_names, device,
             ep_tr, ep_te,
             n_outputs=delta_tr.shape[1],
             device=device, task_name=f"ΔHI(sl={sl})",
-            seq_len=sl,
+            seq_len=sl, batch_size=probe_batch,
         )
 
         per_dim, r2s, rmses, prs = {}, [], [], []
@@ -756,6 +757,9 @@ def run_one(
     tasks: set | None = None,
     forecast_horizon: int | None = None,
     step_size: int = 10,
+    probe_batch: int = PROBE_BATCH,
+    task1_seq_lens: list | None = None,
+    delta_hi_seq_lens: list | None = None,
 ) -> dict:
     """Run downstream evaluation for one checkpoint.
 
@@ -789,12 +793,14 @@ def run_one(
 
     if 1 in tasks:
         t1, probe_hi, scaler_hi = task1_hi(
-            Z_tr, Z_te, tr_data, te_data, hi_names, device
+            Z_tr, Z_te, tr_data, te_data, hi_names, device,
+            seq_lens=task1_seq_lens, probe_batch=probe_batch,
         )
 
     if 2 in tasks:
         t2_vel, t2b_alarm = task2_delta_hi(
-            Z_tr, Z_te, tr_data, te_data, hi_names, device
+            Z_tr, Z_te, tr_data, te_data, hi_names, device,
+            seq_lens=delta_hi_seq_lens, probe_batch=probe_batch,
         )
 
     if 3 in tasks:
@@ -803,7 +809,8 @@ def run_one(
             # Train sl=1 probe silently even if Task 1 was skipped.
             logging.info("  Task 3 requires Task-1 probe — training sl=1 probe…")
             _, probe_hi, scaler_hi = task1_hi(
-                Z_tr, Z_te, tr_data, te_data, hi_names, device, seq_lens=[1]
+                Z_tr, Z_te, tr_data, te_data, hi_names, device,
+                seq_lens=[1], probe_batch=probe_batch,
             )
         t3 = task3_forecast(
             model, probe_hi, scaler_hi,
@@ -832,7 +839,8 @@ def run_one(
 #  MULTIPROCESSING WORKER
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon):
+def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon,
+            step_size, probe_batch, task1_seq_lens, delta_hi_seq_lens):
     """Subprocess entry point — one checkpoint, one GPU."""
     logging.basicConfig(
         level=logging.INFO,
@@ -847,6 +855,10 @@ def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon
             ep_offset_all, ep_len_all, device,
             tasks=tasks,
             forecast_horizon=forecast_horizon,
+            step_size=step_size,
+            probe_batch=probe_batch,
+            task1_seq_lens=task1_seq_lens,
+            delta_hi_seq_lens=delta_hi_seq_lens,
         )
     except Exception as e:
         import traceback
@@ -987,9 +999,19 @@ def main():
     parser.add_argument("--step_size",        type=int, default=10,
                         help="subsample starting frames every N steps for Task 3 "
                              "(default 10 — 10× faster, negligible metric impact)")
+    parser.add_argument("--probe_batch",      type=int, default=PROBE_BATCH,
+                        help=f"batch size for probe training (default {PROBE_BATCH})")
+    parser.add_argument("--task1_seq_lens",   type=int, nargs="+", default=None,
+                        metavar="N",
+                        help="seq_lens for Task 1 HI probe (default: 1 10 50)")
+    parser.add_argument("--delta_hi_seq_lens", type=int, nargs="+", default=None,
+                        metavar="N",
+                        help="seq_lens for Task 2 ΔHI probe (default: 1 10 50)")
     args = parser.parse_args()
     # --tasks 1 2 → set {1, 2};  omitted → None (all tasks)
     tasks = set(args.tasks) if args.tasks else None
+    task1_seq_lens    = args.task1_seq_lens     # None → use TASK1_SEQ_LENS default
+    delta_hi_seq_lens = args.delta_hi_seq_lens  # None → use DELTA_HI_SEQ_LENS default
 
     if args.hdf5:
         global HDF5_PATH
@@ -1031,7 +1053,9 @@ def main():
             p = mp.Process(
                 target=_worker,
                 args=(rank, cfg, gpu_id, shared_data,
-                      str(rp), tasks, args.forecast_horizon),
+                      str(rp), tasks, args.forecast_horizon,
+                      args.step_size, args.probe_batch,
+                      task1_seq_lens, delta_hi_seq_lens),
             )
             p.start()
             procs.append(p)
@@ -1049,6 +1073,9 @@ def main():
                 tasks=tasks,
                 forecast_horizon=args.forecast_horizon,
                 step_size=args.step_size,
+                probe_batch=args.probe_batch,
+                task1_seq_lens=task1_seq_lens,
+                delta_hi_seq_lens=delta_hi_seq_lens,
             )
             with open(rp, "w") as f:
                 json.dump(result, f, indent=2)
