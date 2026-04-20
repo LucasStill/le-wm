@@ -17,27 +17,65 @@ from module import ARPredictor, Embedder, MLP, SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
 
 
+def _encode_strided_actions(raw_action, ctx_len, s, action_encoder):
+    """Max-pool raw actions over each stride interval, then encode.
+
+    For binary maintenance actions, max-pool is OR: the interval is marked
+    as a maintenance interval if *any* step in it had a maintenance event.
+    Works for any action_dim (linear encoder, arbitrary shape).
+    """
+    intervals = [raw_action[:, k * s : (k + 1) * s].amax(dim=1) for k in range(ctx_len)]
+    pooled = torch.stack(intervals, dim=1)   # (B, ctx_len, action_dim)
+    return action_encoder(pooled)            # (B, ctx_len, D)
+
+
+def _zero_pad_prefix(ctx_emb, ctx_act, zero_pad_prob, training):
+    """Randomly zero-pad a prefix of context embeddings/actions during training.
+
+    Teaches the model that early-episode positions have no prior context
+    (pads with zeros, which = action 0 = do_nothing for actions).
+    """
+    if not training or zero_pad_prob <= 0.0:
+        return ctx_emb, ctx_act
+    ctx_len = ctx_emb.size(1)
+    if ctx_len < 2 or torch.rand(1).item() >= zero_pad_prob:
+        return ctx_emb, ctx_act
+    n_pad = torch.randint(1, ctx_len, (1,)).item()
+    ctx_emb = ctx_emb.clone()
+    ctx_act = ctx_act.clone()
+    ctx_emb[:, :n_pad] = 0.0
+    ctx_act[:, :n_pad] = 0.0
+    return ctx_emb, ctx_act
+
+
 def lejepa_forward(self, batch, stage, cfg):
     """encode observations, predict next states, compute losses."""
 
-    ctx_len = cfg.wm.history_size
-    s       = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
-    lambd   = cfg.loss.sigreg.weight
+    ctx_len        = cfg.wm.history_size
+    s              = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
+    lambd          = cfg.loss.sigreg.weight
+    zero_pad_prob  = cfg.wm.get("zero_pad_prob", 0.0)
 
     # Replace NaN values with 0 (occurs at sequence boundaries)
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
 
     output = self.model.encode(batch)
 
-    emb     = output["emb"]      # (B, T, D),  T = H*s + obs_window_size
-    act_emb = output["act_emb"]
+    emb = output["emb"]      # (B, T, D),  T = H*s + obs_window_size
 
     # Strided context: z_0, z_s, z_2s, ..., z_{(H-1)*s}  →  (B, H, D)
     ctx_emb = emb[:, :ctx_len * s : s]
-    # Last action in each stride interval (captures any maintenance event)
-    ctx_act = act_emb[:, s - 1 : ctx_len * s : s]
+    # Max-pool raw actions over each stride interval then encode.
+    # For s=1 this is equivalent to encoding the single step (no change).
+    ctx_act = _encode_strided_actions(
+        batch["action"], ctx_len, s, self.model.action_encoder
+    )
     # Strided target: z_s, z_2s, ..., z_{H*s}  →  predict one stride ahead
     tgt_emb = emb[:, s : ctx_len * s + 1 : s]
+
+    # Zero-pad prefix augmentation: randomly mask early positions with zeros
+    # to simulate inference at early episode timesteps (no prior context).
+    ctx_emb, ctx_act = _zero_pad_prefix(ctx_emb, ctx_act, zero_pad_prob, self.training)
 
     pred_emb = self.model.predict(ctx_emb, ctx_act)
 

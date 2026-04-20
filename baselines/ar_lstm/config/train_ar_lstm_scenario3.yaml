@@ -47,6 +47,7 @@ wm:
   h_step: 1           # stride between history latents; 1 = dense (original)
   num_preds: 1
   embed_dim: 64
+  zero_pad_prob: 0.0  # prob of randomly zeroing a prefix of the context window each batch
 
 # ── LSTM predictor ────────────────────────────────────────────────────────────
 lstm:
