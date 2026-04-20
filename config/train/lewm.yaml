@@ -83,6 +83,8 @@ wm:
                  # h_step=s: context is z_0, z_s, z_2s, … covering history_size*s steps
   num_preds: 1
   embed_dim: 64 #192
+  zero_pad_prob: 0.0   # prob of randomly zeroing a prefix of the context window each batch
+                       # teaches the model early-episode inference (0.0 = off)
 
 predictor:
   depth: 4 #6

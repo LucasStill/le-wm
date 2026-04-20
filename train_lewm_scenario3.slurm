@@ -81,6 +81,11 @@ HISTORY_LEN=50
 H_STEP=1
 N_SENSORS=84
 
+# Zero-pad prefix augmentation probability (0.0 = off, 0.3 = 30% chance per batch)
+# When >0, randomly zeroes a prefix of the context window during training so the
+# model learns early-episode inference (no prior context available).
+ZERO_PAD_PROB=0.0
+
 RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}
 
 srun python -u train.py \
@@ -90,6 +95,7 @@ srun python -u train.py \
     obs_window_size=${WIN_SIZE} \
     wm.history_size=${HISTORY_LEN} \
     wm.h_step=${H_STEP} \
+    wm.zero_pad_prob=${ZERO_PAD_PROB} \
     num_workers=16 \
     loader.batch_size=512 \
     loader.persistent_workers=True \

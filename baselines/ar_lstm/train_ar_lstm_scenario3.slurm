@@ -45,12 +45,16 @@ DATA_DIR=$SCRATCH
 HISTORY_LEN=50   # number of latent steps in context
 H_STEP=1         # stride between latents; 1=dense, 5=every 5th obs
 
+# Zero-pad prefix augmentation probability (0.0 = off, 0.3 = 30% chance per batch)
+ZERO_PAD_PROB=0.0
+
 RUN_NAME=ar_lstm_s3_h${HISTORY_LEN}_S${H_STEP}_hd256_l2
 
 srun python -u baselines/ar_lstm/train_ar_lstm.py \
     --config-name train_ar_lstm_scenario3 \
     wm.history_size=${HISTORY_LEN} \
     wm.h_step=${H_STEP} \
+    wm.zero_pad_prob=${ZERO_PAD_PROB} \
     data.dataset.cache_dir=${DATA_DIR} \
     subdir=scenario3_ar_lstm_h${HISTORY_LEN}_S${H_STEP}_hd256_l2 \
     output_model_name=${RUN_NAME} \

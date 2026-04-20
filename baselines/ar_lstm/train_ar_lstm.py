@@ -44,37 +44,43 @@ from utils import (                    # noqa: E402
     get_column_normalizer,
 )
 from baselines.ar_lstm.model import build_ar_lstm  # noqa: E402
+from train import _encode_strided_actions, _zero_pad_prefix  # noqa: E402
 
 
-
-# ── Training forward pass (identical to train.py: lejepa_forward) ─────────────
+# ── Training forward pass (mirrors train.py: lejepa_forward) ──────────────────
 # The LSTM predictor exposes the same predict() interface as the transformer,
 # so the forward pass needs zero modification.
 
 def ar_lstm_forward(self, batch, stage, cfg):
     """Encode observations, predict next states, compute losses.
 
-    Identical to lejepa_forward in train.py — the LSTM and transformer
+    Mirrors lejepa_forward in train.py — the LSTM and transformer
     predictors share the same encode()/predict() interface.
     """
-    ctx_len = cfg.wm.history_size  # H: number of context embeddings
-    s       = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
-    lambd   = cfg.loss.sigreg.weight
+    ctx_len       = cfg.wm.history_size  # H: number of context embeddings
+    s             = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
+    lambd         = cfg.loss.sigreg.weight
+    zero_pad_prob = cfg.wm.get("zero_pad_prob", 0.0)
 
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
 
     # Step 1: encode all T_raw frames → Z = (B, T, embed_dim)
-    output  = self.model.encode(batch)
-    emb     = output["emb"]       # (B, T, D),  T = H*s + obs_window_size
-    act_emb = output["act_emb"]   # (B, T, D)
+    output = self.model.encode(batch)
+    emb    = output["emb"]       # (B, T, D),  T = H*s + obs_window_size
 
     # Step 2: strided context and target
     # Context: z_0, z_s, z_2s, ..., z_{(H-1)*s}  →  (B, H, D)
     ctx_emb = emb[:, :ctx_len * s : s]
-    # Last action in each stride interval (captures any maintenance event)
-    ctx_act = act_emb[:, s - 1 : ctx_len * s : s]
+    # Max-pool raw actions over each stride interval then encode.
+    # For s=1 this is equivalent to encoding the single step (no change).
+    ctx_act = _encode_strided_actions(
+        batch["action"], ctx_len, s, self.model.action_encoder
+    )
     # Target: z_s, z_2s, ..., z_{H*s}  →  predict one stride ahead
     tgt_emb = emb[:, s : ctx_len * s + 1 : s]
+
+    # Zero-pad prefix augmentation (mirrors lejepa_forward)
+    ctx_emb, ctx_act = _zero_pad_prefix(ctx_emb, ctx_act, zero_pad_prob, self.training)
 
     # Step 3: LSTM predicts ẑ_{t+s} for each context position
     pred_emb = self.model.predict(ctx_emb, ctx_act)  # (B, H, D)
