@@ -48,10 +48,28 @@ export STABLEWM_HOME=/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
 # ── Checkpoints ───────────────────────────────────────────────────────────────
 # Format: "display_name:path/to/checkpoint.ckpt"
 # Keep this list in sync with --array=0-N above.
+# To switch batches: comment out the active CKPTS=(...) block and uncomment another.
+# NEVER use names starting with a digit — bash forbids it.
+
+# -- Batch: JEPA baselines (v3 / S5 variants) --
+# CKPTS=(
+#     "scenario3_sensor_w1_H50_v3:${STABLEWM_HOME}/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w1_H50_v3_epoch_10_object.ckpt"
+#     "scenario3_sensor_w1_H50_S5:${STABLEWM_HOME}/scenario3_sensor_w1_H50_S5/lewm_s3_sensor_w1_H50_S5_epoch_10_object.ckpt"
+#     "scenario3_sensor_w5_H50_S5:${STABLEWM_HOME}/scenario3_sensor_w5_H50_S5/lewm_s3_sensor_w5_H50_S5_epoch_10_object.ckpt"
+# )
+
+# -- Batch: JEPA large-stride variants --
+# CKPTS=(
+#     "scenario3_sensor_w10_H10_S10:${STABLEWM_HOME}/scenario3_sensor_w10_H10_S10/lewm_s3_sensor_w10_H10_S10_epoch_10_object.ckpt"
+#     "scenario3_sensor_w1_H10_S10:${STABLEWM_HOME}/scenario3_sensor_w1_H10_S10/lewm_s3_sensor_w1_H10_S10_epoch_10_object.ckpt"
+#     "scenario3_sensor_w1_H100_v3:${STABLEWM_HOME}/scenario3_sensor_w1_H100_v3/lewm_s3_sensor_w1_H100_v3_epoch_10_object.ckpt"
+# )
+
+# -- Batch: AE baselines --
 CKPTS=(
-    "scenario3_sensor_w1_H50_v3:${STABLEWM_HOME}/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w1_H50_v3_epoch_10_object.ckpt"
-    "scenario3_sensor_w1_H50_S5:${STABLEWM_HOME}/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w1_H50_S5_epoch_10_object.ckpt"
-    "scenario3_sensor_w5_H50_S5:${STABLEWM_HOME}/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w5_H50_S5_epoch_10_object.ckpt"
+    "ae_s3_sensor_w1:${STABLEWM_HOME}/ae_s3_sensor_w1_epoch_91_object.ckpt"
+    "ae_s3_sensor_w100:${STABLEWM_HOME}/ae_s3_sensor_w100_epoch_23_object.ckpt"
+    "ae_s3_sensor_w50:${STABLEWM_HOME}/ae_s3_sensor_w50_epoch_43_object.ckpt"
 )
 
 CKPT="${CKPTS[$SLURM_ARRAY_TASK_ID]}"
