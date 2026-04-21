@@ -255,6 +255,110 @@ def compute_delta_hi(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  TIME-TO-NEXT-MAINTENANCE  (TNM)
+# ══════════════════════════════════════════════════════════════════════════════
+
+TNM_CAP = 5000   # steps beyond which we treat TNM as "too far" and exclude
+
+
+def compute_tnm(
+    ep_ids: np.ndarray,   # (N,) local episode index
+    actions: np.ndarray,  # (N,) binary maintenance flag
+    cap: int = TNM_CAP,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute Time-to-Next-Maintenance (TNM) for every timestep.
+
+    Uses vectorised searchsorted per episode — O(N log M) total.
+
+    Returns
+    -------
+    tnm_log : (M,) float32  — log1p(TNM), one entry per valid timestep
+    valid   : (N,) bool     — True for timesteps included in M
+                              (has a maintenance event within `cap` steps)
+    """
+    n   = len(ep_ids)
+    tnm = np.full(n, -1, dtype=np.int64)
+
+    for ep_id in np.unique(ep_ids):
+        mask    = ep_ids == ep_id
+        idx     = np.where(mask)[0]            # global indices
+        ep_act  = actions[idx]
+        maint_l = np.where(ep_act > 0.5)[0]   # local (within episode) maintenance times
+        if len(maint_l) == 0:
+            continue
+        t_local = np.arange(len(idx))
+        # pos[i] = index of first maint_l > t_local[i]
+        pos       = np.searchsorted(maint_l, t_local, side="right")
+        has_fut   = pos < len(maint_l)
+        tnm[idx[has_fut]] = maint_l[pos[has_fut]] - t_local[has_fut]
+
+    valid    = (tnm >= 0) & (tnm <= cap)
+    tnm_log  = np.log1p(tnm[valid].astype(np.float32))
+    return tnm_log, valid
+
+
+def task2_tnm(
+    Z_tr, Z_te, tr_data, te_data, device,
+    seq_lens=None, probe_batch=PROBE_BATCH, cap=TNM_CAP,
+):
+    """Time-to-Next-Maintenance probe.
+
+    Target: log1p(TNM) — log scale compresses the 0–5000 step range.
+    Trained just like Task 1: TransformerProbe with early stopping.
+
+    Reported metrics per seq_len:
+        r2        — R² on log scale (primary signal; 0 = constant prediction)
+        rmse_log  — RMSE in log space
+        mae_steps — MAE back-transformed to steps (more interpretable)
+    """
+    if seq_lens is None:
+        seq_lens = [1, 10, 50]
+
+    logging.info(f"  Task 2-TNM — Time-to-Next-Maintenance probe  cap={cap}")
+
+    tnm_tr, valid_tr = compute_tnm(tr_data["ep_ids"], tr_data["actions"], cap)
+    tnm_te, valid_te = compute_tnm(te_data["ep_ids"], te_data["actions"], cap)
+
+    Z_tr_v = Z_tr[valid_tr];  ep_tr = tr_data["ep_ids"][valid_tr]
+    Z_te_v = Z_te[valid_te];  ep_te = te_data["ep_ids"][valid_te]
+
+    # Keep as (M, 1) for train_probe interface
+    tnm_tr2 = tnm_tr[:, np.newaxis]
+    tnm_te2 = tnm_te[:, np.newaxis]
+
+    logging.info(
+        f"  TNM samples  train={len(Z_tr_v):,}  test={len(Z_te_v):,}"
+        f"  log-target mean={tnm_tr.mean():.2f} std={tnm_tr.std():.2f}"
+        f"  (~{np.expm1(tnm_tr.mean()):.0f} steps on average)"
+    )
+
+    results = {}
+    for sl in seq_lens:
+        logging.info(f"  TNM seq_len={sl}")
+        preds, gt, _, _ = train_probe(
+            Z_tr_v, tnm_tr2, Z_te_v, tnm_te2,
+            ep_tr, ep_te,
+            n_outputs=1,
+            device=device, task_name=f"TNM(sl={sl})",
+            seq_len=sl, batch_size=probe_batch,
+        )
+        p = preds[:, 0];  g = gt[:, 0]
+        r2        = float(r2_score(g, p))
+        rmse_log  = float(np.sqrt(np.mean((g - p) ** 2)))
+        mae_steps = float(np.mean(np.abs(np.expm1(g) - np.expm1(p))))
+        results[f"sl{sl}"] = {
+            "r2":        r2,
+            "rmse_log":  rmse_log,
+            "mae_steps": mae_steps,
+        }
+        logging.info(
+            f"  TNM sl={sl}  R²={r2:.3f}  RMSE_log={rmse_log:.4f}"
+            f"  MAE_steps={mae_steps:.0f}"
+        )
+    return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  ENCODING
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -788,7 +892,7 @@ def run_one(
     Z_te = encode_observations(model, te_data["obs"], enc_t, device)
     logging.info(f"  Z_tr={Z_tr.shape}  Z_te={Z_te.shape}")
 
-    t1 = t2_vel = t2b_alarm = t3 = None
+    t1 = t2_vel = t2b_alarm = t2_tnm_res = t3 = None
     probe_hi = scaler_hi = None
 
     if 1 in tasks:
@@ -800,6 +904,10 @@ def run_one(
     if 2 in tasks:
         t2_vel, t2b_alarm = task2_delta_hi(
             Z_tr, Z_te, tr_data, te_data, hi_names, device,
+            seq_lens=delta_hi_seq_lens, probe_batch=probe_batch,
+        )
+        t2_tnm_res = task2_tnm(
+            Z_tr, Z_te, tr_data, te_data, device,
             seq_lens=delta_hi_seq_lens, probe_batch=probe_batch,
         )
 
@@ -831,6 +939,7 @@ def run_one(
         "task1_hi":        t1,
         "task2_delta_hi":  t2_vel,
         "task2b_alarm":    t2b_alarm,
+        "task2_tnm":       t2_tnm_res,
         "task3_forecast":  t3,
     }
 

@@ -40,7 +40,13 @@
 dataset:
   # With obs_window_size=w the encoder needs w-1 extra frames per sample.
   # Total frames: history_size + num_preds + (obs_window_size - 1).
-  num_steps: ${eval:'${wm.history_size} * ${wm.h_step} + ${obs_window_size}'}
+  # Total frames per sample:
+  #   context    : H * s  frames  (H latents, stride s)
+  #   extra targets: (P-1) * s  frames  (P-1 autoregressive steps beyond step 0)
+  #   encoder window: w - 1  extra frames for TemporalAggregator
+  # = (H + P - 1) * s + w
+  # For P=1 (default) this reduces to the original H*s + w.
+  num_steps: ${eval:'(${wm.history_size} + ${wm.num_preds} - 1) * ${wm.h_step} + ${obs_window_size}'}
   frameskip: 1
   name: scenario3_train_400_lewm
   cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel

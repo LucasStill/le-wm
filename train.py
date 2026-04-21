@@ -48,40 +48,105 @@ def _zero_pad_prefix(ctx_emb, ctx_act, zero_pad_prob, training):
     return ctx_emb, ctx_act
 
 
+import logging as _logging
+
+
+def _ar_rollout(model, emb, ctx_emb, pred_emb_0, all_act, ctx_len, s, num_preds):
+    """Autoregressive rollout for prediction steps 1 … num_preds-1.
+
+    Starting from the step-0 predictions (pred_emb_0), slides a window of
+    H latents forward one stride at a time.  Only the last token of each
+    predict() call is compared to the true target — the others were already
+    covered by the parallel step-0 loss.
+
+    Returns
+    -------
+    Scalar loss tensor (mean MSE over rollout steps), or 0 if num_preds <= 1.
+
+    Why the window slides with predictions (not true latents)
+    ---------------------------------------------------------
+    Using predicted values in the rolling context mirrors inference time
+    exactly and forces the predictor to stay on-manifold: compounding errors
+    are penalised, creating pressure for more informative representations.
+    """
+    if num_preds <= 1:
+        return torch.zeros(1, device=emb.device).squeeze()
+
+    z_buf    = ctx_emb     # (B, H, D) — starts with true (possibly zero-padded) context
+    pred_emb = pred_emb_0  # (B, H, D) — predictions from step 0
+
+    step_losses = []
+    for k in range(1, num_preds):
+        target_idx = (ctx_len + k) * s
+        if target_idx >= emb.size(1):
+            _logging.warning(
+                f"AR rollout step {k}: target index {target_idx} ≥ emb length "
+                f"{emb.size(1)}. Increase num_steps in the data config. Stopping early."
+            )
+            break
+
+        # Slide window: drop oldest latent, append the last predicted token
+        z_buf    = torch.cat([z_buf[:, 1:],  pred_emb[:, -1:]], dim=1)  # (B, H, D)
+        # Action window for the slid context: positions k … H+k-1
+        a_buf    = all_act[:, k : ctx_len + k]                            # (B, H, D)
+
+        pred_emb = model.predict(z_buf, a_buf)       # (B, H, D)
+        tgt_k    = emb[:, target_idx]                 # (B, D)
+        step_losses.append((pred_emb[:, -1] - tgt_k).pow(2).mean())
+
+    if not step_losses:
+        return torch.zeros(1, device=emb.device).squeeze()
+    return torch.stack(step_losses).mean()
+
+
 def lejepa_forward(self, batch, stage, cfg):
-    """encode observations, predict next states, compute losses."""
+    """Encode observations, predict next states, compute losses.
 
-    ctx_len        = cfg.wm.history_size
-    s              = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
-    lambd          = cfg.loss.sigreg.weight
-    zero_pad_prob  = cfg.wm.get("zero_pad_prob", 0.0)
+    num_preds=1 (default): parallel 1-step prediction at all H context
+        positions — H MSE pairs per sample, same as original.
+    num_preds=P>1: parallel step-0 loss + autoregressive rollout for
+        steps 1…P-1 (only last-token MSE per step, true targets from emb).
 
-    # Replace NaN values with 0 (occurs at sequence boundaries)
+    Data requirement: scenario3.yaml num_steps must be
+        (H + P - 1) * s + w  so that emb has enough tokens for all targets.
+        This is handled automatically when you set wm.num_preds in the config.
+    """
+    ctx_len       = cfg.wm.history_size
+    s             = cfg.wm.get("h_step", 1)
+    num_preds     = cfg.wm.get("num_preds", 1)
+    lambd         = cfg.loss.sigreg.weight
+    zero_pad_prob = cfg.wm.get("zero_pad_prob", 0.0)
+
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
-
     output = self.model.encode(batch)
+    emb = output["emb"]   # (B, T_out, D)
 
-    emb = output["emb"]      # (B, T, D),  T = H*s + obs_window_size
+    # Pre-encode ALL action intervals needed: positions 0 … H+P-2
+    # interval k covers raw actions [k*s, (k+1)*s)
+    # For num_preds=1 this is just H intervals — identical to before.
+    total_act = ctx_len + max(num_preds - 1, 0)   # H + P - 1
+    all_act = _encode_strided_actions(
+        batch["action"], total_act, s, self.model.action_encoder
+    )  # (B, H+P-1, D)
 
-    # Strided context: z_0, z_s, z_2s, ..., z_{(H-1)*s}  →  (B, H, D)
-    ctx_emb = emb[:, :ctx_len * s : s]
-    # Max-pool raw actions over each stride interval then encode.
-    # For s=1 this is equivalent to encoding the single step (no change).
-    ctx_act = _encode_strided_actions(
-        batch["action"], ctx_len, s, self.model.action_encoder
-    )
-    # Strided target: z_s, z_2s, ..., z_{H*s}  →  predict one stride ahead
-    tgt_emb = emb[:, s : ctx_len * s + 1 : s]
+    ctx_emb = emb[:, :ctx_len * s : s]           # (B, H, D)
+    ctx_act = all_act[:, :ctx_len]                # (B, H, D)
+    tgt_emb = emb[:, s : ctx_len * s + 1 : s]    # (B, H, D)
 
-    # Zero-pad prefix augmentation: randomly mask early positions with zeros
-    # to simulate inference at early episode timesteps (no prior context).
     ctx_emb, ctx_act = _zero_pad_prefix(ctx_emb, ctx_act, zero_pad_prob, self.training)
 
-    pred_emb = self.model.predict(ctx_emb, ctx_act)
+    # Step 0: parallel 1-step prediction at all H positions
+    pred_emb = self.model.predict(ctx_emb, ctx_act)   # (B, H, D)
+    pred_loss = (pred_emb - tgt_emb).pow(2).mean()
 
-    # LeWM loss
-    output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
-    output["sigreg_loss"]= self.sigreg(emb.transpose(0, 1))
+    # Steps 1…P-1: autoregressive rollout (last-token MSE per step)
+    ar_loss = _ar_rollout(
+        self.model, emb, ctx_emb, pred_emb, all_act, ctx_len, s, num_preds
+    )
+
+    output["pred_loss"]    = pred_loss + ar_loss
+    output["ar_loss"]      = ar_loss
+    output["sigreg_loss"]  = self.sigreg(emb.transpose(0, 1))
     output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]
 
     losses_dict = {f"{stage}/{k}": v.detach() for k, v in output.items() if "loss" in k}

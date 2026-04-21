@@ -44,7 +44,7 @@ from utils import (                    # noqa: E402
     get_column_normalizer,
 )
 from baselines.ar_lstm.model import build_ar_lstm  # noqa: E402
-from train import _encode_strided_actions, _zero_pad_prefix  # noqa: E402
+from train import _encode_strided_actions, _zero_pad_prefix, _ar_rollout  # noqa: E402
 
 
 # ── Training forward pass (mirrors train.py: lejepa_forward) ──────────────────
@@ -54,41 +54,43 @@ from train import _encode_strided_actions, _zero_pad_prefix  # noqa: E402
 def ar_lstm_forward(self, batch, stage, cfg):
     """Encode observations, predict next states, compute losses.
 
-    Mirrors lejepa_forward in train.py — the LSTM and transformer
-    predictors share the same encode()/predict() interface.
+    Mirrors lejepa_forward in train.py exactly — including multi-step
+    autoregressive rollout when num_preds > 1.  The LSTM and transformer
+    predictors share the same encode()/predict() interface so _ar_rollout
+    works unchanged for both.
     """
-    ctx_len       = cfg.wm.history_size  # H: number of context embeddings
-    s             = cfg.wm.get("h_step", 1)   # temporal stride (1 = original dense)
+    ctx_len       = cfg.wm.history_size
+    s             = cfg.wm.get("h_step", 1)
+    num_preds     = cfg.wm.get("num_preds", 1)
     lambd         = cfg.loss.sigreg.weight
     zero_pad_prob = cfg.wm.get("zero_pad_prob", 0.0)
 
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
-
-    # Step 1: encode all T_raw frames → Z = (B, T, embed_dim)
     output = self.model.encode(batch)
-    emb    = output["emb"]       # (B, T, D),  T = H*s + obs_window_size
+    emb    = output["emb"]   # (B, T_out, D)
 
-    # Step 2: strided context and target
-    # Context: z_0, z_s, z_2s, ..., z_{(H-1)*s}  →  (B, H, D)
-    ctx_emb = emb[:, :ctx_len * s : s]
-    # Max-pool raw actions over each stride interval then encode.
-    # For s=1 this is equivalent to encoding the single step (no change).
-    ctx_act = _encode_strided_actions(
-        batch["action"], ctx_len, s, self.model.action_encoder
-    )
-    # Target: z_s, z_2s, ..., z_{H*s}  →  predict one stride ahead
-    tgt_emb = emb[:, s : ctx_len * s + 1 : s]
+    total_act = ctx_len + max(num_preds - 1, 0)
+    all_act = _encode_strided_actions(
+        batch["action"], total_act, s, self.model.action_encoder
+    )  # (B, H+P-1, D)
 
-    # Zero-pad prefix augmentation (mirrors lejepa_forward)
+    ctx_emb = emb[:, :ctx_len * s : s]           # (B, H, D)
+    ctx_act = all_act[:, :ctx_len]                # (B, H, D)
+    tgt_emb = emb[:, s : ctx_len * s + 1 : s]    # (B, H, D)
+
     ctx_emb, ctx_act = _zero_pad_prefix(ctx_emb, ctx_act, zero_pad_prob, self.training)
 
-    # Step 3: LSTM predicts ẑ_{t+s} for each context position
-    pred_emb = self.model.predict(ctx_emb, ctx_act)  # (B, H, D)
+    pred_emb = self.model.predict(ctx_emb, ctx_act)   # (B, H, D)
+    pred_loss = (pred_emb - tgt_emb).pow(2).mean()
 
-    # Step 4: losses (identical to JEPA)
-    output["pred_loss"]   = (pred_emb - tgt_emb).pow(2).mean()
-    output["sigreg_loss"] = self.sigreg(emb.transpose(0, 1))
-    output["loss"]        = output["pred_loss"] + lambd * output["sigreg_loss"]
+    ar_loss = _ar_rollout(
+        self.model, emb, ctx_emb, pred_emb, all_act, ctx_len, s, num_preds
+    )
+
+    output["pred_loss"]    = pred_loss + ar_loss
+    output["ar_loss"]      = ar_loss
+    output["sigreg_loss"]  = self.sigreg(emb.transpose(0, 1))
+    output["loss"]         = output["pred_loss"] + lambd * output["sigreg_loss"]
 
     losses_dict = {
         f"{stage}/{k}": v.detach()

@@ -80,13 +80,18 @@ WIN_SIZE=1
 HISTORY_LEN=50
 H_STEP=1
 N_SENSORS=84
+# NUM_PREDS: autoregressive rollout steps during training.
+#   1  = parallel 1-step prediction only (original behaviour, fast)
+#   >1 = step-0 parallel loss + P-1 autoregressive rollout steps
+#   Data loading automatically adjusts to (H+P-1)*s + w frames per sample.
+NUM_PREDS=1
 
 # Zero-pad prefix augmentation probability (0.0 = off, 0.3 = 30% chance per batch)
 # When >0, randomly zeroes a prefix of the context window during training so the
 # model learns early-episode inference (no prior context available).
 ZERO_PAD_PROB=0.0
 
-RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}
+RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS}
 
 srun python -u train.py \
     data=scenario3 \
@@ -95,6 +100,7 @@ srun python -u train.py \
     obs_window_size=${WIN_SIZE} \
     wm.history_size=${HISTORY_LEN} \
     wm.h_step=${H_STEP} \
+    wm.num_preds=${NUM_PREDS} \
     wm.zero_pad_prob=${ZERO_PAD_PROB} \
     num_workers=16 \
     loader.batch_size=512 \
@@ -102,7 +108,7 @@ srun python -u train.py \
     loader.pin_memory=True \
     trainer.precision=bf16-mixed \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP} \
+    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}
