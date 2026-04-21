@@ -66,8 +66,9 @@ import torch.nn.functional as F
 sys.path.insert(0, str(Path(__file__).parent))
 
 from scipy.stats import pearsonr
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    average_precision_score, f1_score,
+    average_precision_score, balanced_accuracy_score, f1_score,
     mean_absolute_error, r2_score, roc_auc_score,
 )
 from sklearn.preprocessing import StandardScaler
@@ -156,6 +157,11 @@ ALARM_HORIZONS  = [10, 20, 50, 100]
 FORECAST_HORIZONS = list(range(1, 51))
 FORECAST_N_EPS    = 200
 HISTORY_SIZE      = 3
+
+# Task 4: health state classification
+HEALTH_POST_WINDOW  = 200   # steps AFTER maintenance → "healthy" label
+HEALTH_PRE_WINDOW   = 300   # steps BEFORE next maintenance → "degraded" label
+HEALTH_SEQ_LENS     = [1, 10, 50]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -355,6 +361,182 @@ def task2_tnm(
             f"  TNM sl={sl}  R²={r2:.3f}  RMSE_log={rmse_log:.4f}"
             f"  MAE_steps={mae_steps:.0f}"
         )
+    return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TASK 4 — HEALTH STATE CLASSIFICATION  (healthy vs pre-maintenance)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def compute_health_labels(
+    ep_ids: np.ndarray,    # (N,) local episode index
+    actions: np.ndarray,   # (N,) maintenance flag
+    post_window: int = HEALTH_POST_WINDOW,
+    pre_window:  int = HEALTH_PRE_WINDOW,
+) -> np.ndarray:
+    """Assign health-state labels to every timestep.
+
+    Labels:
+      0  — "healthy":  within `post_window` steps AFTER a maintenance event
+                       (or the start of an episode, which is also a reset).
+      1  — "degraded": within `pre_window` steps BEFORE the next maintenance
+                       event.
+     -1  — excluded:   ambiguous mid-episode drift (neither label applies).
+
+    When healthy and degraded windows overlap (maintenance events close
+    together), the degraded label takes priority — it is the more
+    informative signal.
+    """
+    n      = len(ep_ids)
+    labels = np.full(n, -1, dtype=np.int8)
+
+    for ep_id in np.unique(ep_ids):
+        mask   = ep_ids == ep_id
+        idx    = np.where(mask)[0]          # global indices
+        ep_act = actions[idx]
+        ep_len = len(idx)
+        maint  = np.where(ep_act > 0.5)[0]  # local (within-episode) positions
+
+        # ── healthy: right after episode start ──────────────────────────────
+        labels[idx[: min(post_window, ep_len)]] = 0
+
+        # ── healthy: right after each maintenance event ──────────────────────
+        for m in maint:
+            end = min(m + post_window + 1, ep_len)
+            labels[idx[m : end]] = 0
+
+        # ── degraded: just before each maintenance event (overrides healthy) ─
+        for m in maint:
+            start = max(0, m - pre_window)
+            labels[idx[start : m]] = 1      # exclude the event step itself
+
+    return labels
+
+
+def _build_clf_windows(
+    Z: np.ndarray,          # (N, D) — full split embeddings
+    labels: np.ndarray,     # (N,) int8  — includes -1 for excluded
+    ep_ids: np.ndarray,     # (N,) local episode index
+    seq_len: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Mean-pool `seq_len` embeddings per labeled timestep.
+
+    For each timestep with a valid label (0 or 1), take the preceding
+    `seq_len` frames in the same episode and mean-pool them. Frames before
+    the episode start are padded by repeating the earliest available frame.
+
+    Returns (X, y) arrays containing only labeled timesteps.
+    """
+    X_list, y_list = [], []
+
+    for ep_id in np.unique(ep_ids):
+        mask   = ep_ids == ep_id
+        idx    = np.where(mask)[0]
+        Z_ep   = Z[idx]        # (T, D)
+        lbl_ep = labels[idx]   # (T,) — includes -1
+
+        for local_t in range(len(idx)):
+            if lbl_ep[local_t] < 0:
+                continue
+            start  = max(0, local_t - seq_len + 1)
+            window = Z_ep[start : local_t + 1]         # (<=sl, D)
+            if len(window) < seq_len:
+                pad    = np.tile(window[:1], (seq_len - len(window), 1))
+                window = np.concatenate([pad, window], axis=0)
+            X_list.append(window.mean(axis=0))
+            y_list.append(lbl_ep[local_t])
+
+    return np.array(X_list, dtype=np.float32), np.array(y_list, dtype=np.int8)
+
+
+def task4_health_clf(
+    Z_tr: np.ndarray, Z_te: np.ndarray,
+    tr_data: dict, te_data: dict,
+    seq_lens: list | None = None,
+    post_window: int = HEALTH_POST_WINDOW,
+    pre_window:  int = HEALTH_PRE_WINDOW,
+) -> dict:
+    """Binary health-state classification probe.
+
+    Labels are derived solely from action timestamps (no HI values used),
+    so the probe directly tests whether the latent encodes relative
+    degradation level:
+      class 0  —  "healthy"   (just after a repair, HI near 0)
+      class 1  —  "degraded"  (just before policy triggers maintenance)
+
+    For each seq_len, mean-pool the preceding `seq_len` embeddings then
+    fit a logistic regression.  Uses class_weight='balanced' to handle
+    any residual class imbalance.
+
+    Metrics per seq_len:
+        auroc        — area under ROC curve
+        balanced_acc — balanced accuracy (mean of per-class recall)
+        f1           — F1 score (threshold at 0.5)
+        n_healthy    — number of healthy test samples
+        n_degraded   — number of degraded test samples
+    """
+    if seq_lens is None:
+        seq_lens = HEALTH_SEQ_LENS
+
+    logging.info(
+        f"  Task 4 — Health Classification  "
+        f"(post_window={post_window}, pre_window={pre_window})"
+    )
+
+    labels_tr = compute_health_labels(
+        tr_data["ep_ids"], tr_data["actions"], post_window, pre_window
+    )
+    labels_te = compute_health_labels(
+        te_data["ep_ids"], te_data["actions"], post_window, pre_window
+    )
+
+    n_h_tr = int((labels_tr == 0).sum())
+    n_d_tr = int((labels_tr == 1).sum())
+    n_h_te = int((labels_te == 0).sum())
+    n_d_te = int((labels_te == 1).sum())
+    logging.info(
+        f"  Label counts  train: healthy={n_h_tr:,}  degraded={n_d_tr:,} "
+        f"  test: healthy={n_h_te:,}  degraded={n_d_te:,}"
+    )
+
+    if n_h_te < 10 or n_d_te < 10:
+        logging.warning("  Task 4 skipped — too few test samples in one class")
+        return {}
+
+    results = {}
+    for sl in seq_lens:
+        logging.info(f"  Task 4  seq_len={sl}")
+        X_tr, y_tr = _build_clf_windows(Z_tr, labels_tr, tr_data["ep_ids"], sl)
+        X_te, y_te = _build_clf_windows(Z_te, labels_te, te_data["ep_ids"], sl)
+
+        scaler   = StandardScaler()
+        X_tr_s   = scaler.fit_transform(X_tr)
+        X_te_s   = scaler.transform(X_te)
+
+        clf = LogisticRegression(
+            max_iter=500, C=1.0, class_weight="balanced", random_state=SEED
+        )
+        clf.fit(X_tr_s, y_tr)
+
+        y_score = clf.predict_proba(X_te_s)[:, 1]
+        y_pred  = clf.predict(X_te_s)
+
+        auroc    = float(roc_auc_score(y_te, y_score))
+        bal_acc  = float(balanced_accuracy_score(y_te, y_pred))
+        f1_val   = float(f1_score(y_te, y_pred, zero_division=0))
+
+        results[f"sl{sl}"] = {
+            "auroc":        auroc,
+            "balanced_acc": bal_acc,
+            "f1":           f1_val,
+            "n_healthy":    int((y_te == 0).sum()),
+            "n_degraded":   int((y_te == 1).sum()),
+        }
+        logging.info(
+            f"  Task 4 sl={sl}  AUROC={auroc:.3f}  "
+            f"BalAcc={bal_acc:.3f}  F1={f1_val:.3f}"
+        )
+
     return results
 
 
@@ -849,7 +1031,7 @@ def task3_forecast(
 #  PER-CHECKPOINT RUNNER  (called in each worker process)
 # ══════════════════════════════════════════════════════════════════════════════
 
-ALL_TASKS = {1, 2, 3}   # valid task numbers
+ALL_TASKS = {1, 2, 3, 4}   # valid task numbers
 
 
 def run_one(
@@ -864,6 +1046,7 @@ def run_one(
     probe_batch: int = PROBE_BATCH,
     task1_seq_lens: list | None = None,
     delta_hi_seq_lens: list | None = None,
+    health_seq_lens: list | None = None,
 ) -> dict:
     """Run downstream evaluation for one checkpoint.
 
@@ -892,7 +1075,7 @@ def run_one(
     Z_te = encode_observations(model, te_data["obs"], enc_t, device)
     logging.info(f"  Z_tr={Z_tr.shape}  Z_te={Z_te.shape}")
 
-    t1 = t2_vel = t2b_alarm = t2_tnm_res = t3 = None
+    t1 = t2_vel = t2b_alarm = t2_tnm_res = t3 = t4 = None
     probe_hi = scaler_hi = None
 
     if 1 in tasks:
@@ -927,20 +1110,27 @@ def run_one(
             step_size=step_size,
         )
 
+    if 4 in tasks:
+        t4 = task4_health_clf(
+            Z_tr, Z_te, tr_data, te_data,
+            seq_lens=health_seq_lens,
+        )
+
     del model; torch.cuda.empty_cache()
 
     return {
-        "name":            name,
-        "path":            cfg["path"],
-        "encoder_type":    enc_t,
-        "obs_window_size": w,
-        "n_params":        n_params,
-        "embed_dim":       int(Z_tr.shape[1]),
-        "task1_hi":        t1,
-        "task2_delta_hi":  t2_vel,
-        "task2b_alarm":    t2b_alarm,
-        "task2_tnm":       t2_tnm_res,
-        "task3_forecast":  t3,
+        "name":              name,
+        "path":              cfg["path"],
+        "encoder_type":      enc_t,
+        "obs_window_size":   w,
+        "n_params":          n_params,
+        "embed_dim":         int(Z_tr.shape[1]),
+        "task1_hi":          t1,
+        "task2_delta_hi":    t2_vel,
+        "task2b_alarm":      t2b_alarm,
+        "task2_tnm":         t2_tnm_res,
+        "task3_forecast":    t3,
+        "task4_health_clf":  t4,
     }
 
 
@@ -949,7 +1139,7 @@ def run_one(
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon,
-            step_size, probe_batch, task1_seq_lens, delta_hi_seq_lens):
+            step_size, probe_batch, task1_seq_lens, delta_hi_seq_lens, health_seq_lens):
     """Subprocess entry point — one checkpoint, one GPU."""
     logging.basicConfig(
         level=logging.INFO,
@@ -968,6 +1158,7 @@ def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon
             probe_batch=probe_batch,
             task1_seq_lens=task1_seq_lens,
             delta_hi_seq_lens=delta_hi_seq_lens,
+            health_seq_lens=health_seq_lens,
         )
     except Exception as e:
         import traceback
@@ -1007,6 +1198,10 @@ def write_flat_csv(all_results, hi_names, path):
         for key in ("all", "clean", "event", "gap"):
             for tau_i, val in enumerate(t3.get(f"mean_rmse_{key}", [])):
                 rows.append([name, w, f"task3_{key}", "-", f"tau_{tau_i+1}", "mean_rmse", val])
+        for sl_tag, m in (res.get("task4_health_clf") or {}).items():
+            for metric, val in m.items():
+                if isinstance(val, (int, float)):
+                    rows.append([name, w, "task4_health_clf", sl_tag, "-", metric, val])
     with open(path, "w", newline="") as fh:
         csv.writer(fh).writerows([header] + rows)
     logging.info(f"Flat CSV → {path}")
@@ -1038,16 +1233,23 @@ def write_curves_csv(all_results, path):
 
 
 def print_summary(all_results):
-    print(f"\n{'='*90}")
+    print(f"\n{'='*104}")
     print(f"  {'Model':<32}  {'T1 R²':>6}  {'T2 R²':>6}  "
-          f"{'Alarm AUC@K20':>13}  {'T3 τ=1':>7}  {'T3 τ=10':>8}  {'gap@τ=10':>9}")
-    print("-" * 90)
+          f"{'Alarm@K20':>9}  {'T3 τ=1':>7}  {'T3 τ=10':>8}  {'gap@τ=10':>9}  {'T4 AUROC':>8}")
+    print("-" * 104)
     for res in all_results:
         if "error" in res:
             print(f"  {res['name']:<32}  ERROR: {res['error'][:40]}")
             continue
         t1   = res.get("task1_hi", {}).get("__mean__", {})
-        # Show best (highest R²) seq_len for Task 2
+        # Task 1: best seq_len (highest R²)
+        t1_all = res.get("task1_hi") or {}
+        t1_best = max(
+            (v.get("__mean__", {}) for v in t1_all.values()),
+            key=lambda d: d.get("r2", -999),
+            default={},
+        ) if t1_all else {}
+        # Task 2: best seq_len
         t2_all = res.get("task2_delta_hi", {})
         t2 = max(
             (v.get("__mean__", {}) for v in t2_all.values()),
@@ -1058,16 +1260,27 @@ def print_summary(all_results):
         t3   = res.get("task3_forecast") or {}
         mr_all  = t3.get("mean_rmse_all", [float("nan")] * 50)
         gap_arr = t3.get("mean_rmse_gap",  [float("nan")] * 50)
+        # Task 4: best seq_len (highest AUROC)
+        t4_all  = res.get("task4_health_clf") or {}
+        t4_auroc = max(
+            (v.get("auroc", float("nan")) for v in t4_all.values()),
+            default=float("nan"),
+        )
+        auc_str = (
+            f"{alrm['auc']:>9.3f}" if alrm.get("auc") is not None
+            else f"{'nan':>9}"
+        )
         print(
             f"  {res['name']:<32}  "
-            f"{t1.get('r2', float('nan')):>6.3f}  "
+            f"{t1_best.get('r2', float('nan')):>6.3f}  "
             f"{t2.get('r2', float('nan')):>6.3f}  "
-            f"{alrm.get('auc', float('nan') if alrm.get('auc') is None else alrm['auc']):>13.3f}  "
+            f"{auc_str}  "
             f"{mr_all[0]:>7.5f}  "
             f"{mr_all[9] if len(mr_all) > 9 else float('nan'):>8.5f}  "
-            f"{gap_arr[9] if len(gap_arr) > 9 else float('nan'):>+9.5f}"
+            f"{gap_arr[9] if len(gap_arr) > 9 else float('nan'):>+9.5f}  "
+            f"{t4_auroc:>8.3f}"
         )
-    print("=" * 90)
+    print("=" * 104)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1119,11 +1332,15 @@ def main():
     parser.add_argument("--delta_hi_seq_lens", type=int, nargs="+", default=None,
                         metavar="N",
                         help="seq_lens for Task 2 ΔHI probe (default: 1 10 50)")
+    parser.add_argument("--health_seq_lens",   type=int, nargs="+", default=None,
+                        metavar="N",
+                        help="seq_lens for Task 4 health classification (default: 1 10 50)")
     args = parser.parse_args()
     # --tasks 1 2 → set {1, 2};  omitted → None (all tasks)
     tasks = set(args.tasks) if args.tasks else None
     task1_seq_lens    = args.task1_seq_lens     # None → use TASK1_SEQ_LENS default
     delta_hi_seq_lens = args.delta_hi_seq_lens  # None → use DELTA_HI_SEQ_LENS default
+    health_seq_lens   = args.health_seq_lens    # None → use HEALTH_SEQ_LENS default
 
     if args.hdf5:
         global HDF5_PATH
@@ -1167,7 +1384,7 @@ def main():
                 args=(rank, cfg, gpu_id, shared_data,
                       str(rp), tasks, args.forecast_horizon,
                       args.step_size, args.probe_batch,
-                      task1_seq_lens, delta_hi_seq_lens),
+                      task1_seq_lens, delta_hi_seq_lens, health_seq_lens),
             )
             p.start()
             procs.append(p)
@@ -1188,6 +1405,7 @@ def main():
                 probe_batch=args.probe_batch,
                 task1_seq_lens=task1_seq_lens,
                 delta_hi_seq_lens=delta_hi_seq_lens,
+                health_seq_lens=health_seq_lens,
             )
             with open(rp, "w") as f:
                 json.dump(result, f, indent=2)
