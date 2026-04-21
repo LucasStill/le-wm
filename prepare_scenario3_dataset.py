@@ -62,6 +62,39 @@ import numpy as np
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 
 
+# ── metadata preservation ─────────────────────────────────────────────────────
+#
+# Source files carry rich metadata that is valuable for downstream analysis
+# (archetype labels, events, weather, speed regimes).  These fields are
+# copied through unchanged on every conversion.  See patch_scenario3_metadata.py
+# for the list and rationale; this script uses the same set so both paths
+# produce identical lewm files.
+
+EP_META_KEYS  = ["archetype", "archetype_onset", "eol_triggered", "success_coeff"]
+PER_STEP_KEYS = ["event_mask", "event_types", "speed_strategy"]
+WEATHER_KEYS  = ["weather/dtamb", "weather/rain"]
+
+PROPAGATED_ATTRS = [
+    "archetype_names", "context_names", "event_names", "sensor_names",
+    "scenario", "split", "n_episodes", "n_timesteps",
+]
+
+
+def _copy_key(src: h5py.File, dst: h5py.File, key: str, compress: bool) -> None:
+    """Copy one dataset from src to dst, preserving dtype. Safe no-op if absent."""
+    if key not in src:
+        return
+    if key in dst:
+        return
+    data = src[key][:]
+    kwargs = {"data": data}
+    if compress and data.nbytes > 1024 * 1024:
+        kwargs["compression"] = "lzf"
+        chunk0 = min(4096, data.shape[0])
+        kwargs["chunks"] = (chunk0,) + data.shape[1:]
+    dst.create_dataset(key, **kwargs)
+
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def check_sensors_not_stub(path: Path) -> None:
@@ -165,6 +198,10 @@ def prepare_one(
         sensor_names  = list(src.attrs.get("sensor_names", []))
         context_names = list(src.attrs.get("context_names", []))
 
+        # Snapshot the source object for metadata copy below (re-opened outside
+        # this `with` block, so we capture the path now).
+        src_path_for_meta = input_path
+
     n_hi = hi.shape[1]
     state_label_names = [f"HI_{i}" for i in range(n_hi)]
 
@@ -213,6 +250,21 @@ def prepare_one(
         dst.attrs["n_contexts"]        = 12
         dst.attrs["n_actions"]         = int(max(unique_actions)) + 1
         dst.attrs["source_file"]       = str(input_path)
+
+        # ── Copy rich metadata from source ────────────────────────────────
+        # Episode-level (tiny), per-timestep events, speed regimes, weather.
+        # Training ignores these; downstream analysis / archetype-stratified
+        # eval uses them.  Kept in sync with patch_scenario3_metadata.py.
+        with h5py.File(src_path_for_meta, "r") as meta_src:
+            for k in EP_META_KEYS:
+                _copy_key(meta_src, dst, f"ep_meta/{k}", compress=False)
+            for k in PER_STEP_KEYS:
+                _copy_key(meta_src, dst, k, compress=True)
+            for k in WEATHER_KEYS:
+                _copy_key(meta_src, dst, k, compress=True)
+            for a in PROPAGATED_ATTRS:
+                if a in meta_src.attrs and a not in dst.attrs:
+                    dst.attrs[a] = meta_src.attrs[a]
 
     logging.info(f"  Written ✓  {output_path}")
 
