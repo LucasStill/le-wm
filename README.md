@@ -125,10 +125,15 @@ The returned module is in `eval` mode with its PyTorch weights accessible via `.
 
 ## TurboSens Benchmark
 
-TurboSens evaluates world models on the OpenDeckSMR turbofan simulator across
-four tasks: HI state estimation, degradation velocity, latent forecasting, and
-OOD detection.  All evaluation scripts accept any mix of JEPA and AR-LSTM
-checkpoints in the same run.
+TurboSens evaluates world models on the OpenDeckSMR turbofan simulator.
+The benchmark is split into two scripts:
+
+- **`eval_sweep.py`** — four downstream probing tasks that measure what the
+  encoder/predictor has learned about the underlying system (HI state,
+  degradation dynamics, latent forecasting, health classification).
+- **`eval_ood.py`** — anomaly/OOD detection on five live simulator scenarios.
+
+Both scripts accept any mix of JEPA and AR-LSTM checkpoints in a single run.
 
 ### Checkpoint format
 
@@ -136,19 +141,28 @@ All eval scripts use a consistent `name:path` format:
 ```bash
 "display_name:/absolute/path/to/checkpoint_epoch_N_object.ckpt"
 ```
-The `display_name` is used as the model label in all output files and figures.
+The `display_name` is the model label in all output files and figures.
 
 ---
 
-### Tasks 1–3 — Downstream benchmark sweep
+### Downstream benchmark sweep (`eval_sweep.py`)
 
-**What it runs:**
+**Tasks:**
 
-| Task | Description | Approx. time / ckpt |
-|---|---|---|
-| 1 | HI state estimation — R², RMSE, Pearson per component, for `seq_len ∈ {1, 10, 50}` | ~10 min |
-| 2 | Degradation velocity (ΔHI) + maintenance alarm AUC | ~10 min |
-| 3 | Latent forecasting + action-divergence gap φ(τ) | ~40 min |
+| # | Task | Target | Probe | Metrics |
+|---|---|---|---|---|
+| 1 | HI state estimation | HI (10-dim) | TransformerProbe, `seq_len ∈ {1, 10, 50}` | R², RMSE, Pearson |
+| 2 | Degradation velocity ΔHI + maintenance alarm | ΔHI(t), `tnm = time-to-next-maint` | TransformerProbe | R², AUROC@K |
+| 3 | Latent forecasting | HI at τ=1…50 via AR rollout | Task-1 probe as decoder | RMSE(τ), clean vs event gap |
+| 4 | Health-state classification | binary: `healthy` vs `pre-maintenance` | Logistic regression on mean-pooled z | AUROC, balanced acc, F1 |
+
+**Task 4 labels are derived purely from action timestamps** (no HI values used):
+- `healthy` — within 200 steps after a repair (or episode start)
+- `degraded` — within 300 steps before the next maintenance event
+- everything else is excluded (ambiguous mid-episode drift)
+
+This directly tests whether the latent encodes *relative degradation level*
+without leaking the HI target through the labels.
 
 **Run on Jean-Zay (recommended):**
 ```bash
@@ -165,26 +179,31 @@ CKPTS=(
 # All tasks (default):
 python eval_sweep.py "${CKPTS[@]}" --out_dir results/sweep/ --no_parallel
 
-# Task 1 only (fastest — just HI probing):
-python eval_sweep.py "${CKPTS[@]}" --out_dir results/sweep/ --tasks 1
-
-# Tasks 1 and 2 (skip slow forecasting):
-python eval_sweep.py "${CKPTS[@]}" --out_dir results/sweep/ --tasks 1 2
+# Subsets:
+python eval_sweep.py "${CKPTS[@]}" --tasks 1        # HI probe only (fastest)
+python eval_sweep.py "${CKPTS[@]}" --tasks 1 2 4    # skip slow forecasting
+python eval_sweep.py "${CKPTS[@]}" --tasks 4        # health classification only
 ```
 
-**`--no_parallel` explained:** On a single-GPU machine this flag has no effect
-on results — it only skips the multiprocessing setup overhead.  On multi-GPU
-machines (without the flag) each checkpoint would be dispatched to a separate
-GPU in parallel.  Always use `--no_parallel` on Jean-Zay single-GPU jobs for
-cleaner logs.
+**Useful flags:**
+```bash
+--tasks N [N ...]            # select a subset of {1, 2, 3, 4}
+--task1_seq_lens  N [N ...]  # override {1, 10, 50} for Task 1
+--delta_hi_seq_lens N ...    # override seq_lens for Task 2
+--health_seq_lens   N ...    # override seq_lens for Task 4
+--forecast_horizon N         # max τ for Task 3 (default 50)
+--step_size N                # Task-3 starting-frame subsampling (default 10)
+--no_parallel                # force sequential even on multi-GPU hosts
+--hdf5 /path/to/data.h5      # override the HDF5 path baked into the script
+```
 
 **Output files** written to `--out_dir`:
 ```
 results/sweep/
 ├── {name}.json          ← per-checkpoint results (all tasks)
-├── summary.json         ← combined list of all results
-├── metrics_flat.csv     ← flat table for plotting (Tasks 1 & 2)
-└── task3_curves.csv     ← RMSE(τ) curves for plotting (Task 3)
+├── summary.json         ← combined list
+├── metrics_flat.csv     ← flat table (Tasks 1, 2, 2b, 4)
+└── task3_curves.csv     ← RMSE(τ) curves for plotting
 ```
 
 **Generate paper figures** from the saved CSVs (no GPU needed, rerun freely):
@@ -194,14 +213,6 @@ python plot_results.py \
     --curves results/sweep/task3_curves.csv \
     --out_dir figures/sweep/
 ```
-
-Produces (PDF + PNG at 300 dpi):
-
-| File | Content |
-|---|---|
-| `fig_task1_r2.pdf` | Per-component R² bar chart, all models side-by-side |
-| `fig_task3_curves.pdf` | RMSE(τ) for clean / event / gap, 3-panel |
-| `fig_task3_comparison.pdf` | Overlay RMSE curves for all models |
 
 ---
 
@@ -220,7 +231,6 @@ sbatch baselines/ar_lstm/train_ar_lstm.slurm
 
 **Key hyperparameters:**
 ```bash
-# In the slurm:
 H=3        # predictor context window (try 1, 10, 50)
 HIDDEN=256 # LSTM hidden state size
 LAYERS=2   # stacked LSTM layers
@@ -232,10 +242,11 @@ and `eval_ood.py`.
 
 ---
 
-### Task 4 — OOD Detection
+### OOD Detection (`eval_ood.py`)
 
 Evaluates four anomaly detectors (surprise, Mahalanobis, k-NN, reconstruction)
-on five OOD scenarios generated by the live OpenDeckSMR simulator.
+on five OOD scenarios generated by the live OpenDeckSMR simulator. Independent
+from the `eval_sweep.py` tasks — reports its own AUC-ROC / score-shift metrics.
 
 **Run on Jean-Zay (self-contained — starts simulator worker on the same node):**
 ```bash
@@ -249,30 +260,29 @@ sbatch eval_ood.slurm
 python eval_ood.py "${CKPTS[@]}" --out_dir results/ood/ --no_simulator
 ```
 
-**Generate all figures from a completed run** (no GPU needed, rerun freely):
+**Generate all figures from a completed run:**
 ```bash
 python plot_ood.py \
     --summary_json $STABLEWM_HOME/eval_ood/<JOB_ID>/ood_summary.json \
     --out_dir      figures/ood
 ```
 
-This produces 9 figures in both `.pdf` and `.png`:
+Produces 9 figures in both `.pdf` and `.png`:
 
 | File | Content |
 |---|---|
-| `auc_heatmap` | AUC-ROC per detector × scenario (both models) |
+| `auc_heatmap` | AUC-ROC per detector × scenario |
 | `score_shift` | Normalised score shift (OOD − ID) / σ_ID |
 | `trajectories` | Example degradation state trajectories per scenario |
 | `episode_lengths` | Episode length distributions |
 | `paper_summary` | Compact two-panel summary for the paper |
 | `correlated_pattern` | HPC+HPT selective degradation pattern |
-| `episode_auc` | Per-timestep vs per-episode AUC comparison |
+| `episode_auc` | Per-timestep vs per-episode AUC |
 | `recon_profile` | Reconstruction error over episode lifetime |
 | `spike_fault` | Spike fault pattern visualisation |
 
 **Run connectivity test (if simulator communication fails):**
 ```bash
-# From le-wm venv on any node:
 python test_zmq.py                     # reads $WORK/.simulator_addr
 python test_zmq.py tcp://r1i3n21:5555  # explicit address
 python test_zmq.py --batch 100         # include throughput benchmark
