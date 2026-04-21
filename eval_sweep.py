@@ -68,8 +68,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from scipy.stats import pearsonr
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    average_precision_score, balanced_accuracy_score, f1_score,
-    mean_absolute_error, r2_score, roc_auc_score,
+    accuracy_score, average_precision_score, balanced_accuracy_score,
+    classification_report, confusion_matrix, f1_score, mean_absolute_error,
+    r2_score, roc_auc_score,
 )
 from sklearn.preprocessing import StandardScaler
 
@@ -163,6 +164,10 @@ HEALTH_POST_WINDOW  = 200   # steps AFTER maintenance → "healthy" label
 HEALTH_PRE_WINDOW   = 300   # steps BEFORE next maintenance → "degraded" label
 HEALTH_SEQ_LENS     = [1, 10, 50]
 
+# Task 5: archetype classification  (Scenario-3 only)
+ARCHETYPE_SEQ_LENS  = [1, 10, 50]
+ARCHETYPE_SUBSAMPLE = 20    # keep every Nth timestep per episode to speed up fit
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  DATASET LOADING
@@ -173,14 +178,21 @@ def load_dataset(hdf5_path: str, encoder_type: str,
                  seed: int = SEED) -> tuple:
     """Load full HDF5 dataset and return train/test split dicts.
 
-    Returns  (tr_data, te_data, hi_names, ep_offset_all, ep_len_all)
+    Returns  (tr_data, te_data, hi_names, archetype_names,
+              ep_offset_all, ep_len_all)
 
     Each split dict has keys:
-        obs      : (N, n_sensors) or (N, H, W)
-        hi       : (N, n_hi)
-        actions  : (N,) float — 1.0 = maintenance event
-        ep_ids   : (N,) int   — local episode index per timestep
-        eps      : ndarray[int] — global episode indices
+        obs        : (N, n_sensors) or (N, H, W)
+        hi         : (N, n_hi)
+        actions    : (N,) float — 1.0 = maintenance event
+        ep_ids     : (N,) int   — local episode index per timestep
+        eps        : ndarray[int] — global episode indices
+        archetype  : (N,) int8  — per-timestep archetype label  [if available]
+        event_mask : (N,) bool  — abrupt-event flag              [if available]
+
+    Scenario-3 metadata fields (archetype, event_mask) are loaded when
+    present; for legacy datasets that lack them the corresponding keys
+    are simply absent from the returned dicts.
     """
     with h5py.File(hdf5_path, "r") as f:
         ep_len_all    = f["ep_len"][:]
@@ -197,6 +209,14 @@ def load_dataset(hdf5_path: str, encoder_type: str,
         if actions.ndim > 1:
             actions = actions[:, 0]
 
+        # Scenario-3 metadata (optional)
+        archetype_per_ep = (
+            f["ep_meta/archetype"][:].astype(np.int32)
+            if "ep_meta/archetype" in f else None
+        )
+        archetype_names = list(f.attrs.get("archetype_names", []))
+        event_mask_all  = f["event_mask"][:] if "event_mask" in f else None
+
     N_EP = len(ep_len_all)
     rng  = np.random.default_rng(seed)
     perm = rng.permutation(N_EP)
@@ -204,24 +224,35 @@ def load_dataset(hdf5_path: str, encoder_type: str,
 
     def _gather(eps):
         obs_l, hi_l, act_l, ep_id_l = [], [], [], []
+        arch_l, evt_l = [], []
         for local_i, e in enumerate(eps):
             s, l = int(ep_offset_all[e]), int(ep_len_all[e])
             obs_l.append(obs_raw[s : s + l])
             hi_l.append(states[s : s + l])
             act_l.append(actions[s : s + l])
             ep_id_l.append(np.full(l, local_i, dtype=np.int32))
-        return dict(
+            if archetype_per_ep is not None:
+                arch_l.append(np.full(l, archetype_per_ep[e], dtype=np.int32))
+            if event_mask_all is not None:
+                evt_l.append(event_mask_all[s : s + l])
+        d = dict(
             obs     = np.concatenate(obs_l),
             hi      = np.concatenate(hi_l),
             actions = np.concatenate(act_l),
             ep_ids  = np.concatenate(ep_id_l),
             eps     = eps,
         )
+        if arch_l:
+            d["archetype"] = np.concatenate(arch_l)
+        if evt_l:
+            d["event_mask"] = np.concatenate(evt_l)
+        return d
 
     return (
         _gather(perm[:n_tr]),
         _gather(perm[n_tr:]),
         hi_names,
+        archetype_names,
         ep_offset_all,
         ep_len_all,
     )
@@ -415,38 +446,59 @@ def compute_health_labels(
 
 def _build_clf_windows(
     Z: np.ndarray,          # (N, D) — full split embeddings
-    labels: np.ndarray,     # (N,) int8  — includes -1 for excluded
+    labels: np.ndarray,     # (N,) int  — negative values are skipped
     ep_ids: np.ndarray,     # (N,) local episode index
     seq_len: int,
-) -> tuple[np.ndarray, np.ndarray]:
+    aux: np.ndarray | None = None,   # optional (N,) per-timestep side info
+    stride: int = 1,                  # keep every `stride`-th labeled step
+) -> tuple:
     """Mean-pool `seq_len` embeddings per labeled timestep.
 
-    For each timestep with a valid label (0 or 1), take the preceding
+    For each timestep with a non-negative label, take the preceding
     `seq_len` frames in the same episode and mean-pool them. Frames before
     the episode start are padded by repeating the earliest available frame.
 
-    Returns (X, y) arrays containing only labeled timesteps.
+    Parameters
+    ----------
+    aux : optional per-timestep side information (e.g. archetype), returned
+          aligned with X/y so callers can stratify results downstream.
+    stride : subsample labeled timesteps (1 = keep all). Used by Task 5
+             where every step in an episode has the same label.
+
+    Returns (X, y) or (X, y, aux) when aux is provided.
     """
-    X_list, y_list = [], []
+    X_list, y_list, aux_list = [], [], []
 
     for ep_id in np.unique(ep_ids):
         mask   = ep_ids == ep_id
         idx    = np.where(mask)[0]
         Z_ep   = Z[idx]        # (T, D)
-        lbl_ep = labels[idx]   # (T,) — includes -1
+        lbl_ep = labels[idx]
+        aux_ep = aux[idx] if aux is not None else None
 
+        kept = 0
         for local_t in range(len(idx)):
             if lbl_ep[local_t] < 0:
                 continue
+            if stride > 1 and (kept % stride) != 0:
+                kept += 1
+                continue
+            kept += 1
             start  = max(0, local_t - seq_len + 1)
-            window = Z_ep[start : local_t + 1]         # (<=sl, D)
+            window = Z_ep[start : local_t + 1]
             if len(window) < seq_len:
                 pad    = np.tile(window[:1], (seq_len - len(window), 1))
                 window = np.concatenate([pad, window], axis=0)
             X_list.append(window.mean(axis=0))
             y_list.append(lbl_ep[local_t])
+            if aux_ep is not None:
+                aux_list.append(aux_ep[local_t])
 
-    return np.array(X_list, dtype=np.float32), np.array(y_list, dtype=np.int8)
+    X = np.array(X_list, dtype=np.float32)
+    y = np.array(y_list, dtype=np.int32)
+    if aux is None:
+        return X, y
+    return X, y, np.array(aux_list, dtype=np.int32)
 
 
 def task4_health_clf(
@@ -455,6 +507,7 @@ def task4_health_clf(
     seq_lens: list | None = None,
     post_window: int = HEALTH_POST_WINDOW,
     pre_window:  int = HEALTH_PRE_WINDOW,
+    archetype_names: list | None = None,
 ) -> dict:
     """Binary health-state classification probe.
 
@@ -503,11 +556,25 @@ def task4_health_clf(
         logging.warning("  Task 4 skipped — too few test samples in one class")
         return {}
 
+    # Optional archetype stratification (Scenario-3 only)
+    arch_tr = tr_data.get("archetype")
+    arch_te = te_data.get("archetype")
+    stratify = arch_tr is not None and arch_te is not None
+
     results = {}
     for sl in seq_lens:
         logging.info(f"  Task 4  seq_len={sl}")
-        X_tr, y_tr = _build_clf_windows(Z_tr, labels_tr, tr_data["ep_ids"], sl)
-        X_te, y_te = _build_clf_windows(Z_te, labels_te, te_data["ep_ids"], sl)
+        if stratify:
+            X_tr, y_tr, _ = _build_clf_windows(
+                Z_tr, labels_tr, tr_data["ep_ids"], sl, aux=arch_tr
+            )
+            X_te, y_te, arch_windows = _build_clf_windows(
+                Z_te, labels_te, te_data["ep_ids"], sl, aux=arch_te
+            )
+        else:
+            X_tr, y_tr = _build_clf_windows(Z_tr, labels_tr, tr_data["ep_ids"], sl)
+            X_te, y_te = _build_clf_windows(Z_te, labels_te, te_data["ep_ids"], sl)
+            arch_windows = None
 
         scaler   = StandardScaler()
         X_tr_s   = scaler.fit_transform(X_tr)
@@ -525,16 +592,166 @@ def task4_health_clf(
         bal_acc  = float(balanced_accuracy_score(y_te, y_pred))
         f1_val   = float(f1_score(y_te, y_pred, zero_division=0))
 
-        results[f"sl{sl}"] = {
+        entry = {
             "auroc":        auroc,
             "balanced_acc": bal_acc,
             "f1":           f1_val,
             "n_healthy":    int((y_te == 0).sum()),
             "n_degraded":   int((y_te == 1).sum()),
         }
+
+        # Per-archetype breakdown (only when both classes have >= 10 samples)
+        if arch_windows is not None and archetype_names:
+            per_arch = {}
+            for a_idx, a_name in enumerate(archetype_names):
+                m = arch_windows == a_idx
+                y_sub, s_sub, p_sub = y_te[m], y_score[m], y_pred[m]
+                n_h, n_d = int((y_sub == 0).sum()), int((y_sub == 1).sum())
+                if n_h >= 10 and n_d >= 10:
+                    per_arch[a_name] = {
+                        "auroc":        float(roc_auc_score(y_sub, s_sub)),
+                        "balanced_acc": float(balanced_accuracy_score(y_sub, p_sub)),
+                        "f1":           float(f1_score(y_sub, p_sub, zero_division=0)),
+                        "n_healthy":    n_h,
+                        "n_degraded":   n_d,
+                    }
+                else:
+                    per_arch[a_name] = {"auroc": None, "n_healthy": n_h, "n_degraded": n_d}
+            entry["per_archetype"] = per_arch
+
+        results[f"sl{sl}"] = entry
         logging.info(
             f"  Task 4 sl={sl}  AUROC={auroc:.3f}  "
             f"BalAcc={bal_acc:.3f}  F1={f1_val:.3f}"
+        )
+        if arch_windows is not None and archetype_names:
+            for a_name, m in entry["per_archetype"].items():
+                if m.get("auroc") is not None:
+                    logging.info(
+                        f"    [{a_name:<15}] AUROC={m['auroc']:.3f}  "
+                        f"(n_h={m['n_healthy']}, n_d={m['n_degraded']})"
+                    )
+
+    return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TASK 5 — ARCHETYPE CLASSIFICATION  (Scenario-3 only)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def task5_archetype(
+    Z_tr: np.ndarray, Z_te: np.ndarray,
+    tr_data: dict, te_data: dict,
+    archetype_names: list,
+    seq_lens: list | None = None,
+    subsample_stride: int = ARCHETYPE_SUBSAMPLE,
+) -> dict:
+    """Per-timestep archetype classification from latent embeddings.
+
+    Archetype is an episode-level property (4 classes: A_compressor,
+    B_fan_booster, C_turbine, D_balanced) that describes which degradation
+    mode dominates the engine's lifetime.  Each timestep inherits the label
+    from its parent episode.
+
+    Since every step in an episode has the same label, we subsample by
+    `subsample_stride` to keep the fit fast and avoid over-counting
+    temporal redundancy within episodes.
+
+    For each `seq_len`, mean-pool the preceding frames and fit a multinomial
+    logistic regression.  Metrics per seq_len:
+        accuracy      — top-1 accuracy (all classes)
+        balanced_acc  — mean per-class recall
+        f1_macro      — macro-averaged F1
+        per_class     — precision / recall / f1 per archetype
+        confusion     — (n_classes, n_classes) list-of-lists
+    """
+    if seq_lens is None:
+        seq_lens = ARCHETYPE_SEQ_LENS
+
+    if "archetype" not in tr_data or "archetype" not in te_data:
+        logging.warning(
+            "  Task 5 skipped — archetype labels not in dataset "
+            "(run patch_scenario3_metadata.py first)"
+        )
+        return {}
+
+    if not archetype_names:
+        logging.warning("  Task 5 skipped — archetype_names empty")
+        return {}
+
+    n_classes = len(archetype_names)
+    logging.info(
+        f"  Task 5 — Archetype Classification  ({n_classes} classes, "
+        f"stride={subsample_stride})"
+    )
+    arch_tr = tr_data["archetype"]
+    arch_te = te_data["archetype"]
+    # Episode-level archetype distribution (one label per episode)
+    ep_ids_tr = tr_data["ep_ids"]
+    _, first_idx_tr = np.unique(ep_ids_tr, return_index=True)
+    ep_arch_tr = arch_tr[first_idx_tr]
+    dist_tr = {
+        archetype_names[i]: int((ep_arch_tr == i).sum())
+        for i in range(n_classes)
+    }
+    logging.info(f"  Train episode dist: {dist_tr}")
+
+    results = {}
+    for sl in seq_lens:
+        logging.info(f"  Task 5  seq_len={sl}")
+        # Use `labels` = archetype  and `stride` to subsample within episodes.
+        X_tr, y_tr = _build_clf_windows(
+            Z_tr, arch_tr, tr_data["ep_ids"], sl, stride=subsample_stride
+        )
+        X_te, y_te = _build_clf_windows(
+            Z_te, arch_te, te_data["ep_ids"], sl, stride=subsample_stride
+        )
+        logging.info(
+            f"    windows train={len(X_tr):,}  test={len(X_te):,}"
+        )
+
+        scaler = StandardScaler()
+        X_tr_s = scaler.fit_transform(X_tr)
+        X_te_s = scaler.transform(X_te)
+
+        clf = LogisticRegression(
+            max_iter=500, C=1.0, class_weight="balanced",
+            multi_class="multinomial", solver="lbfgs", random_state=SEED,
+        )
+        clf.fit(X_tr_s, y_tr)
+        y_pred  = clf.predict(X_te_s)
+        y_proba = clf.predict_proba(X_te_s)   # (M, n_classes)
+
+        acc      = float(accuracy_score(y_te, y_pred))
+        bal_acc  = float(balanced_accuracy_score(y_te, y_pred))
+        f1_mac   = float(f1_score(y_te, y_pred, average="macro", zero_division=0))
+        cm       = confusion_matrix(y_te, y_pred, labels=list(range(n_classes)))
+        report   = classification_report(
+            y_te, y_pred, target_names=archetype_names,
+            labels=list(range(n_classes)),
+            output_dict=True, zero_division=0,
+        )
+        per_class = {
+            name: {
+                "precision": float(report[name]["precision"]),
+                "recall":    float(report[name]["recall"]),
+                "f1":        float(report[name]["f1-score"]),
+                "support":   int(report[name]["support"]),
+            }
+            for name in archetype_names
+        }
+
+        results[f"sl{sl}"] = {
+            "accuracy":     acc,
+            "balanced_acc": bal_acc,
+            "f1_macro":     f1_mac,
+            "per_class":    per_class,
+            "confusion":    cm.tolist(),
+            "n_test":       int(len(y_te)),
+        }
+        logging.info(
+            f"  Task 5 sl={sl}  acc={acc:.3f}  bal_acc={bal_acc:.3f}  "
+            f"f1_macro={f1_mac:.3f}  (chance={1.0/n_classes:.3f})"
         )
 
     return results
@@ -1031,7 +1248,7 @@ def task3_forecast(
 #  PER-CHECKPOINT RUNNER  (called in each worker process)
 # ══════════════════════════════════════════════════════════════════════════════
 
-ALL_TASKS = {1, 2, 3, 4}   # valid task numbers
+ALL_TASKS = {1, 2, 3, 4, 5}   # valid task numbers
 
 
 def run_one(
@@ -1047,6 +1264,9 @@ def run_one(
     task1_seq_lens: list | None = None,
     delta_hi_seq_lens: list | None = None,
     health_seq_lens: list | None = None,
+    archetype_seq_lens: list | None = None,
+    archetype_names: list | None = None,
+    exclude_events: bool = False,
 ) -> dict:
     """Run downstream evaluation for one checkpoint.
 
@@ -1075,22 +1295,59 @@ def run_one(
     Z_te = encode_observations(model, te_data["obs"], enc_t, device)
     logging.info(f"  Z_tr={Z_tr.shape}  Z_te={Z_te.shape}")
 
-    t1 = t2_vel = t2b_alarm = t2_tnm_res = t3 = t4 = None
+    # ── Optional event filtering for Tasks 1/2 ───────────────────────────
+    # Scenario-3 records abrupt events (bird_ingestion, sensor_spike, ...) in
+    # `event_mask`.  When --exclude_events is set, mask those timesteps out of
+    # probe data so reported metrics reflect gradual-degradation performance
+    # only (not contaminated by rare spike events).  Tasks 3/4/5 already have
+    # their own semantics and are not affected.
+    probe_tr_data, probe_te_data = tr_data, te_data
+    Z_tr_probe, Z_te_probe = Z_tr, Z_te
+    if exclude_events and "event_mask" in tr_data and "event_mask" in te_data:
+        keep_tr = ~tr_data["event_mask"]
+        keep_te = ~te_data["event_mask"]
+        dropped_tr = int((~keep_tr).sum())
+        dropped_te = int((~keep_te).sum())
+        logging.info(
+            f"  --exclude_events: dropping {dropped_tr:,} train / "
+            f"{dropped_te:,} test event timesteps (Tasks 1/2 only)"
+        )
+        # Build filtered views for probe training (Tasks 1 & 2 only)
+        probe_tr_data = {
+            **tr_data,
+            "obs":     tr_data["obs"][keep_tr],
+            "hi":      tr_data["hi"][keep_tr],
+            "actions": tr_data["actions"][keep_tr],
+            "ep_ids":  tr_data["ep_ids"][keep_tr],
+        }
+        probe_te_data = {
+            **te_data,
+            "obs":     te_data["obs"][keep_te],
+            "hi":      te_data["hi"][keep_te],
+            "actions": te_data["actions"][keep_te],
+            "ep_ids":  te_data["ep_ids"][keep_te],
+        }
+        Z_tr_probe = Z_tr[keep_tr]
+        Z_te_probe = Z_te[keep_te]
+
+    t1 = t2_vel = t2b_alarm = t2_tnm_res = t3 = t4 = t5 = None
     probe_hi = scaler_hi = None
 
     if 1 in tasks:
         t1, probe_hi, scaler_hi = task1_hi(
-            Z_tr, Z_te, tr_data, te_data, hi_names, device,
+            Z_tr_probe, Z_te_probe, probe_tr_data, probe_te_data,
+            hi_names, device,
             seq_lens=task1_seq_lens, probe_batch=probe_batch,
         )
 
     if 2 in tasks:
         t2_vel, t2b_alarm = task2_delta_hi(
-            Z_tr, Z_te, tr_data, te_data, hi_names, device,
+            Z_tr_probe, Z_te_probe, probe_tr_data, probe_te_data,
+            hi_names, device,
             seq_lens=delta_hi_seq_lens, probe_batch=probe_batch,
         )
         t2_tnm_res = task2_tnm(
-            Z_tr, Z_te, tr_data, te_data, device,
+            Z_tr_probe, Z_te_probe, probe_tr_data, probe_te_data, device,
             seq_lens=delta_hi_seq_lens, probe_batch=probe_batch,
         )
 
@@ -1100,7 +1357,8 @@ def run_one(
             # Train sl=1 probe silently even if Task 1 was skipped.
             logging.info("  Task 3 requires Task-1 probe — training sl=1 probe…")
             _, probe_hi, scaler_hi = task1_hi(
-                Z_tr, Z_te, tr_data, te_data, hi_names, device,
+                Z_tr_probe, Z_te_probe, probe_tr_data, probe_te_data,
+                hi_names, device,
                 seq_lens=[1], probe_batch=probe_batch,
             )
         t3 = task3_forecast(
@@ -1114,6 +1372,14 @@ def run_one(
         t4 = task4_health_clf(
             Z_tr, Z_te, tr_data, te_data,
             seq_lens=health_seq_lens,
+            archetype_names=archetype_names,
+        )
+
+    if 5 in tasks:
+        t5 = task5_archetype(
+            Z_tr, Z_te, tr_data, te_data,
+            archetype_names=archetype_names or [],
+            seq_lens=archetype_seq_lens,
         )
 
     del model; torch.cuda.empty_cache()
@@ -1131,6 +1397,7 @@ def run_one(
         "task2_tnm":         t2_tnm_res,
         "task3_forecast":    t3,
         "task4_health_clf":  t4,
+        "task5_archetype":   t5,
     }
 
 
@@ -1139,7 +1406,8 @@ def run_one(
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon,
-            step_size, probe_batch, task1_seq_lens, delta_hi_seq_lens, health_seq_lens):
+            step_size, probe_batch, task1_seq_lens, delta_hi_seq_lens, health_seq_lens,
+            archetype_seq_lens, exclude_events):
     """Subprocess entry point — one checkpoint, one GPU."""
     logging.basicConfig(
         level=logging.INFO,
@@ -1147,7 +1415,7 @@ def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon
         force=True,
     )
     device = torch.device(f"cuda:{gpu_id}" if torch.cuda.is_available() else "cpu")
-    tr_data, te_data, hi_names, ep_offset_all, ep_len_all = shared_data
+    tr_data, te_data, hi_names, archetype_names, ep_offset_all, ep_len_all = shared_data
     try:
         result = run_one(
             cfg, tr_data, te_data, hi_names,
@@ -1159,6 +1427,9 @@ def _worker(rank, cfg, gpu_id, shared_data, result_path, tasks, forecast_horizon
             task1_seq_lens=task1_seq_lens,
             delta_hi_seq_lens=delta_hi_seq_lens,
             health_seq_lens=health_seq_lens,
+            archetype_seq_lens=archetype_seq_lens,
+            archetype_names=archetype_names,
+            exclude_events=exclude_events,
         )
     except Exception as e:
         import traceback
@@ -1202,6 +1473,16 @@ def write_flat_csv(all_results, hi_names, path):
             for metric, val in m.items():
                 if isinstance(val, (int, float)):
                     rows.append([name, w, "task4_health_clf", sl_tag, "-", metric, val])
+        for sl_tag, m in (res.get("task5_archetype") or {}).items():
+            for metric, val in m.items():
+                if isinstance(val, (int, float)):
+                    rows.append([name, w, "task5_archetype", sl_tag, "-", metric, val])
+                elif metric == "per_class" and isinstance(val, dict):
+                    for arch_name, pc in val.items():
+                        for pm, pv in pc.items():
+                            if isinstance(pv, (int, float)):
+                                rows.append([name, w, "task5_archetype", sl_tag,
+                                             arch_name, pm, pv])
     with open(path, "w", newline="") as fh:
         csv.writer(fh).writerows([header] + rows)
     logging.info(f"Flat CSV → {path}")
@@ -1233,10 +1514,11 @@ def write_curves_csv(all_results, path):
 
 
 def print_summary(all_results):
-    print(f"\n{'='*104}")
+    print(f"\n{'='*116}")
     print(f"  {'Model':<32}  {'T1 R²':>6}  {'T2 R²':>6}  "
-          f"{'Alarm@K20':>9}  {'T3 τ=1':>7}  {'T3 τ=10':>8}  {'gap@τ=10':>9}  {'T4 AUROC':>8}")
-    print("-" * 104)
+          f"{'Alarm@K20':>9}  {'T3 τ=1':>7}  {'T3 τ=10':>8}  {'gap@τ=10':>9}  "
+          f"{'T4 AUROC':>8}  {'T5 acc':>7}")
+    print("-" * 116)
     for res in all_results:
         if "error" in res:
             print(f"  {res['name']:<32}  ERROR: {res['error'][:40]}")
@@ -1266,6 +1548,12 @@ def print_summary(all_results):
             (v.get("auroc", float("nan")) for v in t4_all.values()),
             default=float("nan"),
         )
+        # Task 5: best seq_len (highest accuracy)
+        t5_all = res.get("task5_archetype") or {}
+        t5_acc = max(
+            (v.get("accuracy", float("nan")) for v in t5_all.values()),
+            default=float("nan"),
+        )
         auc_str = (
             f"{alrm['auc']:>9.3f}" if alrm.get("auc") is not None
             else f"{'nan':>9}"
@@ -1278,9 +1566,10 @@ def print_summary(all_results):
             f"{mr_all[0]:>7.5f}  "
             f"{mr_all[9] if len(mr_all) > 9 else float('nan'):>8.5f}  "
             f"{gap_arr[9] if len(gap_arr) > 9 else float('nan'):>+9.5f}  "
-            f"{t4_auroc:>8.3f}"
+            f"{t4_auroc:>8.3f}  "
+            f"{t5_acc:>7.3f}"
         )
-    print("=" * 104)
+    print("=" * 116)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1335,12 +1624,20 @@ def main():
     parser.add_argument("--health_seq_lens",   type=int, nargs="+", default=None,
                         metavar="N",
                         help="seq_lens for Task 4 health classification (default: 1 10 50)")
+    parser.add_argument("--archetype_seq_lens", type=int, nargs="+", default=None,
+                        metavar="N",
+                        help="seq_lens for Task 5 archetype classification (default: 1 10 50)")
+    parser.add_argument("--exclude_events",    action="store_true",
+                        help="drop timesteps flagged in event_mask from Task 1/2 "
+                             "probe data (scenario-3 only)")
     args = parser.parse_args()
     # --tasks 1 2 → set {1, 2};  omitted → None (all tasks)
     tasks = set(args.tasks) if args.tasks else None
-    task1_seq_lens    = args.task1_seq_lens     # None → use TASK1_SEQ_LENS default
-    delta_hi_seq_lens = args.delta_hi_seq_lens  # None → use DELTA_HI_SEQ_LENS default
-    health_seq_lens   = args.health_seq_lens    # None → use HEALTH_SEQ_LENS default
+    task1_seq_lens     = args.task1_seq_lens
+    delta_hi_seq_lens  = args.delta_hi_seq_lens
+    health_seq_lens    = args.health_seq_lens
+    archetype_seq_lens = args.archetype_seq_lens
+    exclude_events     = args.exclude_events
 
     if args.hdf5:
         global HDF5_PATH
@@ -1361,10 +1658,11 @@ def main():
     shared_data = load_dataset(
         HDF5_PATH, checkpoints[0]["encoder_type"], TRAIN_SPLIT, SEED
     )
-    tr_data, te_data, hi_names, ep_offset_all, ep_len_all = shared_data
+    tr_data, te_data, hi_names, archetype_names, ep_offset_all, ep_len_all = shared_data
     logging.info(
         f"Dataset  train={len(tr_data['obs']):,}  test={len(te_data['obs']):,}  "
-        f"HI dims={len(hi_names)}  episodes={len(ep_len_all)}"
+        f"HI dims={len(hi_names)}  episodes={len(ep_len_all)}  "
+        f"archetypes={archetype_names or 'none'}"
     )
 
     n_gpus = torch.cuda.device_count()
@@ -1384,7 +1682,8 @@ def main():
                 args=(rank, cfg, gpu_id, shared_data,
                       str(rp), tasks, args.forecast_horizon,
                       args.step_size, args.probe_batch,
-                      task1_seq_lens, delta_hi_seq_lens, health_seq_lens),
+                      task1_seq_lens, delta_hi_seq_lens, health_seq_lens,
+                      archetype_seq_lens, exclude_events),
             )
             p.start()
             procs.append(p)
@@ -1406,6 +1705,9 @@ def main():
                 task1_seq_lens=task1_seq_lens,
                 delta_hi_seq_lens=delta_hi_seq_lens,
                 health_seq_lens=health_seq_lens,
+                archetype_seq_lens=archetype_seq_lens,
+                archetype_names=archetype_names,
+                exclude_events=exclude_events,
             )
             with open(rp, "w") as f:
                 json.dump(result, f, indent=2)
