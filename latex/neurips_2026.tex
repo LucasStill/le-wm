@@ -1,0 +1,686 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+\PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2026
+
+% The authors should use one of these tracks.
+% Before accepting by the NeurIPS conference, select one of the options below.
+% 0. "default" for submission
+\usepackage{neurips_2026}
+
+% the "default" option is equal to the "main" option, which is used for the Main Track with double-blind reviewing.
+% 1. "main" option is used for the Main Track
+%  \usepackage[main]{neurips_2026}
+% 2. "position" option is used for the Position Paper Track
+%  \usepackage[position]{neurips_2026}
+% 3. "eandd" option is used for the Evaluations & Datasets Track
+ % \usepackage[eandd]{neurips_2026}
+ % if you need to opt-in for a single-blind submission in the E&D track:
+ %\usepackage[eandd, nonanonymous]{neurips_2026}
+% 4. "creativeai" option is used for the Creative AI Track
+%  \usepackage[creativeai]{neurips_2026}
+% 5. "sglblindworkshop" option is used for the Workshop with single-blind reviewing
+ % \usepackage[sglblindworkshop]{neurips_2026}
+% 6. "dblblindworkshop" option is used for the Workshop with double-blind reviewing
+%  \usepackage[dblblindworkshop]{neurips_2026}
+
+% After being accepted, the authors should add "final" behind the track to compile a camera-ready version.
+% 1. Main Track
+ % \usepackage[main, final]{neurips_2026}
+% 2. Position Paper Track
+%  \usepackage[position, final]{neurips_2026}
+% 3. Evaluations & Datasets Track
+ % \usepackage[eandd, final]{neurips_2026}
+% 4. Creative AI Track
+%  \usepackage[creativeai, final]{neurips_2026}
+% 5. Workshop with single-blind reviewing
+%  \usepackage[sglblindworkshop, final]{neurips_2026}
+% 6. Workshop with double-blind reviewing
+%  \usepackage[dblblindworkshop, final]{neurips_2026}
+% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote.
+% For workshops (5., 6.), the authors should add the name of the workshop, "\workshoptitle" command is used to set the workshop title.
+% \workshoptitle{WORKSHOP TITLE}
+
+% "preprint" option is used for arXiv or other preprint submissions
+ % \usepackage[preprint]{neurips_2026}
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{neurips_2026}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{graphicx} 
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{subcaption}
+
+
+
+% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote. 
+\title{TurboSens: An Interactive Turbofan Benchmark for World-Model Evaluation and Physical Understanding}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+
+\author{%
+  Lucas Thil\thanks{Use footnote for providing further information about author (webpage, alternative address)---\emph{not} for acknowledging funding agencies.} \\
+  LIX, École Polytechnique \\
+  Palaiseau, France \\
+  \texttt{lix@polytechnique.fr} \\
+  \And
+  IRT SystemX \\
+  Palaiseau, France \\
+  \texttt{lucas.thil@irt-systemx.fr} \\
+  \AND
+  Jesse Read \\
+  LIX, École Polytechnique \\
+  Palaiseau, France \\
+  \texttt{jread@lix.polytechnique.fr} \\
+  \AND
+  Rim Kaddah \\
+  IRT SystemX \\
+  Palaiseau, France \\
+  \texttt{rim.kaddah@irt-systemx.fr} \\
+  \AND
+  Guillaume Doquet \\
+  Safran Tech \\
+  Chateaufort, France \\
+  \texttt{guillaume.doquet@safrangroup.com} \\
+}
+
+\begin{document}
+
+
+\maketitle
+
+
+\begin{abstract}
+  The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on both the left- and right-hand margins. Use 10~point type, with a vertical spacing (leading) of 11~points. The word \textbf{Abstract} must be centered, bold, and in point size 12. Two line spaces precede the abstract. The abstract must be limited to one paragraph.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+% --- P1: the world-model evaluation question ---
+World models~\cite{Balestriero_LeCun_2025, Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025, okada2021dreaming, okada2022dreamingv2, Maes_Lidec_Scieur_LeCun_Balestriero_2026} are increasingly proposed as general‑purpose representations for complex dynamical systems, trained self‑supervised to predict future observations or latent states and spanning joint‑embedding, recurrent latent‑dynamics, and autoregressive architectures. A central open question is whether such representations capture the \emph{physical} structure of the underlying system or merely fit statistical regularities of the observation stream. Answering this requires paired access to sensor observations \emph{and} the true latent state of a physical system, a combination absent from almost every current benchmark: real operational data never exposes the true state, object‑level physics benchmarks~\cite{bear1physion, riochet2018intphys, Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025} reduce physical understanding to binary violation‑of‑expectation discrimination, and industrial prognostics benchmarks such as C‑MAPSS~\cite{Saxena_Goebel_Simon_Eklund_2008} and N‑CMAPSS~\cite{Arias_Chao_Kulkarni_Goebel_Fink_2021} expose only a scalar remaining‑useful‑life label rather than the full state vector.
+
+% --- P2: what we provide (core instrument framing) ---
+We introduce \textbf{TurboSens}, an interactive turbofan simulator and accompanying dataset designed as an \emph{instrument} for evaluating world‑model representations, not a replacement for existing prognostics benchmarks and not a claim of physical realism. TurboSens is generated by OpenDeckSMR~\cite{psaropoulos_2025_17804895}, a component‑level thermodynamic engine simulator that exposes, at every timestep, both a sensor stream and the full ten‑dimensional ground‑truth health state $\mathbf{s}_t$. This paired access enables an \emph{inverse evaluation protocol}: train a world model self‑supervised on sensor sequences alone, freeze the encoder, then probe the latent space against the true $\mathbf{s}_t$ through regression, forecasting, and out‑of‑distribution tasks. Because the true state is available but never used as a training signal, TurboSens asks whether a learned representation recovers the causal structure of engine health from observations alone, going beyond scalar RUL regression and binary violation‑of‑expectation discrimination.
+
+% --- P3: interactive / cookbook angle ---
+Crucially, TurboSens is \emph{interactive} rather than a static dump of trajectories. The simulator can be queried online under arbitrary action sequences, enabling counterfactual rollouts, reinforcement learning and model predictive control experiments, and on‑demand generation of out‑of‑distribution regimes for stress‑testing. We release the environment as a configurable pipeline: degradation archetypes, maintenance policies, stochastic event rates, and flight‑phase contexts are independent knobs, and new scenarios can be composed from the same building blocks. This \emph{cookbook} design is intended to encourage the community to enrich the pipeline with additional operating regimes and physical models over time, rather than to freeze a single reference benchmark.
+
+% --- P4: what makes the states interesting ---
+The simulator is driven by a well‑maintained‑fleet abstraction: engines are kept within a healthy operating band by an expert policy combining life‑limiting‑part ceilings, health‑correlated scheduling, and opportunistic bundling, with imperfect restoration and stochastic inspection findings. Trajectories therefore unfold not as a single monotonic arc but as a sawtooth of partial resets, punctuated by rare stochastic events (ingestion, surges, shocks, sensor spikes) that create discontinuities in the health state, the observations, or both. Sensor observations are recorded across multiple structured flight‑phase contexts per timestep, so different state configurations produce distinct signatures depending on operating condition, and the mapping from seven sensor channels to ten state dimensions is structurally sub‑determined. These are modelling choices, not claims of realism: they deliberately produce latent state trajectories that are interesting for representation learning to resolve.
+
+% --- P5: Contributions ---
+\paragraph{Contributions.}
+\begin{enumerate}
+    \item An \textbf{interactive turbofan simulator} built on OpenDeckSMR, exposing paired ground‑truth state and sensor observations with discrete maintenance actions, on‑demand trajectory generation, and a configurable cookbook of degradation archetypes, maintenance policies, events, and flight contexts.
+
+    \item An \textbf{inverse evaluation protocol} that trains world models self‑supervised on sensor sequences, then directly probes their representations against the full ten‑dimensional health state through regression, degradation‑velocity estimation, multi‑step latent forecasting, and out‑of‑distribution detection.
+
+    \item \textbf{Reference scenarios and splits}: released HDF5 datasets (TurboSens3, TurboSens4) with documented schemas, providing a concrete starting point for the protocol while leaving the pipeline open for further scenario composition.
+\end{enumerate}
+
+
+
+\section{Related Work}
+\label{sec:related_work}
+
+\paragraph{World models and physical understanding.}
+A growing family of world models, spanning joint‑embedding predictive architectures~\cite{Balestriero_LeCun_2025, Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025, Maes_Lidec_Scieur_LeCun_Balestriero_2026}, recurrent latent‑dynamics models~\cite{okada2021dreaming, okada2022dreamingv2}, and autoregressive sequence models~\cite{wang2020data, krishnan2022self, deng2024enhancing, calabrese2021predictive}, train encoders and predictors on high‑dimensional observation streams (pixels, sensors) to recover latent dynamics without supervision. A parallel body of work asks whether such representations encode \emph{physical} structure: Physion~\cite{bear1physion} scores rigid‑body outcome prediction, CLEVRER~\cite{yiclevrer} probes causal reasoning over collision videos, and IntPhys/IntPhys2~\cite{riochet2018intphys, Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025} adopt a violation‑of‑expectation paradigm. Two structural limitations recur across the field. First, these evaluations reduce physical understanding to binary discrimination, effectively an out‑of‑distribution detection task that flags anomalies rather than recovering the underlying state. Second, ground‑truth access to the latent state is typically unavailable, so evaluation collapses onto downstream task return or reconstruction quality and cannot certify whether the representation captures physical structure or merely statistical regularities of the observation stream.
+
+\paragraph{Interactive simulators and agentic environments.}
+Gym‑style interactive environments are the standard testbed for reinforcement learning and model predictive control~\cite{towers2024gymnasium, todorov2012mujoco}, but industrial degradation settings have received comparatively little attention in this form. \citet{Maulana_Starr_Ompusunggu_2023} argue for maintenance policies that reason over longer action horizons, a setting that requires an online simulator rather than a static dataset. No existing turbofan benchmark exposes this interface: an agent cannot apply a maintenance action and observe the consequence.
+
+\paragraph{Turbofan degradation datasets.}
+Turbofan prognostics research has long been dominated by C‑MAPSS~\cite{Saxena_Goebel_Simon_Eklund_2008} and N‑CMAPSS~\cite{Arias_Chao_Kulkarni_Goebel_Fink_2021}, which pair sensor streams with a scalar remaining‑useful‑life label as the sole evaluation target~\cite{Ramasso_Saxena}. These datasets established the field but expose neither the full latent health state nor an interactive interface.
+
+% Piloto_Weinstein_Battaglia_Botvinick_2022
+
+
+\section{Problem Formulation}
+
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.51\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/SimulatorSafran.drawio.pdf}
+        \caption{Turbosens modeling framework}
+        \label{fig:placeholder}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/turbofan.png}
+        \caption{Turbofan engine; with courtesy of the OpenDeckSMR team}
+        \label{fig:turbofan}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{figures/future_modeling.drawio.pdf}
+    \caption{Futures Modelling via Turbosens, in predicting possible horizons. }
+    \label{fig:future_modeling}
+\end{figure}
+
+\paragraph{POMDP formulation.}
+Each episode is a partially observable Markov decision process $(\Omega,\, \mathcal{A},\, \mathcal{O},\, f,\, g,\, \rho_0)$ with latent state
+\begin{equation}
+    \omega_t \;=\; \bigl(\mathbf{s}_t,\; \mathbf{c}_t,\; w_t,\; \phi_t,\; \eta_\mathrm{reg},\; e_t\bigr) \;\in\; \Omega,
+    \label{eq:omega}
+\end{equation}
+where $\mathbf{s}_t \in \mathbb{R}^K$ is the persistent mechanical wear ($K{=}10$ efficiency and flow capacity deviations over the five sub systems booster, fan, high pressure compressor, high pressure turbine, low pressure turbine), $\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ is the transient contamination channel (TurboSens4 only, zero in TurboSens3), $w_t$ is the weather state, $\phi_t$ is the flight phase context, $\eta_\mathrm{reg}$ is the episode constant region and archetype label, and $e_t$ is the sparse stochastic event flag. The engine state $\mathbf{s}_t$ is the quantity of interest for representation probing; the other channels of $\omega_t$ are carried because they shape its dynamics or the observation map. A maintenance action $a_t \in \mathcal{A}$ enters the transition multiplicatively through a per channel factor $\Lambda_k(a_t)$ that itself decomposes as a product over independent modulations (mechanical restoration mask, contamination decay, weather calendar jump),
+\begin{equation}
+    \omega^{(k)}_{t+1} \;=\; \Lambda_k(a_t)\,f_k(\omega_t) \;+\; \boldsymbol{\rho}_k(a_t, \omega_t) \;+\; \xi^{(k)}_t,
+    \qquad \Lambda_k(a_t) \;=\; \prod_j \lambda_{k,j}(a_t),
+    \label{eq:omega_transition}
+\end{equation}
+with $\boldsymbol{\rho}$ the additive action contribution (restoration of specific components of $\mathbf{s}_t$) and $\xi_t$ a zero mean process noise. Channel wise equations and the explicit form of the factors $\lambda_{k,j}$ are given in Appendix~\ref{sec:pomdp}.
+
+\paragraph{Phantom observation map.}
+Sensors do not observe $\omega_t$ directly. At each timestep, $S{=}7$ sensor types are sampled under $C$ flight phase contexts ($C{=}12$ for TurboSens3, $C{=}16$ for TurboSens4), yielding
+\begin{equation}
+    \mathbf{o}_t \;=\; g(\omega_t) \;+\; \boldsymbol{\varepsilon}_t \;\in\; \mathbb{R}^{S \times C}.
+    \label{eq:obs}
+\end{equation}
+Internally $g$ first maps the two wear channels into a phantom state $\tilde{\mathbf{s}}_t$ that couples them (Section~\ref{sec:dataset}) and then applies the OpenDeckSMR thermodynamic simulator at the current flight phase. A single $\mathbf{o}_t$ is therefore consistent with many $(\mathbf{s}_t, \mathbf{c}_t)$ pairs, and the observability of $\mathbf{s}_t$ is action dependent: a cleaning action collapses $\tilde{\mathbf{s}}_t$ back onto $\mathbf{s}_t$ for a limited window, after which contamination rebuilds and the two diverge again.
+
+\paragraph{Evaluation task.}
+We ask whether a world model trained self supervised on observation and action histories learns representations that recover the engine state $\mathbf{s}_t$. The encoder produces an embedding
+\begin{equation}
+    \mathbf{z}_t \;=\; \mathrm{Enc}_\theta(\mathbf{o}_{\le t},\; a_{\le t}) \;\in\; \mathbb{R}^d,
+\end{equation}
+which we freeze and feed to a lightweight probe $h_\psi$ trained to predict
+\begin{equation}
+    \hat{\mathbf{s}}_{t+\tau} \;=\; h_\psi(\mathbf{z}_t) \qquad \text{for } \tau \ge 0,
+    \label{eq:probe}
+\end{equation}
+reporting per component $R^2$ on held out episodes, together with a steps to next action regression task (Section~\ref{sec:evaluation}).
+
+
+\section{The TurboSens Dataset}
+\label{sec:dataset}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{cl}
+\toprule
+\textbf{Symbol} & \textbf{Description} \\
+\midrule
+$\omega_t \in \Omega$                   & Full POMDP latent state (see eq.~\ref{eq:omega}) \\
+$\mathbf{s}_t \in \mathbb{R}^K$         & Engine mechanical wear, probing target \\
+$\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ & Contamination channel (TurboSens4 only) \\
+$\tilde{\mathbf{s}}_t$                  & Phantom state coupling $\mathbf{s}_t$ and $\mathbf{c}_t$ \\
+$K, K_c$                                & Mechanical and contamination dimensions ($K{=}10$) \\
+$\phi_t$                                & Flight phase context \\
+$S, C$                                  & Sensor types and flight phase contexts \\
+$\mathbf{o}_t \in \mathbb{R}^{S \times C}$ & Sensor observation tensor at time $t$ \\
+$a_t \in \mathcal{A}$                   & Maintenance action at time $t$ \\
+$\mathbf{z}_t \in \mathbb{R}^d$         & Encoder embedding, $\mathrm{Enc}_\theta(\mathbf{o}_{\le t}, a_{\le t})$ \\
+$\hat{\mathbf{s}}_{t+\tau}$             & Probe prediction at horizon $\tau$ \\
+\bottomrule
+\end{tabular}
+\caption{Core notation used in the main body; the full symbol table (probe, objective, and scenario specific symbols) is in Appendix~\ref{sec:notation_full}.}
+\label{tab:notation}
+\end{table}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Property} & \textbf{TurboSens3} & \textbf{TurboSens4} \\
+\midrule
+Episodes                  & 400 & 500 \\
+Total Flights & 400k & 7M \\
+Max trajectory length     & 10{,}000 & 20{,}000 \\
+Observation $\mathbf{o}_t$  & $\mathbb{R}^{7 \times 12}$ & $\mathbb{R}^{(7+4) \times 16}$ \\
+Observation dim $n_s$     & 84 & 176 \\
+HI state dim $K$          & 10 & 10 \\
+Contamination & None & Yes \\
+Maintenance Policy        & Health Based & Health Based + Context \\
+Action space              & Discrete(6)  & Discrete(7)\\
+Maintenance event rate    & 0.04\% & XX \\
+Regions & 0 & 6 \\
+Degradation Archetypes & 4 & 4 \\
+Surprise Events & Yes & Yes \\
+Phantom Observation Model & No & Yes $\tilde s \neq s$ \\
+Weather Archetypes & Limited & Full \\
+Flight-phase contexts $C$ & 12 & 16 \\
+Context meaning & key probes & Flight-phase discretization \\
+\bottomrule
+\end{tabular}
+\caption{OpenDeckSMR environment properties across scenarios.
+\textsuperscript{$\dagger$}Fill in from data.}
+\label{tab:odsmr_base}
+\end{table}
+
+
+
+
+TurboSens is a synthetic turbofan degradation dataset generated with \texttt{OpenDeckSMR}, a component‑level thermodynamic simulator that exposes \emph{both} the observable sensor stream and the ground‑truth health state $\mathbf{s}_t$, the key property that enables direct evaluation of learned representations.
+
+We release two scenarios, summarized in Table~\ref{tab:odsmr_base}. \textbf{TurboSens3} offers health‑correlated maintenance with six actions, four heterogeneous degradation archetypes, twelve flight contexts, a library of ten stochastic events, and imperfect restoration. Full details of Scenario 3 are provided in Appendix~\ref{sec:dataset_scenario3}. \textbf{TurboSens4} extends this setting with a two‑channel hidden state that separates intrinsic mechanical wear from transient contamination, six geographic operating regions with region‑specific event intensities, sixteen flight‑phase contexts, and a phantom observation model in which the sensed state $\tilde{\mathbf{s}}$ can diverge from the true mechanical state $\mathbf{s}$ under heavy contamination.
+
+\paragraph{Phantom observations and action dependent observability.}
+The TurboSens4 observation model makes the latent state recovery problem non trivial even with perfect sensors. Two channels of the POMDP latent state $\omega_t$ carry the wear information: the persistent mechanical wear $\mathbf{s}_t \in \mathbb{R}^K$ and a transient contamination channel $\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ (fouling, deposits, residues) whose dynamics are region dependent and episode stochastic. Sensors do not observe either channel directly; the observation map $g$ in equation~\ref{eq:obs} first combines them into a phantom state
+\begin{equation}
+    \tilde{\mathbf{s}}_t \;=\; \mathrm{clip}\!\bigl(\mathbf{s}_t \;+\; M\,\max(0,-\mathbf{s}_t) \;+\; C\,\mathbf{c}_t\bigr),
+    \label{eq:phantom}
+\end{equation}
+a nonlinear coupling in which contamination inflates $\tilde{\mathbf{s}}_t$ above the true wear (heavy fouling can mimic compressor degradation) and the mask $M$ can even reverse sign contributions under specific failure modes. Actions split into two classes: \emph{life limiting part replacements} restore components of $\mathbf{s}_t$, while \emph{cleaning actions} decay $\mathbf{c}_t$ toward zero. Cleaning therefore does not improve the underlying engine but \emph{reveals} it: immediately after a clean, $\tilde{\mathbf{s}}_t \approx \mathbf{s}_t$ and the sensors expose the true wear; as contamination rebuilds, the phantom drifts and observability degrades. A representation that simply regresses $\tilde{\mathbf{s}}_t$ from $\mathbf{o}_t$ will fail, because a single $\mathbf{o}_t$ is consistent with many $(\mathbf{s}_t, \mathbf{c}_t)$ pairs; only a world model that integrates the action history can disentangle the two channels. A complete transition and observation specification is given in Appendix~\ref{sec:pomdp}.
+
+TurboSens is designed to challenge world models with sparse, imbalanced interventions ($0.04\%$-$0.26\%$ of steps contain maintenance), heterogeneous failure trajectories, multi‑context partial observability, and action‑dependent latent observability. The dataset is generated on‑demand via a provided script; the reference splits are released as HDF5 files with a documented schema.
+
+
+\subsection{Datasets Coverage}
+
+
+\subsection{Degradation and Maintenance Mechanisms}
+
+TurboSens3 models degradation as a two‑regime process: an early \textit{burn‑in} phase superimposed on a persistent linear drift. For component $k$, the per‑step increment is
+\begin{equation}
+  \Delta s_t^k = -\beta_k \exp(-t_k/\tau_k) - \alpha_k^{(m)} + \varepsilon_t,
+\end{equation}
+
+where $t_k$ is the time since last repair, $\beta_k,\tau_k$ control burn‑in, $\alpha_k^{(m)}$ is a speed‑regime‑dependent drift rate, and $\varepsilon_t$ is Gaussian noise. The linear term dominates after $\approx 500$ steps, consuming $\sim$70-80\% of the degradation budget over a $10^4$‑step episode.
+
+\paragraph{Heterogeneous archetypes.}
+Each episode is assigned one of four failure modes (Table~\ref{tab:archetypes}), modulating drift rates to concentrate wear in specific subsystems. Archetypes A-C mimic real‑world degradation; Archetype D (balanced) produces long‑lived engines that rarely reach airworthiness limits.
+
+\begin{table}[h]
+\centering
+\caption{Degradation archetypes in TurboSens3.}
+\label{tab:archetypes}
+\small
+\begin{tabular}{llcl}
+\toprule
+ID & Name & Drift multiplier & Dominant subsystem \\
+\midrule
+A & Compressor‑driven & up to $2.8\times$ & HPC, Booster \\
+B & Fan/Booster‑driven & up to $2.5\times$ & Fan, Booster \\
+C & Turbine‑driven    & up to $2.8\times$ & HPT, LPT \\
+D & Balanced          & $0.65\times$ & All uniformly \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Realistic maintenance.}
+Six actions (idle or replace one of five module assemblies) are selected by an expert policy that mimics industrial practice:
+\begin{itemize}
+    \item \textit{LLP ceilings}: hard cycle limits per component, forcing replacement regardless of health.
+    \item \textit{Health‑correlated scheduling}: maintenance is triggered when a component is predicted to reach 80\% degradation within $1500$-$2500$ steps.
+    \item \textit{Opportunistic bundling}: any visit triggers a scan for other near‑end‑of‑life components, bundling replacements to avoid costly separate shop visits.
+    \item \textit{Imperfect restoration}: even new components restore only $80$-$90\%$ of the degradation budget, with episode‑varying quality $\kappa\sim\mathcal{U}(0.7,1.0)$.
+    \item \textit{Inspection findings}: $3$-$7\%$ chance that a degraded component is missed during inspection, forcing an unplanned emergency visit $200$-$800$ steps later.
+\end{itemize}
+
+This policy yields sparse interventions ($0.04\%$ of timesteps) and strongly asymmetric inter‑maintenance intervals, in contrast to the uniform scheduling of earlier benchmarks.
+
+A library of ten stochastic events (\texttt{ingestion\_perm},
+\texttt{surge}, \texttt{icing}, \texttt{sensor\_spike}, and others)
+further enriches the dataset; full details, rates, and the mapping
+between labels and the physical phenomena they model are provided in
+Appendix~\ref{sec:dataset_events}.
+
+
+\section{Evaluation Framework}~\label{sec:evaluation}
+
+
+\textbf{Representation quality via HI probing.} The central evaluation question is whether a world model's encoder implicitly learns latent degradation structure without explicit supervision on $s_t$. We evaluate this with a probing protocol:
+
+\begin{enumerate}
+    \item Train the model on observation sequences with no access to state labels
+    \item Freeze the encoder, and train downstream models over the next tasks
+    \item Report per-component RMSE, pearson correlation and $R^2$ scores on held-out episodes. 
+    \item Report distribution score of possible forecasted futures
+\end{enumerate}
+
+This protocol cleanly separates representation learning from downstream decoding, is sensitive to the geometric structure of the latent space, and admits fair comparison across model families without retraining.
+
+\textbf{Probing as a training callback.} We integrate HI probing as a Lightning callback (HIProbeCallback) that runs every $N$ epochs during training, logging per-component $R^2$ to Weights \& Biases in real time. This turns probing from a post-hoc diagnostic into a continuous signal that reveals when the encoder begins to capture degradation structure during learning, a qualitatively different view than final-checkpoint evaluation.
+
+\textbf{Connection to industrial use case.} In deployed systems, ground-truth HI is unavailable: operators can only observe sensors. A representation that accurately encodes HI from sensor sequences could directly enable predictive maintenance scheduling, anomaly detection, and remaining-useful-life estimation without access to privileged simulator state. TurboSens provides the controlled setting to validate whether self-supervised world models can bridge this gap, with the ambition that models trained here transfer to real operational data where the ground truth is unknown but the physics is shared.
+
+\textbf{Maintenance-action RUL probing.}
+Beyond degradation state, a practically relevant question is whether the encoder
+implicitly captures \emph{operational timing}: how many timesteps remain until the
+next scheduled maintenance action.
+At each timestep $t$ within an episode of length $L$, we define the
+steps-to-next-action target as
+\begin{equation}
+    \tau_t \;=\; \min\!\Bigl(\inf\{k > 0 : a_{t+k} = 1\},\; H\Bigr),
+    \label{eq:rul-target}
+\end{equation}
+where $H$ is a horizon cap (we use $H = 300$) and the infimum defaults to
+$L - t$ when no future action exists in the episode.
+This formulation avoids the severe class imbalance of binary action prediction
+(${\sim}0.26\%$ positive rate) and is defined at every timestep, yielding a dense
+regression signal.
+Because $\tau_t$ is heavy-tailed, targets are $\log(1 + \tau_t)$-transformed
+before standardisation; predictions are mapped back to timestep units for
+reporting.
+
+We train the same \textsc{TransformerProbe} architecture used for HI probing
+(frozen encoder, lightweight transformer head, Adam with early stopping) on the
+scalar target $\tau_t$, and report RMSE, MAE, $R^2$, and Pearson-$r$ on
+held-out episodes in original timestep units.
+In contrast to HI probing, which tests whether the encoder encodes
+\emph{physical} degradation structure, action-RUL probing tests whether it
+encodes \emph{operational} structure, specifically, how closely the current
+system state precedes a human intervention decision.
+A high score on both probes would indicate that world-model representations
+are simultaneously physically informative and maintenance-schedule-aware, a
+combination directly applicable to predictive maintenance pipelines.
+
+
+\subsection{Downstream Evaluation Tasks}
+\label{sec:downstream}
+
+We evaluate the quality of the learned representations through four
+downstream tasks applied to a \emph{frozen} encoder, treating the world
+model as a black box whose only interface is the mapping
+$\mathbf{o}_{1:t} \mapsto \mathbf{z}_t$ and, where applicable, a learned
+latent predictor $g_\psi$. The protocol is deliberately
+architecture‑agnostic: any encoder that produces a per‑frame embedding,
+autoregressive or joint‑embedding, recurrent or transformer, can be
+evaluated without modification. No fine‑tuning of the world model is
+performed; a lightweight TransformerProbe is trained on top of the fixed
+embeddings for Tasks~1 and~2, while Task~3 requires no additional training.
+Together the tasks probe successively deeper properties of the
+representation: instantaneous state geometry, local degradation
+dynamics, and multi-step predictive accuracy.
+
+\paragraph{Task 1: Health-Indicator State Estimation.}
+A TransformerProbe is trained to predict the ten-dimensional
+health-indicator (HI) vector $\mathbf{s}_t \in \mathbb{R}^{10}$
+from a single encoder embedding $\mathbf{z}_t$.
+Each HI dimension corresponds to the efficiency or flow-capacity
+degradation of a turbofan component (fan, high-pressure compressor,
+high-pressure turbine, low-pressure turbine, booster).
+We report $R^2$, RMSE, and Pearson-$r$ per component and averaged
+across all ten dimensions.
+Strong performance on this task indicates that the latent space
+captures a geometrically structured representation of the current
+degradation state.
+
+\paragraph{Task 2: Degradation Velocity Estimation.}
+Rather than predicting the absolute health state, we ask whether the
+encoder captures the \emph{rate of change} of degradation.
+The target is $\Delta\mathbf{s}_t = \mathbf{s}_t - \mathbf{s}_{t-1}$,
+computed within episode boundaries and restricted to non-maintenance
+timesteps so the target reflects pure degradation drift and excludes
+the discontinuous HI reset induced by a maintenance action.
+Predicting $\Delta\mathbf{s}_t$ from a single snapshot $\mathbf{z}_t$
+is strictly harder than predicting $\mathbf{s}_t$: it requires the
+encoder to capture local curvature of the degradation manifold, not
+only its position.
+We additionally derive a maintenance alarm score by computing
+$\|\widehat{\Delta\mathbf{s}}_t\|_2$, the predicted rate magnitude,
+and evaluating binary alarm quality~(AUC-ROC, Average Precision, F1)
+for the event ``maintenance occurs within $K$ steps''
+at thresholds $K \in \{10, 20, 50, 100\}$.
+
+\paragraph{Task 3: Latent Forecasting with Action Divergence.}
+We evaluate the latent predictor directly by rolling out $\tau$ steps
+autoregressively from an initial context window of $H$ embeddings,
+then decoding each predicted embedding $\hat{\mathbf{z}}_{t+\tau}$
+to the HI space using the Task-1 probe (no additional training).
+Rollouts use zero actions, i.e.\ the world model propagates the
+current degradation trajectory without any maintenance intervention.
+To quantify the cost of ignoring maintenance, we split each
+$\tau$-step trajectory into \emph{clean} segments (no maintenance
+event in $(t, t{+}\tau]$) and \emph{event} segments (at least one
+maintenance event).
+We report the mean HI RMSE at each horizon $\tau$ for both splits
+and their difference
+$\delta(\tau) = \mathrm{RMSE}_{\mathrm{event}}(\tau)
+              - \mathrm{RMSE}_{\mathrm{clean}}(\tau)$,
+which we term the \emph{action-divergence gap}.
+A large gap at short horizons indicates that maintenance transitions
+are a primary source of forecast error and motivates
+action-conditioned world modelling.
+
+\subsection{Task 4: Out-of-Distribution Detection via Latent Surprise}
+\label{sec:ood}
+
+A central motivation for pairing a physics-based simulator with a learned
+world model is the ability to generate and evaluate scenarios that fall
+outside the training distribution.
+We define a \emph{latent surprise score} grounded in the world model's one‑step predictor:
+\begin{equation}
+  \mathcal{S}(t) =
+  \bigl\|\,\mathbf{z}_{t+1}
+         - g_\psi\!\bigl(\mathbf{z}_{t-H+1:t},\,\mathbf{a}_{t-H+1:t}\bigr)
+  \bigr\|_2,
+  \label{eq:surprise}
+\end{equation}
+where $g_\psi$ is the learned predictor and $\mathbf{z}_{t+1}$ is the
+encoder output at the next timestep. The score is well defined for any
+model that exposes a one step latent prediction, including recurrent
+world models where $g_\psi$ is the recurrence cell applied to the
+latent state, autoregressive models where $g_\psi$ is the decoder
+conditioned on a prefix, and joint embedding architectures where
+$g_\psi$ is the explicit predictor head.
+For in-distribution degradation trajectories, $\mathcal{S}(t)$ is small
+(Task~3 establishes $\mathcal{S} \approx 0.002$ at $\tau{=}1$ for clean segments).
+We ask whether $\mathcal{S}$ rises significantly for three categories of
+out-of-distribution trajectory generated with the simulator.
+
+\paragraph{OOD scenario 1: premature maintenance.}
+A maintenance action (HI restoration) is triggered while the engine health
+is still near nominal, a configuration never present in the training set
+where maintenance always follows significant degradation.
+The predictor, calibrated to slow monotonic drift, expects continuation of
+near-nominal dynamics; the sudden restoration jump produces a spike in
+$\mathcal{S}$ localised to the event timestep.
+
+\paragraph{OOD scenario 2: accelerated degradation.}
+Degradation-rate parameters are set to values outside the training range
+(multiplied by factors of $3\times$ and $5\times$).
+The latent trajectory traverses the learned degradation manifold at an
+anomalous speed; the predictor underestimates the per-step displacement,
+causing $\mathcal{S}$ to grow proportionally to the rate multiplier.
+
+\paragraph{OOD scenario 3: correlated component failure.}
+Two turbofan components whose degradation is statistically independent in
+the training distribution (fan and turbine) are forced to degrade
+simultaneously at elevated rate.
+Even if each component's individual rate lies within the training range,
+the joint dynamics occupy a low-density region of the latent space,
+detectable via the Mahalanobis distance
+$d_M(\mathbf{z}_t) = \sqrt{(\mathbf{z}_t - \boldsymbol{\mu})^\top
+                     \boldsymbol{\Sigma}^{-1}
+                     (\mathbf{z}_t - \boldsymbol{\mu})}$
+computed from the training embedding distribution.
+
+\paragraph{Metrics.}
+For each scenario we report: (i) mean $\mathcal{S}$ on OOD segments versus
+matched in-distribution segments, (ii) AUC-ROC for binary separation of OOD
+from in-distribution samples using $\mathcal{S}$ as the score, and (iii)
+the Mahalanobis distance in encoder space.
+A high AUC indicates that the world model's own prediction error serves as
+an unsupervised anomaly detector without any OOD-specific training signal.
+
+
+
+
+\subsection{Results}
+\label{sec:results}
+
+\paragraph{Task 1: Health-Indicator State Estimation.}
+Table~\ref{tab:task1} reports per-component $R^2$, RMSE, and Pearson-$r$ for the HI state estimation probe trained on frozen embeddings.
+The snapshot encoder ($w{=}1$) achieves a mean $R^2$ of $0.834$ across all ten turbofan health-indicator dimensions, with the single-embedding probe already recovering high-amplitude components nearly perfectly ($R^2 = 0.956$ for \texttt{H/Eff}, $R^2 = 0.935$ for \texttt{Fan/Wc}).
+The temporally aggregated encoder ($w{=}10$) improves the mean to $0.852$, with gains concentrated in low-amplitude, slowly varying components: \texttt{Bst/Wc} improves by $+0.10$ and \texttt{TrbH/Eff} by $+0.06$, while high-amplitude components remain essentially unchanged.
+This pattern is consistent with the TemporalAggregator acting as a noise-smoothing mechanism: components whose instantaneous sensor signal is weak benefit from averaging over a short trajectory window, whereas already-discriminative components saturate regardless. The lowest-performing dimension, \texttt{TrbL/Wc} ($R^2 \approx 0.71$), corresponds to a slow, low-amplitude degradation mode that is hard to separate from sensor noise at any window size.
+
+\paragraph{Task 2: Degradation Velocity Estimation.}
+The velocity probe (predicting $\Delta\mathbf{s}_t = \mathbf{s}_t - \mathbf{s}_{t-1}$ from a single embedding) yields $R^2 \approx -0.02$ for both model variants, with the probe converging to predicting the mean (near zero) within 21 epochs. This result is expected and informative.
+The per-step degradation increment is approximately $2.3 \times 10^{-5}$ in normalised units, five orders of magnitude smaller than the HI amplitude, with variance so low that the RMSE of a constant-mean predictor equals the empirical standard deviation. 
+The JEPA objective only requires predicting the \emph{position} of the next latent state, not the velocity of transition; accordingly, the encoder has no gradient pressure to encode degradation rate in its geometry. We evaluate the same probe with trajectory windows of $\mathrm{seq\_len} \in \{1, 10, 50\}$:
+a probe attending over a window of consecutive embeddings can compute a finite-difference estimate of the local slope, which is the natural
+information source for velocity estimation. Whether this suffices to push $R^2$ into positive territory is an open question we report in Table~\ref{tab:task2}.
+The maintenance alarm (Task~2b), scored by the predicted $\|\Delta\hat{\mathbf{s}}_t\|_2$, yields AUC$=0.50$ at all horizons when the velocity probe is constant, confirming that snapshot embeddings carry no direct alarm signal.
+
+\paragraph{Task 2 (bis): Degradation Archetype Classification.}
+Simply from some sequence, predict the current degradation archetype. 
+
+\paragraph{Task 3: Latent Forecasting and Action Divergence.}
+Figure~\ref{fig:task3} reports the mean HI RMSE of the zero-action autoregressive rollout as a function of forecast horizon $\tau$. We distinguish \emph{clean} trajectories (no maintenance event in $(t, t{+}\tau]$) from \emph{event} trajectories (at least one maintenance event), and define the action-divergence gap $\delta(\tau) = \mathrm{RMSE}_\mathrm{event}(\tau) - \mathrm{RMSE}_\mathrm{clean}(\tau)$.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/fig_task3_curves.pdf}
+    \caption{Latent forecasting comparison of window sizes for le-wm over latent forecasting (Task 3).}
+    \label{fig:task3}
+\end{figure}
+
+Three findings stand out. First, the one-step clean RMSE of the world model matches the direct encoder RMSE from Task~1 to within numerical precision: $0.00199$ vs.\ $0.00198$ for $w{=}1$, and $0.00186$ vs.\ $0.00187$ for $w{=}10$.
+The predictor adds negligible error at $\tau{=}1$ for smooth degradation trajectories; the encoder representation is the performance bottleneck, not the dynamics model.
+
+Second, the $w{=}10$ model consistently outperforms $w{=}1$ on clean trajectories at all horizons, with RMSE at $\tau{=}50$ of $0.00480$ versus $0.00572$ (a $16\%$ reduction). Temporal aggregation at the encoder level propagates useful trajectory direction information into the initial latent state, giving the predictor a better-informed context for multi-step rollout.
+
+Third, the action-divergence gap $\delta(\tau)$ peaks at $\tau \approx 6$ (gap $\approx +0.0031$ for $w{=}1$, $+0.0029$ for $w{=}10$) and decays monotonically toward zero by $\tau{=}50$. The peak reflects the average proximity of a sampled starting frame to the next maintenance event in the dataset. The decay is a statistical dilution effect: at large $\tau$, the event set is dominated by trajectories whose maintenance event falls late in the window, contributing minimal extra error at the evaluated prediction target. The peak gap ($\approx 0.003$) is larger than the per-step degradation drift at any horizon, establishing maintenance transitions as the dominant source of forecast error. This motivates action-conditioned world modelling as a direct and quantified next step: closing the gap would require the predictor to condition on the binary maintenance signal, which is precisely the information discarded in the zero-action baseline.
+
+
+We evaluate three unsupervised OOD detectors on frozen JEPA representations. Distribution-based methods (Mahalanobis, k-NN) achieve moderate AUC (0.69-0.77), demonstrating that JEPA embeddings carry distributional information about the training regime. Notably, prediction error (Surprise) is an unreliable OOD signal — OOD trajectories are often more predictable than training ones because fast monotonic degradation is locally smooth. This motivates future work on representations explicitly trained with anomaly-sensitivity objectives.
+
+
+\subsection{Discussion}
+\label{sec:discussion}
+
+The three evaluation tasks reveal a consistent picture of what the JEPA
+world model has and has not learned. The encoder geometry faithfully represents the instantaneous degradation state of all ten turbofan health indicators ($\bar{R}^2 {=} 0.85$ from a single snapshot), confirming that the JEPA objective successfully organises the latent space by health state without any supervised signal. The dynamics model propagates this state smoothly over at least 50 steps without divergence, and with near-zero overhead at one step, suggesting that the predictor has learned a good linearised approximation of the degradation physics for maintenance-free trajectories.
+
+The velocity task (Task~2) highlights a fundamental distinction between state encoding and rate encoding. JEPA's latent space is indexed by degradation position, not by the local tangent to the degradation manifold. This is not a deficiency of the architecture but a consequence of the objective: a world model trained to predict the next latent state in a near-linear dynamical system needs to encode position but not velocity, because position alone determines the next position.
+Recovering velocity requires either a trajectory window (seq\_len~$>$~1),
+or a change to the training objective such as explicitly penalising velocity prediction error, or stronger wider temporal objectives.
+
+The action-divergence gap (Task~3) provides a principled, quantified
+motivation for moving beyond the zero-action world model. The analysis shows that maintenance transitions, not long-horizon drift, dominate forecast error. An action-conditioned world model that receives the binary maintenance signal as input to its predictor would, in principle, collapse the event and clean RMSE curves to the same trajectory, reducing peak RMSE by a factor of approximately $2.3\times$ at short horizons. This represents a concrete and measurable target for future work, directly informed by the benchmark results.
+
+
+%% ── Table 1: Task 1 HI State Estimation ─────────────────────────────────────
+\begin{table}[t]
+\centering
+\caption{%
+  Task~1: Health-indicator state estimation.
+  A TransformerProbe is trained on frozen embeddings to predict
+  each of the ten turbofan HI dimensions.
+  Results are shown for the snapshot encoder ($w{=}1$) and the
+  temporally aggregated encoder ($w{=}10$).
+}
+\label{tab:task1}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{3}{c}{$w = 1$} & \multicolumn{3}{c}{$w = 10$} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Component & $R^2$ & RMSE & Pearson & $R^2$ & RMSE & Pearson \\
+\midrule
+Bst/Eff    & 0.847 & 0.00185 & 0.926 & 0.850 & 0.00183 & 0.930 \\
+Bst/Wc     & 0.762 & 0.00233 & 0.883 & 0.865 & 0.00176 & 0.939 \\
+Fan/Eff    & 0.782 & 0.00217 & 0.888 & 0.785 & 0.00216 & 0.891 \\
+Fan/Wc     & 0.935 & 0.00107 & 0.969 & 0.954 & 0.00090 & 0.979 \\
+H/Eff      & 0.956 & 0.00162 & 0.978 & 0.957 & 0.00159 & 0.978 \\
+H/Wc       & 0.863 & 0.00285 & 0.930 & 0.874 & 0.00274 & 0.935 \\
+TrbH/Eff   & 0.792 & 0.00202 & 0.890 & 0.850 & 0.00172 & 0.924 \\
+TrbH/Wc    & 0.869 & 0.00145 & 0.933 & 0.855 & 0.00152 & 0.926 \\
+TrbL/Eff   & 0.819 & 0.00195 & 0.906 & 0.818 & 0.00196 & 0.906 \\
+TrbL/Wc    & 0.713 & 0.00249 & 0.845 & 0.714 & 0.00248 & 0.846 \\
+\midrule
+\textbf{Mean} & \textbf{0.834} & \textbf{0.00198} & \textbf{0.915}
+              & \textbf{0.852} & \textbf{0.00187} & \textbf{0.925} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ── Table 2: Task 3 Summary ──────────────────────────────────────────────────
+\label{tab:task2}
+\begin{table}[t]
+\centering
+\caption{%
+  Task~3: Latent forecasting RMSE at selected horizons $\tau$.
+  \emph{Clean}: no maintenance event in $(t, t{+}\tau]$.
+  \emph{Event}: at least one maintenance event in $(t, t{+}\tau]$.
+  \emph{Gap}: $\delta(\tau) = \mathrm{RMSE}_\mathrm{event} -
+  \mathrm{RMSE}_\mathrm{clean}$, quantifying the action-divergence cost of the zero-action forecaster. All values are mean HI RMSE $\times 10^{3}$.
+}
+\label{tab:task3}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{r ccc ccc}
+\toprule
+& \multicolumn{3}{c}{$w = 1$} & \multicolumn{3}{c}{$w = 10$} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+$\tau$ & Clean & Event & Gap & Clean & Event & Gap \\
+\midrule
+ 1  & 1.99 & 4.52 & $+$2.54 & 1.86 & 4.28 & $+$2.42 \\
+ 5  & 2.07 & 5.10 & $+$3.04 & 1.91 & 4.75 & $+$2.83 \\
+10  & 2.22 & 5.04 & $+$2.83 & 2.03 & 4.64 & $+$2.61 \\
+20  & 3.04 & 5.03 & $+$1.99 & 2.57 & 4.43 & $+$1.86 \\
+30  & 4.21 & 5.26 & $+$1.05 & 3.47 & 4.49 & $+$1.01 \\
+50  & 5.72 & 5.89 & $+$0.17 & 4.80 & 4.75 & $-$0.05 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+
+
+
+
+\section*{References}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+
+
+%References follow the acknowledgments in the camera-ready paper. Use unnumbered first-level heading for
+%the references. Any choice of citation style is acceptable as long as you are
+%consistent. It is permissible to reduce the font size to \verb+small+ (9 point)
+%when listing the references.
+%Note that the Reference section does not count towards the page limit.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\appendix
+
+
+\include{appendix}
+
+
+
+
+\newpage
+\input{checklist.tex}
+
+
+
+\end{document}

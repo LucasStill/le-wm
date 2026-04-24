@@ -1,0 +1,267 @@
+
+ @article{Balestriero_LeCun_2025, title={LeJEPA: Provable and Scalable Self-Supervised Learning Without the Heuristics}, url={http://arxiv.org/abs/2511.08544}, DOI={10.48550/arXiv.2511.08544}, abstractNote={Learning manipulable representations of the world and its dynamics is central to AI. Joint-Embedding Predictive Architectures (JEPAs) offer a promising blueprint, but lack of practical guidance and theory has led to ad-hoc R&D. We present a comprehensive theory of JEPAs and instantiate it in {bf LeJEPA}, a lean, scalable, and theoretically grounded training objective. First, we identify the isotropic Gaussian as the optimal distribution that JEPAs’ embeddings should follow to minimize downstream prediction risk. Second, we introduce a novel objective--{bf Sketched Isotropic Gaussian Regularization} (SIGReg)--to constrain embeddings to reach that ideal distribution. Combining the JEPA predictive loss with SIGReg yields LeJEPA with numerous theoretical and practical benefits: (i) single trade-off hyperparameter, (ii) linear time and memory complexity, (iii) stability across hyper-parameters, architectures (ResNets, ViTs, ConvNets) and domains, (iv) heuristics-free, e.g., no stop-gradient, no teacher-student, no hyper-parameter schedulers, and (v) distributed training-friendly implementation requiring only $approx$50 lines of code. Our empirical validation covers 10+ datasets, 60+ architectures, all with varying scales and domains. As an example, using imagenet-1k for pretraining and linear evaluation with frozen backbone, LeJEPA reaches 79% with a ViT-H/14. We hope that the simplicity and theory-friendly ecosystem offered by LeJEPA will reestablish self-supervised pre-training as a core pillar of AI research (href{git@github.com:rbalestr-lab/lejepa.git}{GitHub repo}).}, note={arXiv:2511.08544 [cs]}, number={arXiv:2511.08544}, publisher={arXiv}, author={Balestriero, Randall and LeCun, Yann}, year={2025}, month=nov }
+
+ @article{Maes_Lidec_Scieur_LeCun_Balestriero_2026, title={LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}, url={http://arxiv.org/abs/2603.19312}, DOI={10.48550/arXiv.2603.19312}, abstractNote={Joint Embedding Predictive Architectures (JEPAs) offer a compelling framework for learning world models in compact latent spaces, yet existing methods remain fragile, relying on complex multi-term losses, exponential moving averages, pre-trained encoders, or auxiliary supervision to avoid representation collapse. In this work, we introduce LeWorldModel (LeWM), the first JEPA that trains stably end-to-end from raw pixels using only two loss terms: a next-embedding prediction loss and a regularizer enforcing Gaussian-distributed latent embeddings. This reduces tunable loss hyperparameters from six to one compared to the only existing end-to-end alternative. With ~15M parameters trainable on a single GPU in a few hours, LeWM plans up to 48x faster than foundation-model-based world models while remaining competitive across diverse 2D and 3D control tasks. Beyond control, we show that LeWM’s latent space encodes meaningful physical structure through probing of physical quantities. Surprise evaluation confirms that the model reliably detects physically implausible events.}, note={arXiv:2603.19312 [cs]}, number={arXiv:2603.19312}, publisher={arXiv}, author={Maes, Lucas and Lidec, Quentin Le and Scieur, Damien and LeCun, Yann and Balestriero, Randall}, year={2026}, month=mar }
+
+
+
+ @book{Ramasso_Saxena, title={Review and Analysis of Algorithmic Approaches Developed for Prognostics on CMAPSS Dataset}, url={https://ntrs.nasa.gov/api/citations/20150007677/downloads/20150007677.pdf}, institution={NASA}, author={Ramasso, Emmanuel and Saxena, Abhinav}, year={2015} }
+
+@book{richter2011advanced,
+  title={Advanced control of turbofan engines},
+  author={Richter, Hanz},
+  year={2011},
+  publisher={Springer Science \& Business Media}
+}
+
+ @article{Arias_Chao_Kulkarni_Goebel_Fink_2021, title={Aircraft Engine Run-to-Failure Dataset under Real Flight Conditions for Prognostics and Diagnostics}, volume={6}, ISSN={2306-5729}, url={https://www.mdpi.com/2306-5729/6/1/5}, DOI={10.3390/data6010005}, abstractNote={A key enabler of intelligent maintenance systems is the ability to predict the remaining useful lifetime (RUL) of its components, i.e., prognostics. The development of data-driven prognostics models requires datasets with run-to-failure trajectories. However, large representative run-to-failure datasets are often unavailable in real applications because failures are rare in many safety-critical systems. To foster the development of prognostics methods, we develop a new realistic dataset of run-to-failure trajectories for a fleet of aircraft engines under real flight conditions. The dataset was generated with the Commercial Modular Aero-Propulsion System Simulation (CMAPSS) model developed at NASA. The damage propagation modelling used in this dataset builds on the modelling strategy from previous work and incorporates two new levels of fidelity. First, it considers real flight conditions as recorded on board of a commercial jet. Second, it extends the degradation modelling by relating the degradation process to its operation history. This dataset also provides the health, respectively, fault class. Therefore, besides its applicability to prognostics problems, the dataset can be used for fault diagnostics.}, number={1}, journal={Data}, author={Arias Chao, Manuel and Kulkarni, Chetan and Goebel, Kai and Fink, Olga}, year={2021}, month=jan, pages={5}, language={en} }
+
+ @article{Maulana_Starr_Ompusunggu_2023, title={Explainable Data-Driven Method Combined with Bayesian Filtering for Remaining Useful Lifetime Prediction of Aircraft Engines Using NASA CMAPSS Datasets}, volume={11}, ISSN={2075-1702}, url={https://www.mdpi.com/2075-1702/11/2/163}, DOI={10.3390/machines11020163}, abstractNote={An aircraft engine is expected to have a high-reliability system as a safety-critical asset. A scheduled maintenance strategy based on statistical calculation has been employed as the current practice to achieve the reliability requirement. Any improvement to this maintenance interval is made after significant reliability issues arise (such as flight delays and high component removals). Several publications and research studies have been conducted related to this issue, one of them involves performing simulations and providing aircraft operation datasets. The recently published NASA CMAPPS datasets have been utilised in this paper since they simulate flight data recording from various measurements. A prognostics model can be developed by analysing these datasets and predicting the engine’s reliability before failure. However, the state-of-the-art prognostics techniques published in the literature using these NASA CMAPPS datasets are mainly purely data-driven. These techniques mainly deal with a “black box” process which does not include uncertainty quantification (UQ). These two factors are barriers to prognostics applications, particularly in the aviation industry. To tackle these issues, this paper aims at developing explainable and transparent algorithms and a software tool to compute the engine health, estimate engine end of life (EoL), and eventually predict its remaining useful life (RUL). The proposed algorithms use hybrid metrics for feature selection, employ logistic regression for health index estimation, and unscented Kalman filter (UKF) to update the prognostics model for predicting the RUL in a recursive fashion. Among the available datasets, dataset 02 is chosen because it has been widely used and is an ideal candidate for result comparison and dataset 03 is employed as a new state-of-the-art. As a result, the proposed algorithms yield 34.5–55.6% better performance in terms of the root mean squared error (RMSE) compared with the previous work. More importantly, the proposed method is transparent and it quantifies the uncertainty during the prediction process.}, number={2}, journal={Machines}, author={Maulana, Faisal and Starr, Andrew and Ompusunggu, Agusmian Partogi}, year={2023}, month=jan, pages={163}, language={en} }
+
+
+ @article{Teichman_Tadros_1991, title={Analytical and Experimental Simulation of Fan Blade Behavior and Damage Under Bird Impact}, volume={113}, ISSN={0742-4795, 1528-8919}, url={https://asmedigitalcollection.asme.org/gasturbinespower/article/113/4/582/407818/Analytical-and-Experimental-Simulation-of-Fan}, DOI={10.1115/1.2906281}, abstractNote={An extensive analytical and experimental program has been undertaken to investigate the Foreign Object Damage resistance capabilities of external components for small gas turbofan engines. A transient nonlinear impact analysis has been used to predict the structural response of fan blades under bird ingestion conditions. This analysis is based on finite elements, a three-dimensional bird load model, and an interactive structure-to-bird contact algorithm. Experiments were designed and carried out to record large blade deformations during bird impact, and were used to validate and calibrate the analytical models. The analytical models and testing program are described, and dominant fan blade response and failure modes are presented. Predicted results demonstrate good correlation with tests. Analysis application to fan blade design and other engine components is recommended.}, number={4}, journal={Journal of Engineering for Gas Turbines and Power}, author={Teichman, H. C. and Tadros, R. N.}, year={1991}, month=oct, pages={582–594}, language={en} }
+
+
+ @article{Li_Lou_Chai_Ma_Jin_2022, title={Numerical Simulation of Bird Strike on Jet Engine Considering Bird Ingestion Requirements}, volume={59}, ISSN={1533-3868}, url={https://arc.aiaa.org/doi/10.2514/1.C036076}, DOI={10.2514/1.C036076}, number={3}, journal={Journal of Aircraft}, author={Li, Junjie and Lou, Yunfeng and Chai, Xianghai and Ma, Zhiqiang and Jin, Xianlong}, year={2022}, month=may, pages={761–773}, language={en} }
+
+ @article{Luo_Ma_Chen_Liu_Zhao_2020, title={Transient Analysis and Safety Assessment of Turbofan Engine Structures during Bird Ingestion}, volume={2020}, rights={http://creativecommons.org/licenses/by/4.0/}, ISSN={1687-5966, 1687-5974}, url={https://www.hindawi.com/journals/ijae/2020/7404587/}, DOI={10.1155/2020/7404587}, abstractNote={The high bypass ratio turbofan engine’s load-carrying structure transient response during bird ingestion was analyzed in accordance with the engine bird ingestion certification regulations, the principles of structural safety assessment were represented, and the structural safety analysis and assessment method of Turbo-Fan engine during bird ingestion were proposed. A high bypass ratio turbofan engine’s FEM was established and verified the rationality when its’ operation. Large bird ingestion into an engine’s procedure was conducted, the dynamic responses of key components on engine’s load-carrying structures during the bird ingestion were discussed, and the safety assessment consequence was obtained. We draw a conclusion that the relevant analysis/simulation data could be submitted to engine certification administration as key documents, the structural safety analysis and assessment method of turbofan engine due to bird ingestion could be applied as analysis and prediction work in the engine bird ingestion certification.}, journal={International Journal of Aerospace Engineering}, author={Luo, Gang and Ma, Chi and Chen, Wei and Liu, Lulu and Zhao, Zhenhua}, year={2020}, month=july, pages={1–17}, language={en} }
+
+ @article{Arena_Collotta_Luca_Ruggieri_Termine_2021, title={Predictive Maintenance in the Automotive Sector: A Literature Review}, volume={27}, ISSN={2297-8747}, url={https://www.mdpi.com/2297-8747/27/1/2}, DOI={10.3390/mca27010002}, abstractNote={With the rapid advancement of sensor and network technology, there has been a notable increase in the availability of condition-monitoring data such as vibration, temperature, pressure, voltage, and other electrical and mechanical parameters. With the introduction of big data, it is possible to prevent potential failures and estimate the remaining useful life of the equipment by developing advanced mathematical models and artificial intelligence (AI) techniques. These approaches allow taking maintenance actions quickly and appropriately. In this scenario, this paper presents a systematic literature review of statistical inference approaches, stochastic methods, and AI techniques for predictive maintenance in the automotive sector. It provides a summary on these approaches, their main results, challenges, and opportunities, and it supports new research works for vehicle predictive maintenance.}, number={1}, journal={Mathematical and Computational Applications}, author={Arena, Fabio and Collotta, Mario and Luca, Liliana and Ruggieri, Marianna and Termine, Francesco Gaetano}, year={2021}, month=dec, pages={2}, language={en} }
+
+ @article{Stanton_Munir_Ikram_El_Bakry_2023, title={Predictive maintenance analytics and implementation for aircraft: Challenges and opportunities}, volume={26}, ISSN={1098-1241, 1520-6858}, url={https://incose.onlinelibrary.wiley.com/doi/10.1002/sys.21651}, DOI={10.1002/sys.21651}, abstractNote={Abstract
+            The increase in available data from sensors embedded in industrial equipment has led to a recent rise in the use of industrial predictive maintenance. In the aircraft industry, predictive maintenance has become an essential tool for optimizing maintenance schedules, reducing aircraft downtime, and identifying unexpected faults. Despite this, there is currently no comprehensive survey of predictive maintenance applications and techniques solely devoted to the aircraft manufacturing industry. This article is an in‐depth state‐of‐the‐art systematic literature review of the different data types, applications, projects, and opportunities for predictive maintenance in this industry. The goal of this review is to identify, and highlight the challenges and opportunities for future research in this field. This review found that the current focus of research is too biased towards aircraft engines due to a lack of publicly available data sets, and that greater automation is an important step to optimize aircraft maintenance to its full potential.}, number={2}, journal={Systems Engineering}, author={Stanton, Izaak and Munir, Kamran and Ikram, Ahsan and El‐Bakry, Murad}, year={2023}, month=mar, pages={216–237}, language={en} }
+
+ @article{Tiddens_Braaksma_Tinga_2022, title={Exploring predictive maintenance applications in industry}, volume={28}, rights={https://www.emerald.com/insight/site-policies}, ISSN={1355-2511}, url={http://www.emerald.com/jqme/article/28/1/68-85/450187}, DOI={10.1108/JQME-05-2020-0029}, abstractNote={Purpose
+              Asset owners and maintainers need to make timely and well-informed maintenance decisions based on the actual or predicted condition of their physical assets. However, only few companies have succeeded to implement predictive maintenance (PdM) effectively. Therefore, this paper aims to identify why only few companies were able to successfully implement PdM.
+            
+            
+              Design/methodology/approach
+              A multiple-case study including 13 cases in various industries in The Netherlands was conducted. This paper examined the choices made in practice to achieve PdM and possible dependencies between and motivations for these choices.
+            
+            
+              Findings
+              An implementation process for PdM appeared to comprise four elements: a trigger, data collection, maintenance technique (MT) selection and decision-making. For each of these elements, several options were available. By identifying the choices made by companies in practice and mapping them on the proposed elements, logical combinations appeared. These combinations can provide insight into the PdM implementation process and may also lead to guidance on this topic. Further, while successful companies typically combined various techniques, the mostly applied techniques were still those based on previous experiences.
+            
+            
+              Research limitations/implications
+              This research calls for better methods or procedures to guide the selection and use of suitable types of PdM, directed by the firm’s ambition level and the available data.
+            
+            
+              Originality/value
+              While it is important for firms to make suitable choices during implementation, the literature often focusses only on developing additional techniques for PdM. This paper provides new insights into the application and selection of techniques for PdM in practice and helps practitioners reduce the often applied trial-and-error process.}, number={1}, journal={Journal of Quality in Maintenance Engineering}, author={Tiddens, Wieger and Braaksma, Jan and Tinga, Tiedo}, year={2022}, month=feb, pages={68–85}, language={en} }
+
+ @article{Khan_Sohaib_Rashid_Ali_Akbar_Basit_Ahmad_2021, title={Recent trends and challenges in predictive maintenance of aircraft’s engine and hydraulic system}, volume={43}, ISSN={1678-5878, 1806-3691}, url={https://link.springer.com/10.1007/s40430-021-03121-2}, DOI={10.1007/s40430-021-03121-2}, number={8}, journal={Journal of the Brazilian Society of Mechanical Sciences and Engineering}, author={Khan, Khalid and Sohaib, Muhammad and Rashid, Azaz and Ali, Saddam and Akbar, Hammad and Basit, Abdul and Ahmad, Tanvir}, year={2021}, month=aug, pages={403}, language={en} }
+
+ @article{Ucar_Karakose_Kirimca_2024, title={Artificial Intelligence for Predictive Maintenance Applications: Key Components, Trustworthiness, and Future Trends}, volume={14}, ISSN={2076-3417}, url={https://www.mdpi.com/2076-3417/14/2/898}, DOI={10.3390/app14020898}, abstractNote={Predictive maintenance (PdM) is a policy applying data and analytics to predict when one of the components in a real system has been destroyed, and some anomalies appear so that maintenance can be performed before a breakdown takes place. Using cutting-edge technologies like data analytics and artificial intelligence (AI) enhances the performance and accuracy of predictive maintenance systems and increases their autonomy and adaptability in complex and dynamic working environments. This paper reviews the recent developments in AI-based PdM, focusing on key components, trustworthiness, and future trends. The state-of-the-art (SOTA) techniques, challenges, and opportunities associated with AI-based PdM are first analyzed. The integration of AI technologies into PdM in real-world applications, the human–robot interaction, the ethical issues emerging from using AI, and the testing and validation abilities of the developed policies are later discussed. This study exhibits the potential working areas for future research, such as digital twin, metaverse, generative AI, collaborative robots (cobots), blockchain technology, trustworthy AI, and Industrial Internet of Things (IIoT), utilizing a comprehensive survey of the current SOTA techniques, opportunities, and challenges allied with AI-based PdM.}, number={2}, journal={Applied Sciences}, author={Ucar, Aysegul and Karakose, Mehmet and Kırımça, Necim}, year={2024}, month=jan, pages={898}, language={en} }
+
+ @article{Davari_Veloso_Costa_Pereira_Ribeiro_Gama_2021, title={A Survey on Data-Driven Predictive Maintenance for the Railway Industry}, volume={21}, ISSN={1424-8220}, url={https://www.mdpi.com/1424-8220/21/17/5739}, DOI={10.3390/s21175739}, abstractNote={In the last few years, many works have addressed Predictive Maintenance (PdM) by the use of Machine Learning (ML) and Deep Learning (DL) solutions, especially the latter. The monitoring and logging of industrial equipment events, like temporal behavior and fault events—anomaly detection in time-series—can be obtained from records generated by sensors installed in different parts of an industrial plant. However, such progress is incipient because we still have many challenges, and the performance of applications depends on the appropriate choice of the method. This article presents a survey of existing ML and DL techniques for handling PdM in the railway industry. This survey discusses the main approaches for this specific application within a taxonomy defined by the type of task, employed methods, metrics of evaluation, the specific equipment or process, and datasets. Lastly, we conclude and outline some suggestions for future research.}, number={17}, journal={Sensors}, author={Davari, Narjes and Veloso, Bruno and Costa, Gustavo De Assis and Pereira, Pedro Mota and Ribeiro, Rita P. and Gama, João}, year={2021}, month=aug, pages={5739}, language={en} }
+
+ @article{Nguyen_Medjaher_Tran_2023, title={A review of artificial intelligence methods for engineering prognostics and health management with implementation guidelines}, volume={56}, ISSN={0269-2821, 1573-7462}, url={https://link.springer.com/10.1007/s10462-022-10260-y}, DOI={10.1007/s10462-022-10260-y}, number={4}, journal={Artificial Intelligence Review}, author={Nguyen, Khanh T. P. and Medjaher, Kamal and Tran, Do T.}, year={2023}, month=apr, pages={3659–3709}, language={en} }
+
+ @article{Biggio_Kastanis_2020, title={Prognostics and Health Management of Industrial Assets: Current Progress and Road Ahead}, volume={3}, ISSN={2624-8212}, url={https://www.frontiersin.org/articles/10.3389/frai.2020.578613/full}, DOI={10.3389/frai.2020.578613}, journal={Frontiers in Artificial Intelligence}, author={Biggio, Luca and Kastanis, Iason}, year={2020}, month=nov, pages={578613} }
+
+ @article{Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025, title={V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning}, url={http://arxiv.org/abs/2506.09985}, DOI={10.48550/arXiv.2506.09985}, abstractNote={A major challenge for modern AI is to learn to understand the world and learn to act largely by observation. This paper explores a self-supervised approach that combines internet-scale video data with a small amount of interaction data (robot trajectories), to develop models capable of understanding, predicting, and planning in the physical world. We first pre-train an action-free joint-embedding-predictive architecture, V-JEPA 2, on a video and image dataset comprising over 1 million hours of internet video. V-JEPA 2 achieves strong performance on motion understanding (77.3 top-1 accuracy on Something-Something v2) and state-of-the-art performance on human action anticipation (39.7 recall-at-5 on Epic-Kitchens-100) surpassing previous task-specific models. Additionally, after aligning V-JEPA 2 with a large language model, we demonstrate state-of-the-art performance on multiple video question-answering tasks at the 8 billion parameter scale (e.g., 84.0 on PerceptionTest, 76.9 on TempCompass). Finally, we show how self-supervised learning can be applied to robotic planning tasks by post-training a latent action-conditioned world model, V-JEPA 2-AC, using less than 62 hours of unlabeled robot videos from the Droid dataset. We deploy V-JEPA 2-AC zero-shot on Franka arms in two different labs and enable picking and placing of objects using planning with image goals. Notably, this is achieved without collecting any data from the robots in these environments, and without any task-specific training or reward. This work demonstrates how self-supervised learning from web-scale data and a small amount of robot interaction data can yield a world model capable of planning in the physical world.}, note={arXiv:2506.09985 [cs]}, number={arXiv:2506.09985}, publisher={arXiv}, author={Assran, Mido and Bardes, Adrien and Fan, David and Garrido, Quentin and Howes, Russell and Mojtaba and Komeili and Muckley, Matthew and Rizvi, Ammar and Roberts, Claire and Sinha, Koustuv and Zholus, Artem and Arnaud, Sergio and Gejji, Abha and Martin, Ada and Hogan, Francois Robert and Dugas, Daniel and Bojanowski, Piotr and Khalidov, Vasil and Labatut, Patrick and Massa, Francisco and Szafraniec, Marc and Krishnakumar, Kapil and Li, Yong and Ma, Xiaodong and Chandar, Sarath and Meier, Franziska and LeCun, Yann and Rabbat, Michael and Ballas, Nicolas}, year={2025}, month=june }
+
+@article{towers2024gymnasium,
+  title={Gymnasium: A Standard Interface for Reinforcement Learning Environments},
+  author={Towers, Mark and Kwiatkowski, Ariel and Terry, Jordan and Balis, John U and De Cola, Gianluca and Deleu, Tristan and Goul{\~a}o, Manuel and Kallinteris, Andreas and Krimmel, Markus and KG, Arjun and others},
+  journal={arXiv preprint arXiv:2407.17032},
+  year={2024}
+}
+
+@inproceedings{todorov2012mujoco,
+  title={MuJoCo: A physics engine for model-based control},
+  author={Todorov, Emanuel and Erez, Tom and Tassa, Yuval},
+  booktitle={2012 IEEE/RSJ International Conference on Intelligent Robots and Systems},
+  pages={5026--5033},
+  year={2012},
+  organization={IEEE},
+  doi={10.1109/IROS.2012.6386109}
+}
+ @inproceedings{Saxena_Goebel_Simon_Eklund_2008, address={Denver, CO, USA}, title={Damage propagation modeling for aircraft engine run-to-failure simulation}, ISBN={978-1-4244-1935-7}, url={http://ieeexplore.ieee.org/document/4711414/}, DOI={10.1109/PHM.2008.4711414}, booktitle={2008 International Conference on Prognostics and Health Management}, publisher={IEEE}, author={Saxena, Abhinav and Goebel, Kai and Simon, Don and Eklund, Neil}, year={2008}, month=oct, pages={1–9} }
+
+ @article{Arias_Chao_Kulkarni_Goebel_Fink_2022, title={Fusing physics-based and deep learning models for prognostics}, volume={217}, ISSN={09518320}, url={https://linkinghub.elsevier.com/retrieve/pii/S0951832021004725}, DOI={10.1016/j.ress.2021.107961}, journal={Reliability Engineering \& System Safety}, author={Arias Chao, Manuel and Kulkarni, Chetan and Goebel, Kai and Fink, Olga}, year={2022}, month=jan, pages={107961}, language={en} }
+
+ @article{Costa_Sanchez_2022, title={Variational encoding approach for interpretable assessment of remaining useful life estimation}, volume={222}, ISSN={09518320}, url={https://linkinghub.elsevier.com/retrieve/pii/S0951832022000321}, DOI={10.1016/j.ress.2022.108353}, journal={Reliability Engineering \& System Safety}, author={Costa, Nahuel and Sánchez, Luciano}, year={2022}, month=june, pages={108353}, language={en} }
+
+ @article{De_Pater_Mitici_2022, title={Novel Metrics to Evaluate Probabilistic Remaining Useful Life Prognostics with Applications to Turbofan Engines}, volume={7}, rights={http://creativecommons.org/licenses/by/3.0/us/}, ISSN={2325-016X, 2325-016X}, url={https://papers.phmsociety.org/index.php/phme/article/view/3320}, DOI={10.36001/phme.2022.v7i1.3320}, abstractNote={Well-established metrics such as the Root Mean Square Error or the Mean Absolute Error are not suitable to evaluate estimated distributions of the Remaining Useful Life (i.e., probabilistic prognostics). We therefore propose novel metrics to evaluate the quality of probabilistic Remaining Useful Life prognostics. We estimate the distribution of the Remaining Useful Life of turbofan engines using a Convolutional Neural Network with Monte Carlo dropout. The accuracy and sharpness of the obtained probabilistic prognostics are evaluated using the Continuous Ranked Probability Score (CRPS) and weighted CRPS. The reliability of the obtained probabilistic prognostics is evaluated using the α-Coverage and the Reliability Score. The results show that the estimated distributions of the Remaining Useful Life of turbofan engines are accurate, reliable and sharp when using a Convolutional Neural Network with Monte Carlo dropout. In general, the proposed metrics are suitable to evaluate the accuracy, sharpness and reliability of probabilistic Remaining Useful Life prognostics.}, number={1}, journal={PHM Society European Conference}, author={De Pater, Ingeborg and Mitici, Mihaela}, year={2022}, month=june, pages={96–109} }
+
+ @article{Kim_Park_Lee_Ko_Hwang_2025, title={Enhanced Remaining Useful Life Prediction for Turbofan Engines Using Spatiotemporal Koopman Dual-Branch Transformer}, volume={74}, rights={https://ieeexplore.ieee.org/Xplorehelp/downloads/license-information/IEEE.html}, ISSN={0018-9456, 1557-9662}, url={https://ieeexplore.ieee.org/document/11217208/}, DOI={10.1109/TIM.2025.3625335}, journal={IEEE Transactions on Instrumentation and Measurement}, author={Kim, Eden and Park, Sangjun and Lee, Hyunyong and Ko, Seokkap and Hwang, Euiseok}, year={2025}, pages={1–16} }
+
+@inproceedings{thil2025glide,
+  title={I-GLIDE: Input Groups for Latent Health Indicators in Degradation Estimation},
+  author={Thil, Lucas and Read, Jesse and Kaddah, Rim and Doquet, Guillaume},
+  booktitle={Joint European Conference on Machine Learning and Knowledge Discovery in Databases},
+  pages={395--411},
+  year={2025},
+  organization={Springer}
+}
+
+ @inproceedings{Guo_Sun_Li_Chen_Hou_Yang_2017, address={Beijing, China}, title={An approach of determining aero-engine life-limited parts}, ISBN={978-1-5386-0918-7}, url={http://ieeexplore.ieee.org/document/8030758/}, DOI={10.1109/ICRSE.2017.8030758}, booktitle={2017 Second International Conference on Reliability Systems Engineering (ICRSE)}, publisher={IEEE}, author={Guo, Yuanyuan and Sun, Youchao and Li, Longbiao and Chen, Jian and Hou, Naixian and Yang, Kun}, year={2017}, month=july, pages={1–4} }
+
+@article{immarigeon2003life,
+  title={Life cycle management strategies for aging engines},
+  author={Immarigeon, JP and Beres, W and Au, P and Fahr, A and Wallace, W},
+  year={2003}
+}
+
+@techreport{iata,
+    author = "IATA Leasing Technical Group (ALTG)",
+    title = "Guidance Material and Best Practices for Life-Limited-Parts (LLPs) Traceability",
+    institution = "IATA",
+    year = "2020"
+}
+
+@techreport{eCFR,
+    author = "Federal Aviation Administration, Department of Transportation",
+    title = "Code of Federal Regulations, 33.70 Engine life-limited parts.",
+    institution = "Federal Aviation Administration, Department of Transportation",
+    url="https://drafting.ecfr.gov/on/2023-01-18/title-14/part-33/section-33.70",
+    year = "2023"
+}
+
+@article{riegler2007geared,
+  title={The geared turbofan technology—Opportunities, challenges and readiness status},
+  author={Riegler, C and Bichlmaier, C},
+  journal={Porceedings CEAS. Sep},
+  pages={10--13},
+  year={2007}
+}
+
+@article{vasigh2012aircraft,
+  title={Aircraft finance: Strategies for managing capital costs in a turbulent industry},
+  author={Vasigh, Bijan and Taleghani, Reza and Jenkins, Darryl},
+  year={2012},
+  publisher={J. Ross Publishing}
+}
+
+@software{psaropoulos_2025_17804895,
+  author       = {Psaropoulos, Michail and
+                  Gkoutzamanis, Vasilis and
+                  Kalfas, Anestis I. and
+                  Giannakakis, Panagiotis and
+                  Razakarivony, Sebastien and
+                  Thepaut, Solene and
+                  Vu, Don Quan},
+  title        = {OpenDeckSMR},
+  month        = dec,
+  year         = 2025,
+  publisher    = {Zenodo},
+  version      = {alpha-version},
+  doi          = {10.5281/zenodo.17804895},
+  url          = {https://doi.org/10.5281/zenodo.17804895},
+  swhid        = {swh:1:dir:e22adc17827afa7edbe2cc88a3f94d2575c538b1
+                   ;origin=https://doi.org/10.5281/zenodo.17804894;vi
+                   sit=swh:1:snp:73ba52c7e96170e9f6d1d331bb57967c6034
+                   657d;anchor=swh:1:rel:26cf474d63d6771299edc314ea21
+                   e6485a73ef3b;path=OpenDeckLab-OpenDeckSMR-633585c
+                  },
+}
+
+@article{wang2020data,
+  title={Data-driven prognostic method based on self-supervised learning approaches for fault detection},
+  author={Wang, Tian and Qiao, Meina and Zhang, Mengyi and Yang, Yi and Snoussi, Hichem},
+  journal={Journal of Intelligent Manufacturing},
+  volume={31},
+  number={7},
+  pages={1611--1619},
+  year={2020},
+  publisher={Springer}
+}
+
+@article{deng2024enhancing,
+  title={Enhancing prognostics for sparse labeled data using advanced contrastive self-supervised learning with downstream integration},
+  author={Deng, Weikun and Nguyen, Khanh TP and Gogu, Christian and Medjaher, Kamal and Morio, J{\'e}r{\^o}me},
+  journal={Engineering Applications of Artificial Intelligence},
+  volume={138},
+  pages={109268},
+  year={2024},
+  publisher={Elsevier}
+}
+
+@article{calabrese2021predictive,
+  title={Predictive maintenance: A novel framework for a data-driven, semi-supervised, and partially online prognostic health management application in industries},
+  author={Calabrese, Francesca and Regattieri, Alberto and Bortolini, Marco and Gamberi, Mauro and Pilati, Francesco},
+  journal={Applied Sciences},
+  volume={11},
+  number={8},
+  pages={3380},
+  year={2021},
+  publisher={MDPI}
+}
+
+@article{krishnan2022self,
+  title={Self-supervised learning in medicine and healthcare},
+  author={Krishnan, Rayan and Rajpurkar, Pranav and Topol, Eric J},
+  journal={Nature Biomedical Engineering},
+  volume={6},
+  number={12},
+  pages={1346--1352},
+  year={2022},
+  publisher={Nature Publishing Group UK London}
+}
+
+ @article{Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025, title={IntPhys 2: Benchmarking Intuitive Physics Understanding In Complex Synthetic Environments}, url={http://arxiv.org/abs/2506.09849}, DOI={10.48550/arXiv.2506.09849}, abstractNote={We present IntPhys 2, a video benchmark designed to evaluate the intuitive physics understanding of deep learning models. Building on the original IntPhys benchmark, IntPhys 2 focuses on four core principles related to macroscopic objects: Permanence, Immutability, Spatio-Temporal Continuity, and Solidity. These conditions are inspired by research into intuitive physical understanding emerging during early childhood. IntPhys 2 offers a comprehensive suite of tests, based on the violation of expectation framework, that challenge models to differentiate between possible and impossible events within controlled and diverse virtual environments. Alongside the benchmark, we provide performance evaluations of several state-of-the-art models. Our findings indicate that while these models demonstrate basic visual understanding, they face significant challenges in grasping intuitive physics across the four principles in complex scenes, with most models performing at chance levels (50%), in stark contrast to human performance, which achieves near-perfect accuracy. This underscores the gap between current models and human-like intuitive physics understanding, highlighting the need for advancements in model architectures and training methodologies.}, note={arXiv:2506.09849 [cs]}, number={arXiv:2506.09849}, publisher={arXiv}, author={Bordes, Florian and Garrido, Quentin and Kao, Justine T. and Williams, Adina and Rabbat, Michael and Dupoux, Emmanuel}, year={2025}, month=june }
+
+
+ @article{Piloto_Weinstein_Battaglia_Botvinick_2022, title={Intuitive physics learning in a deep-learning model inspired by developmental psychology}, volume={6}, ISSN={2397-3374}, url={https://www.nature.com/articles/s41562-022-01394-8}, DOI={10.1038/s41562-022-01394-8}, abstractNote={Abstract
+            ‘Intuitive physics’ enables our pragmatic engagement with the physical world and forms a key component of ‘common sense’ aspects of thought. Current artificial intelligence systems pale in their understanding of intuitive physics, in comparison to even very young children. Here we address this gap between humans and machines by drawing on the field of developmental psychology. First, we introduce and open-source a machine-learning dataset designed to evaluate conceptual understanding of intuitive physics, adopting the violation-of-expectation (VoE) paradigm from developmental psychology. Second, we build a deep-learning system that learns intuitive physics directly from visual data, inspired by studies of visual cognition in children. We demonstrate that our model can learn a diverse set of physical concepts, which depends critically on object-level representations, consistent with findings from developmental psychology. We consider the implications of these results both for AI and for research on human cognition.}, number={9}, journal={Nature Human Behaviour}, author={Piloto, Luis S. and Weinstein, Ari and Battaglia, Peter and Botvinick, Matthew}, year={2022}, month=july, pages={1257–1267}, language={en} }
+
+
+@article{riochet2018intphys,
+  title={Intphys: A framework and benchmark for visual intuitive physics reasoning},
+  author={Riochet, Ronan and Castro, Mario Ynocente and Bernard, Mathieu and Lerer, Adam and Fergus, Rob and Izard, V{\'e}ronique and Dupoux, Emmanuel},
+  journal={arXiv preprint arXiv:1803.07616},
+  year={2018}
+}
+
+@inproceedings{yiclevrer,
+  title={CLEVRER: Collision Events for Video Representation and Reasoning},
+  author={Yi, Kexin and Gan, Chuang and Li, Yunzhu and Kohli, Pushmeet and Wu, Jiajun and Torralba, Antonio and Tenenbaum, Joshua B},
+  booktitle={International Conference on Learning Representations}
+}
+
+@inproceedings{bear1physion,
+  title={Physion: Evaluating Physical Prediction from Vision in Humans and Machines},
+  author={Bear, Daniel and Wang, Elias and Mrowca, Damian and Binder, Felix Jedidja and Tung, Hsiao-Yu and Pramod, RT and Holdaway, Cameron and Tao, Sirui and Smith, Kevin A and Sun, Fan-Yun and others},
+  booktitle={Thirty-fifth Conference on Neural Information Processing Systems Datasets and Benchmarks Track (Round 1)}
+}
+
+@inproceedings{okada2022dreamingv2,
+  title={DreamingV2: Reinforcement learning with discrete world models without reconstruction},
+  author={Okada, Masashi and Taniguchi, Tadahiro},
+  booktitle={2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  pages={985--991},
+  year={2022},
+  organization={IEEE}
+}
+
+@inproceedings{okada2021dreaming,
+  title={Dreaming: Model-based reinforcement learning by latent imagination without reconstruction},
+  author={Okada, Masashi and Taniguchi, Tadahiro},
+  booktitle={2021 ieee international conference on robotics and automation (icra)},
+  pages={4209--4215},
+  year={2021},
+  organization={IEEE}
+}
+
+@techreport{payson1984bird,
+  title={A bird strike handbook for base-level managers},
+  author={Payson, Raymond P and Vance, James D},
+  year={1984}
+}
+
+@inproceedings{thorpe1977analysis,
+  title={Analysis of bird-strikes reported by European airlines 1972-1975},
+  author={Thorpe, J},
+  booktitle={Proceedings of the Third World Conference on Bird Hazards to Aircraft (organized by the Bird Strike Committee Europe), Paris, France [not available for checking]},
+  pages={16--51},
+  year={1977}
+}
+
+@techreport{alge1994modern,
+  title={Modern transport engine experience with environmental ingestion effects},
+  author={Alge, TL and Moehring, JT},
+  year={1994},
+  institution={North Atlantic Treaty Organization}
+}

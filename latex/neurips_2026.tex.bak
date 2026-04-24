@@ -1,0 +1,1195 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+\PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2026
+
+% The authors should use one of these tracks.
+% Before accepting by the NeurIPS conference, select one of the options below.
+% 0. "default" for submission
+\usepackage{neurips_2026}
+
+% the "default" option is equal to the "main" option, which is used for the Main Track with double-blind reviewing.
+% 1. "main" option is used for the Main Track
+%  \usepackage[main]{neurips_2026}
+% 2. "position" option is used for the Position Paper Track
+%  \usepackage[position]{neurips_2026}
+% 3. "eandd" option is used for the Evaluations & Datasets Track
+ % \usepackage[eandd]{neurips_2026}
+ % if you need to opt-in for a single-blind submission in the E&D track:
+ %\usepackage[eandd, nonanonymous]{neurips_2026}
+% 4. "creativeai" option is used for the Creative AI Track
+%  \usepackage[creativeai]{neurips_2026}
+% 5. "sglblindworkshop" option is used for the Workshop with single-blind reviewing
+ % \usepackage[sglblindworkshop]{neurips_2026}
+% 6. "dblblindworkshop" option is used for the Workshop with double-blind reviewing
+%  \usepackage[dblblindworkshop]{neurips_2026}
+
+% After being accepted, the authors should add "final" behind the track to compile a camera-ready version.
+% 1. Main Track
+ % \usepackage[main, final]{neurips_2026}
+% 2. Position Paper Track
+%  \usepackage[position, final]{neurips_2026}
+% 3. Evaluations & Datasets Track
+ % \usepackage[eandd, final]{neurips_2026}
+% 4. Creative AI Track
+%  \usepackage[creativeai, final]{neurips_2026}
+% 5. Workshop with single-blind reviewing
+%  \usepackage[sglblindworkshop, final]{neurips_2026}
+% 6. Workshop with double-blind reviewing
+%  \usepackage[dblblindworkshop, final]{neurips_2026}
+% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote.
+% For workshops (5., 6.), the authors should add the name of the workshop, "\workshoptitle" command is used to set the workshop title.
+% \workshoptitle{WORKSHOP TITLE}
+
+% "preprint" option is used for arXiv or other preprint submissions
+ % \usepackage[preprint]{neurips_2026}
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{neurips_2026}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{graphicx} 
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{subcaption}
+
+
+
+% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote. 
+\title{TurboSens: Turbofan Simulator for Model Predictive Control and Physics Understanding (Neurips)}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+
+\author{%
+  Lucas Thil\thanks{Use footnote for providing further information about author (webpage, alternative address)---\emph{not} for acknowledging funding agencies.} \\
+  LIX, École Polytechnique \\
+  Palaiseau, France \\
+  \texttt{lix@polytechnique.fr} \\
+  \And
+  IRT SystemX \\
+  Palaiseau, France \\
+  \texttt{lucas.thil@irt-systemx.fr} \\
+  \AND
+  Jesse Read \\
+  LIX, École Polytechnique \\
+  Palaiseau, France \\
+  \texttt{jread@lix.polytechnique.fr} \\
+  \AND
+  Rim Kaddah \\
+  IRT SystemX \\
+  Palaiseau, France \\
+  \texttt{rim.kaddah@irt-systemx.fr} \\
+  \AND
+  Guillaume Doquet \\
+  Safran Tech \\
+  Chateaufort, France \\
+  \texttt{guillaume.doquet@safrangroup.com} \\
+}
+
+\begin{document}
+
+
+\maketitle
+
+
+\begin{abstract}
+  The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on both the left- and right-hand margins. Use 10~point type, with a vertical spacing (leading) of 11~points. The word \textbf{Abstract} must be centered, bold, and in point size 12. Two line spaces precede the abstract. The abstract must be limited to one paragraph.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+% --- P1: Scale of the problem and why it's hard ---
+Predictive maintenance of turbofan engines underpins a trillion-dollar aerospace industry and shares structural challenges with health monitoring in automotive, medical devices or defence
+~\cite{Ucar_Karakose_Kirimca_2024, Tiddens_Braaksma_Tinga_2022, Arena_Collotta_Luca_Ruggieri_Termine_2021, Khan_Sohaib_Rashid_Ali_Akbar_Basit_Ahmad_2021}: an operator must infer the true internal health state of a complex physical system from a limited set of indirect, noisy sensor measurements.
+In a commercial turbofan, this health state encodes the efficiency and flow capacity of five mechanical subsystems (fan, booster, compressors, turbines) evolving through fouling, erosion, thermal fatigue, and discrete damage events over thousands of flight cycles. None of these state variables are directly measurable in service. What operators observe instead is a small number of sensor channels (temperatures, pressures, shaft speeds, fuel flow) recorded across fundamentally different operating conditions: cruise at altitude, takeoff at sea level, climb through intermediate regimes. The same health state produces distinct sensor signatures depending on flight phase and ambient conditions, while different state configurations can appear indistinguishable within a single operating context. This makes health state recovery a structurally underdetermined problem: with seven sensor channels mapping to ten underlying state dimensions, the system is inherently sub-determined even before
+accounting for sensor noise and context confounding.
+The field has increasingly turned to data-driven methods to tackle this problem~\cite{Nguyen_Medjaher_Tran_2023, Davari_Veloso_Costa_Pereira_Ribeiro_Gama_2021, Biggio_Kastanis_2020}, but their quality is
+bounded by the benchmarks on which they are developed.
+
+% --- P2: CMAPSS critique ---
+For over a decade, turbofan prognostics research has been dominated by the
+Commercial Modular Aero-Propulsion System Simulation
+(CMAPSS)~\cite{Saxena_Goebel_Simon_Eklund_2008} and its successor
+N-CMAPSS~\cite{Arias_Chao_Kulkarni_Goebel_Fink_2021, Arias_Chao_Kulkarni_Goebel_Fink_2022}.
+These datasets model engines that degrade monotonically from a healthy initial state until failure, with no maintenance interventions.
+The evaluation task is almost exclusively remaining-useful-life (RUL) regression: predict, from a window of sensor readings, how many cycles remain before the engine crosses a fixed failure
+threshold~\cite{Ramasso_Saxena, De_Pater_Mitici_2022, Kim_Park_Lee_Ko_Hwang_2025, Costa_Sanchez_2022}.
+While CMAPSS has been invaluable for establishing the field, its limitations are well documented: degradation follows a biphasic monotonic then exponential trajectory that can be predicted by trend extrapolation alone \cite{thil2025glide}; models never need to reason about state resets, imperfect repairs, or complex scheduling logic; sensor observations lack structured multi-context design; and the ground-truth health state is reduced to a scalar RUL label rather than a full state vector, precluding evaluation of whether a learned representation captures the \emph{structure} of engine health. N-CMAPSS introduced more contexts and underlying states but retained the run-to-failure paradigm: engines still degrade without intervention, and evaluation remains scalar RUL prediction.
+
+% --- P3: What the real world looks like (the gap) ---
+Real turbofan fleets do not operate this way. Commercial engines are maintained under stringent airworthiness regulations that impose life-limiting-part (LLP) cycle ceilings \cite{iata, eCFR, immarigeon2003life, Guo_Sun_Li_Chen_Hou_Yang_2017}, mandate inspections, and trigger opportunistic component bundling to minimise costly shop visits \cite{riegler2007geared, vasigh2012aircraft}.
+Maintenance is imperfect: newly installed parts enter ageing engine environments, restoration quality varies across workshops, and inspection findings (components whose degradation was missed) force unplanned emergency returns.
+The resulting fleet behaviour is one where engines are kept within a narrow healthy operating band by active management, with degradation unfolding not as a single monotonic arc but as a sequence of sawtooth cycles punctuated by partial resets of varying magnitude, overlaid with rare stochastic events (bird strikes, compressor surges, icing, sensor faults) that create discontinuities in either the health state, the observations, or both. No existing public benchmark captures this setting. 
+
+% additions:
+There is a general need for new dataset for turbofan engines \cite{Stanton_Munir_Ikram_El_Bakry_2023}
+
+% --- P4: TurboSens introduction ---
+We introduce \textbf{TurboSens}, a large-scale synthetic turbofan
+degradation dataset generated by OpenDeckSMR \cite{psaropoulos_2025_17804895}, a high-fidelity
+thermodynamic engine simulator, designed to close this gap.
+TurboSens models a \emph{well-maintained fleet}: engines degrade through
+heterogeneous degradation-mode archetypes (compressor-driven, fan-driven,
+turbine-driven, balanced), are maintained by an expert policy combining
+LLP ceilings, health-correlated scheduling, and opportunistic bundling (min-build) with imperfect restoration and stochastic inspection findings. Ten categories of rare stochastic events enrich trajectories with consequential disturbances encountered in real operations. Sensor observations are recorded across twelve structured flight contexts per timestep under a correlated weather process, providing the multi-context diagnostic information that operators rely on in practice.
+Crucially, the simulator exposes the \emph{full ten-dimensional ground-truth health state} at every timestep alongside the observations, enabling what we call an \emph{inverse evaluation protocol}: models are trained in a fully self-supervised manner on sensor sequences alone, then their learned representations are evaluated against the known health state through probing, forecasting, and anomaly detection tasks. Because the true state is available but never used as a training signal, TurboSens supports rigorous evaluation of whether self-supervised representations capture the causal structure of engine health, going well beyond scalar RUL regression.
+
+% --- P5: Why the benchmark is both hard and informative ---
+The well-maintained fleet setting makes TurboSens a demanding benchmark.
+Because the expert policy keeps engines in good condition, a model must
+resolve genuinely small state differences from sensor signatures that
+vary subtly across neighbouring health configurations, rather than
+merely tracking a monotonic decline toward failure.
+At the same time, this is precisely what makes the dataset valuable:
+maintenance resets, stochastic events, and the asymmetric
+inter-maintenance interval distribution provide rich structure for
+models to discover, and the sub-determined observation model (seven
+sensors, ten state dimensions, multiple flight contexts) rewards
+architectures that learn to aggregate evidence across operating
+conditions.
+
+% --- P6: Contributions ---
+\paragraph{Contributions.}
+\begin{enumerate}
+    \item \textbf{TurboSens}, a large-scale turbofan degradation dataset
+ with paired ground-truth health states, featuring heterogeneous degradation archetypes, a realistic multi-mechanism maintenance policy with imperfect restoration and inspection findings, ten categories of stochastic events, multi-context sensor observations under a correlated weather process, and structured metadata enabling fine-grained analysis and full customization.
+
+\item An \textbf{online interactive environment} built on OpenDeckSMR that allows agents to query engine state, select from multiple discrete maintenance actions with realistic restoration dynamics, and generate new trajectories on demand, enabling model predictive control of possible outcomes, reinforcement learning, and active research beyond offline replay.
+
+\item An \textbf{inverse evaluation protocol} exploiting full ground-truth access to the ten-dimensional health state: models are trained self-supervised on sensor sequences, then their representations are directly evaluated against the true state through health-state probing, degradation velocity estimation, multi-step latent forecasting, and out-of-distribution detection.
+
+\item A \textbf{safety‑aware evaluation lens}: the maintenance logic mirrors regulatory cycle limits and inspection protocols, allowing explicit measurement of whether a world model respects real‑world operational boundaries, a step toward evaluating system alignment.
+
+\end{enumerate}
+
+
+
+\section{Related Work}
+\label{sec:related_work}
+
+\paragraph{Turbofan degradation datasets and PHM benchmarks.}
+The C-MAPSS benchmark~\cite{Saxena_Goebel_Simon_Eklund_2008}, introduced for the PHM08
+challenge, established the run-to-failure paradigm that still dominates turbofan prognostics: engines degrade monotonically from a nominal state to a fixed failure threshold with no maintenance, no repair, and a scalar remaining-useful-life (RUL) label as the sole evaluation target.
+A review by the dataset's creators~\cite{Ramasso_Saxena} acknowledges the resulting limitations, including the absence of ground-truth state labels, a simplified degradation model, and a narrow range of failure modes. N-CMAPSS~\cite{Arias_Chao_Kulkarni_Goebel_Fink_2021} improved on CMAPSS by introducing realistic flight profiles and richer sensor streams via a thermodynamic simulator, but retains the run-to-failure paradigm with no maintenance and scalar RUL evaluation.
+
+\paragraph{Interactive simulators and agentic environments.}
+Gym-style interactive environments are the standard testbed for
+reinforcement learning and model predictive control~\cite{towers2024gymnasium, 
+todorov2012mujoco}, but industrial degradation settings have received
+comparatively little attention in this form.
+\citet{Maulana_Starr_Ompusunggu_2023} highlight the need to move beyond reactive maintenance toward policies reasoning over longer action horizons, a capability that requires an online simulator rather than a static dataset.
+No existing turbofan benchmark offers this: an agent cannot apply a
+maintenance action and observe the consequence.
+TurboSens exposes multiple discrete maintenance actions with realistic cost structures and imperfect restoration dynamics, supports on-demand trajectory generation for counterfactual policy evaluation, and allows stress-testing under out-of-distribution degradation regimes generated live by the simulator.
+
+\paragraph{World models and self-supervised learning on sensor sequences.}
+Joint-embedding predictive architectures~\cite{Balestriero_LeCun_2025, Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025} and recurrent world models~\cite{okada2021dreaming, okada2022dreamingv2, Maes_Lidec_Scieur_LeCun_Balestriero_2026} are increasingly proposed as general-purpose representations for complex dynamical systems, trained to predict future states in a learned latent space from
+high-dimensional observations.
+A growing body of work applies similar self-supervised objectives to industrial sensor sequences~\cite{wang2020data, krishnan2022self, deng2024enhancing, calabrese2021predictive}, motivated by label scarcity in real deployments.
+A shared limitation across both communities is evaluation: without
+ground-truth access to the true system state, it is unclear whether a
+learned representation captures physical structure or merely statistical
+regularities, and evaluation collapses onto downstream task return or
+reconstruction quality. TurboSens is designed to make this question answerable. Because OpenDeckSMR exposes the true ten-dimensional health state at every timestep, any world model or SSL encoder trained on sensor sequences can be evaluated directly against the ground truth through an \emph{inverse evaluation protocol}: train without labels, then probe the frozen representation against the true state via regression, forecasting, and anomaly detection tasks.
+The industrial setting adds structure that canonical benchmarks lack: a sub-determined observation model (seven sensors for ten state dimensions across twelve flight contexts), maintenance-induced state discontinuities, and stochastic events that test whether a model's surprise signal identifies anomalous regimes unseen during training.
+
+\paragraph{Physics-understanding benchmarks for world models.}
+A growing body of work evaluates whether self-supervised world models acquire physical understanding from high-dimensional observations. Object-level benchmarks such as Physion~\cite{bear1physion} test rigid-body outcome prediction on synthetic scenes, and CLEVRER~\cite{yiclevrer} probes causal reasoning over collision videos. IntPhys~\cite{riochet2018intphys} and its successor IntPhys2~\cite{Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025} adopt a \emph{violation of expectation} paradigm, scoring models on their ability to discriminate physically possible from impossible scenes across principles such as object permanence, immutability, and solidity. Two structural limitations run through this line of work. First, reducing physical understanding to binary discrimination effectively reframes the problem as out-of-distribution detection: a model must flag that something unusual has happened, not represent what should have happened instead. Second, real physical systems admit multiple plausible futures whose likelihoods depend on interventions and latent state, yet evaluation of generative world models such as V-JEPA~\cite{Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025} and Dreamer~\cite{okada2021dreaming, okada2022dreamingv2} collapses onto downstream task return or reconstruction quality, neither of which measures whether the full distribution of outcomes is captured.
+TurboSens supports a richer evaluation: the simulator can be queried online under arbitrary action sequences and exposes the full ground-truth state, enabling counterfactual trajectory generation, direct comparison of predictive distributions against the simulator's true distribution over futures, and treatment of physics-breaking regimes (accelerated degradation, correlated failure) as one axis among several rather than the sole evaluation target.
+
+% Piloto_Weinstein_Battaglia_Botvinick_2022
+
+
+\section{Problem Formulation}
+
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.51\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/SimulatorSafran.drawio.pdf}
+        \caption{Turbosens modeling framework}
+        \label{fig:placeholder}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/turbofan.png}
+        \caption{Turbofan engine; with courtesy of the OpenDeckSMR team}
+        \label{fig:turbofan}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{figures/future_modeling.drawio.pdf}
+    \caption{Futures Modelling via Turbosens, in predicting possible horizons. }
+    \label{fig:future_modeling}
+\end{figure}
+
+\paragraph{System model.}
+A turbofan engine is modeled as a discrete‑time dynamical system with a latent
+health state $\mathbf{s}_t \in \mathbb{R}^K$ ($K{=}10$).
+The state vector encodes efficiency and flow‑capacity deviations for five
+subsystems: booster, fan, high‑pressure compressor (HPC), high‑pressure turbine
+(HPT), and low‑pressure turbine (LPT).
+Degradation follows archetype‑specific stochastic dynamics
+(Appendix~\ref{sec:dataset_degradation}), and discrete maintenance actions
+$a_t \in \mathcal{A}$ partially restore the affected components.
+
+\paragraph{Observations.}
+At each timestep, $S{=}7$ sensors are sampled under $C$ flight contexts,
+yielding an observation tensor $\mathbf{o}_t \in \mathbb{R}^{S \times C}$.
+The mapping $\mathbf{o}_t = g(\mathbf{s}_t, \phi) + \epsilon$ is nonlinear and
+context‑dependent; different operating regimes excite different parts of the
+thermodynamic cycle, so the full multi‑context tensor carries richer
+diagnostic signal than any single slice.
+(For TurboSens1, $C{=}4$; for TurboSens3, $C{=}12$.)
+
+\paragraph{Evaluation task.}
+Given a sequence of observations and actions, we ask whether a world model
+trained solely to predict future observations learns latent representations
+that recover the true health state $\mathbf{s}_t$.
+We probe a frozen encoder by training a small MLP to regress $\mathbf{s}_t$
+and measure per‑component $R^2$ on held‑out episodes.
+We also probe temporal structure via a steps‑to‑next‑action regression task
+(Section~\ref{sec:evaluation}).
+
+
+\section{The TurboSens Dataset}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{cl}
+\toprule
+\textbf{Symbol} & \textbf{Description} \\
+\midrule
+$S$                         & Number of sensor types (7) \\
+$C$                         & Number of flight-phase contexts (4 / 12) \\
+$n_s = S \cdot C$           & Observation dimension (28 / 84) \\
+$\mathbf{o}_t \in \mathbb{R}^{n_s}$ & Sensor observation at time $t$ \\
+$s_t \in \mathbb{R}^K$     & Global health state vector at time $t$ $t$ \\
+$s_t^k \in [-b_k, 0+\epsilon]$ &  Health of component $k$ \\
+$K=10$                         & Number of health-state components \\
+$\mathbf{a}_t \in \mathcal{A}$      & Maintenance action at time $t$ \\
+$T$                         & Episode length (variable) \\
+$\mathbf{z}_t \in \mathbb{R}^d$     & Per-frame latent embedding \\
+$\tilde{\mathbf{z}}_t \in \mathbb{R}^d$ & Temporally aggregated embedding \\
+$d$                         & Embedding dimension \\
+$w$                         & Encoder temporal window size \\
+$H$                         & Predictor history (context) length \\
+$w$ & window size of the encoder \\
+$\text{seq\_len}$           & Context length of downstream target probe  $\phi$ \\ 
+$\lambda$                   & SIGReg regularisation weight \\
+$b_k$                       & Component-specific degradation bound \\
+$\kappa$                    & Restoration quality coefficient \\
+\bottomrule
+\end{tabular}
+\caption{Notation used throughout the paper.}
+\label{tab:notation}
+\end{table}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Property} & \textbf{TurboSens1} & \textbf{TurboSens3} & \textbf{TurboSens4} \\
+\midrule
+Episodes                  & 559          & 400 & 500 \\
+Total Flights & 200k & 400k & 7M \\
+Max trajectory length     & 1{,}000      & 10{,}000 & 20{,}000 \\
+Observation $\mathbf{o}_t$  & $\mathbb{R}^{7 \times 4}$ & $\mathbb{R}^{7 \times 12}$ & $\mathbb{R}^{(7+4) \times 16}$ \\
+Observation dim $n_s$     & 28           & 84 & 176 \\
+HI state dim $K$          & 10           & 10 & 10 \\
+Contamination & None & None & Yes \\
+Maintenance Policy        & Time Based & Health Based & Health Based + Context \\ 
+Action space              & Discrete(2) & Discrete(6)  & Discrete(7)\\
+Maintenance event rate    & 0.26\%       & 0.04\% & XX \\
+Regions & 0 & 0 & 6 \\
+Degradation Archetypes & Homogeneous & 4 & 4 \\
+Surprise Events & No & Yes & Yes \\
+Phantom Observation Model & No & No & Yes $\tilde s \neq s$ \\
+Weather Archetypes & No & Limited & Full \\
+Flight-phase contexts $C$ & 4            & 12 & 16 \\
+Context meaning & 1 per flight phase & key probes & Flight-phase discretization \\
+\bottomrule
+\end{tabular}
+\caption{OpenDeckSMR environment properties across scenarios.
+\textsuperscript{$\dagger$}Fill in from data.}
+\label{tab:odsmr_base}
+\end{table}
+
+
+
+
+TurboSens is a synthetic turbofan degradation dataset generated with \texttt{OpenDeckSMR}, a component‑level thermodynamic simulator that exposes \emph{both} the observable sensor stream and the ground‑truth health state $\mathbf{s}_t$, the key property that enables direct evaluation of learned representations.
+
+We release two scenarios, summarized in Table~\ref{tab:odsmr_base}. \textbf{TurboSens1} reproduces the setting of \cite{REMOVE} in an interactive environment: time‑based maintenance, two actions, and 4 flight contexts. \textbf{TurboSens3} significantly raises the realism: health‑correlated maintenance with six actions, four heterogeneous degradation archetypes, twelve flight contexts, a library of ten stochastic events (bird strike, compressor surge, icing, etc.), and imperfect restoration. Full details of Scenario 3 are provided in Appendix~\ref{sec:dataset_scenario3}.
+
+TurboSens is designed to challenge world models with sparse, imbalanced interventions ($0.04\%$-$0.26\%$ of steps contain maintenance), heterogeneous failure trajectories, and multi‑context partial observability. The dataset is generated on‑demand via a provided script; the reference splits are released as HDF5 files with a documented schema.
+
+
+\subsection{Datasets Coverage}
+
+
+\subsubsection{OpenDeckSMR Basic}
+
+It reflects the dataset generated in \cite{REMOVE} but re-implemented in an interactive environment where we can apply actions in real time. This allows a direct comparison with more static methods. 
+
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{clcl}
+\toprule
+\textbf{Action} & \textbf{Component (LLP)} & \textbf{HI indices} & \textbf{Effect} \\
+\midrule
+0 & Idle (no maintenance)    & —       & No state change \\
+1 & Fan disk                 & $s_1, s_2$  & Partial restoration of fan HI \\
+2 & LPC disk                 & $s_3, s_4$  & Partial restoration of LPC HI \\
+3 & HPC disk                 & $s_5, s_6$  & Partial restoration of HPC HI \\
+4 & HPT disk                 & $s_7, s_8$  & Partial restoration of HPT HI \\
+5 & LPT disk                 & $s_9, s_{10}$ & Partial restoration of LPT HI \\
+\bottomrule
+\end{tabular}
+\caption{Life-Limited Part (LLP) replacement actions in TurboSens3.
+Each action targets a specific rotating assembly; its HI components are
+partially restored upon replacement. Cycle limits and restoration
+magnitudes follow OpenDeckSMR component maps.}
+\label{tab:llp}
+\end{table}
+
+The 0.26\% maintenance rate reflects industrial reality: repair events are scarce, creating a highly imbalanced action distribution that challenges standard sequence models.
+
+\begin{itemize}
+    \item Design choices motivated by industrial realism: Multi-context observations: four flight phases per timestep, matching operational data collection practice in aviation health monitoring
+    \item Rare maintenance events: the action distribution is heavily skewed, requiring models to learn from sparse intervention signals
+    \item Stochastic degradation trajectories: episode-to-episode variability prevents memorization and tests generalization across degradation paths
+    \item Physics-motivated failure criterion: episode termination at component-specific bounds, not arbitrary horizons
+\end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/sensor_distribution_healthy_vs_degraded.pdf}
+    \caption{ODSMR1 (ECML PKDD) state distribution between early (healthy) stages until late (degraded). }
+    \label{fig:odsmr1_hi_distribution}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{figures/episode_0_sensor_HPC_TOUT_contexts.pdf}
+    \caption{HPC TOUT underlying state evolution over the four different contexts.}
+    \label{fig:HPC_TOUT_contexts}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/health_indicator_trajectories.pdf}
+    \caption{Subsystem indicator trajectories}
+    \label{fig:subsystem_hi_trajectories}
+\end{figure}
+
+\subsection{Degradation and Maintenance Mechanisms}
+
+TurboSens3 models degradation as a two‑regime process: an early \textit{burn‑in} phase superimposed on a persistent linear drift. For component $k$, the per‑step increment is
+\begin{equation}
+  \Delta s_t^k = -\beta_k \exp(-t_k/\tau_k) - \alpha_k^{(m)} + \varepsilon_t,
+\end{equation}
+
+where $t_k$ is the time since last repair, $\beta_k,\tau_k$ control burn‑in, $\alpha_k^{(m)}$ is a speed‑regime‑dependent drift rate, and $\varepsilon_t$ is Gaussian noise. The linear term dominates after $\approx 500$ steps, consuming $\sim$70-80\% of the degradation budget over a $10^4$‑step episode.
+
+\paragraph{Heterogeneous archetypes.}
+Each episode is assigned one of four failure modes (Table~\ref{tab:archetypes}), modulating drift rates to concentrate wear in specific subsystems. Archetypes A-C mimic real‑world degradation; Archetype D (balanced) produces long‑lived engines that rarely reach airworthiness limits.
+
+\begin{table}[h]
+\centering
+\caption{Degradation archetypes in TurboSens3.}
+\label{tab:archetypes}
+\small
+\begin{tabular}{llcl}
+\toprule
+ID & Name & Drift multiplier & Dominant subsystem \\
+\midrule
+A & Compressor‑driven & up to $2.8\times$ & HPC, Booster \\
+B & Fan/Booster‑driven & up to $2.5\times$ & Fan, Booster \\
+C & Turbine‑driven    & up to $2.8\times$ & HPT, LPT \\
+D & Balanced          & $0.65\times$ & All uniformly \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Realistic maintenance.}
+Six actions (idle or replace one of five module assemblies) are selected by an expert policy that mimics industrial practice:
+\begin{itemize}
+    \item \textit{LLP ceilings}: hard cycle limits per component, forcing replacement regardless of health.
+    \item \textit{Health‑correlated scheduling}: maintenance is triggered when a component is predicted to reach 80\% degradation within $1500$-$2500$ steps.
+    \item \textit{Opportunistic bundling}: any visit triggers a scan for other near‑end‑of‑life components, bundling replacements to avoid costly separate shop visits.
+    \item \textit{Imperfect restoration}: even new components restore only $80$-$90\%$ of the degradation budget, with episode‑varying quality $\kappa\sim\mathcal{U}(0.7,1.0)$.
+    \item \textit{Inspection findings}: $3$-$7\%$ chance that a degraded component is missed during inspection, forcing an unplanned emergency visit $200$-$800$ steps later.
+\end{itemize}
+
+This policy yields sparse interventions ($0.04\%$ of timesteps) and strongly asymmetric inter‑maintenance intervals, in contrast to the uniform scheduling of earlier benchmarks.
+
+A library of ten stochastic events (bird ingestion, compressor surge,
+icing, sensor spikes, etc.) further enriches the dataset; full details and rates are provided in Appendix~\ref{sec:dataset_events}.
+
+
+\section{Evaluation Framework}~\label{sec:evaluation}
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Downstream evaluation. \emph{T1}: HI state estimation mean $R^2$.
+\emph{T3}: latent forecast RMSE on clean trajectories.
+Gap $= \text{RMSE}_\text{event} - \text{RMSE}_\text{clean}$ at $\tau{=}10$;
+negative $\Rightarrow$ better prediction after maintenance.}
+\label{tab:results}
+\begin{tabular}{@{}l cc cc r@{}}
+\toprule
+& \multicolumn{2}{c}{T1 $R^2$} & \multicolumn{2}{c}{T3 RMSE} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Model & sl=1 & sl=10 & $\tau{=}1$ & $\tau{=}10$ & Gap \\
+\midrule
+  AR-LSTM $H{=}50$             & 0.838 & 0.849 & 0.0021 & 0.0028 & +0.0031 \\
+  AR-LSTM $H{=}10$             & 0.846 & 0.789 & 0.0023 & 0.0033 & +0.0028 \\
+  \midrule
+  JEPA $H{=}100$               & 0.843 & 0.849 & 0.0023 & 0.0058 & -0.0018 \\
+  JEPA $w{=}10,S{=}10$         & 0.845 & 0.789 & 0.0044 & 0.0057 & -0.0010 \\
+  JEPA $S{=}5$                 & 0.787 & 0.796 & 0.0125 & 0.0083 & +0.0008 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ── TABLE 2 — T1 R² by probe seq_len ───────────────────────
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\caption{Task 1 mean $R^2$ vs.\ probe sequence length.
+$\Delta = R^2(\text{sl=50}) - R^2(\text{sl=1})$: AR-LSTM shows negligible gain
+(recurrence already integrates history); JEPA embeddings benefit from wider probe windows.}
+\label{tab:t1_seqlen}
+\begin{tabular}{@{}l ccc r@{}}
+\toprule
+Model & sl=1 & sl=10 & sl=50 & $\Delta$ \\
+\midrule
+  JEPA $w{=}10,S{=}10$         & 0.845 & 0.789 & 0.802 & -0.043 \\
+  JEPA $H{=}100$               & 0.843 & 0.849 & 0.822 & -0.021 \\
+  JEPA $w{=}5,S{=}5$           & 0.826 & 0.760 & 0.783 & -0.043 \\
+  JEPA $H{=}50$ (v1)           & 0.824 & 0.795 & 0.823 & -0.001 \\
+  JEPA $H{=}10,S{=}10$         & 0.812 & 0.796 & 0.787 & -0.025 \\
+  JEPA $H{=}50$                & 0.810 & \textbf{0.869} & \textbf{0.859} & +0.049 \\
+  JEPA $H{=}100$ (v1)          & 0.790 & 0.766 & 0.785 & -0.005 \\
+  JEPA $S{=}5$                 & 0.787 & 0.796 & 0.757 & -0.030 \\
+  \midrule
+  AR-LSTM $H{=}10$             & \textbf{0.846} & 0.789 & 0.787 & -0.059 \\
+  AR-LSTM $H{=}50$             & 0.838 & 0.849 & 0.835 & -0.004 \\
+  AR-LSTM $H{=}1$              & 0.827 & 0.844 & 0.833 & +0.006 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\textbf{Representation quality via HI probing.} The central evaluation question is whether a world model's encoder implicitly learns latent degradation structure without explicit supervision on $s_t$. We evaluate this with a probing protocol:
+
+\begin{enumerate}
+    \item Train the model on observation sequences with no access to state labels
+    \item Freeze the encoder, and train downstream models over the next tasks
+    \item Report per-component RMSE, pearson correlation and $R^2$ scores on held-out episodes. 
+    \item Report distribution score of possible forecasted futures
+\end{enumerate}
+
+This protocol cleanly separates representation learning from downstream decoding, is sensitive to the geometric structure of the latent space, and admits fair comparison across model families without retraining.
+
+\textbf{Probing as a training callback.} We integrate HI probing as a Lightning callback (HIProbeCallback) that runs every $N$ epochs during training, logging per-component $R^2$ to Weights \& Biases in real time. This turns probing from a post-hoc diagnostic into a continuous signal that reveals when the encoder begins to capture degradation structure during learning, a qualitatively different view than final-checkpoint evaluation.
+
+\textbf{Connection to industrial use case.} In deployed systems, ground-truth HI is unavailable: operators can only observe sensors. A representation that accurately encodes HI from sensor sequences could directly enable predictive maintenance scheduling, anomaly detection, and remaining-useful-life estimation without access to privileged simulator state. TurboSens provides the controlled setting to validate whether self-supervised world models can bridge this gap, with the ambition that models trained here transfer to real operational data where the ground truth is unknown but the physics is shared.
+
+\textbf{Maintenance-action RUL probing.}
+Beyond degradation state, a practically relevant question is whether the encoder
+implicitly captures \emph{operational timing}: how many timesteps remain until the
+next scheduled maintenance action.
+At each timestep $t$ within an episode of length $L$, we define the
+steps-to-next-action target as
+\begin{equation}
+    \tau_t \;=\; \min\!\Bigl(\inf\{k > 0 : a_{t+k} = 1\},\; H\Bigr),
+    \label{eq:rul-target}
+\end{equation}
+where $H$ is a horizon cap (we use $H = 300$) and the infimum defaults to
+$L - t$ when no future action exists in the episode.
+This formulation avoids the severe class imbalance of binary action prediction
+(${\sim}0.26\%$ positive rate) and is defined at every timestep, yielding a dense
+regression signal.
+Because $\tau_t$ is heavy-tailed, targets are $\log(1 + \tau_t)$-transformed
+before standardisation; predictions are mapped back to timestep units for
+reporting.
+
+We train the same \textsc{TransformerProbe} architecture used for HI probing
+(frozen encoder, lightweight transformer head, Adam with early stopping) on the
+scalar target $\tau_t$, and report RMSE, MAE, $R^2$, and Pearson-$r$ on
+held-out episodes in original timestep units.
+In contrast to HI probing, which tests whether the encoder encodes
+\emph{physical} degradation structure, action-RUL probing tests whether it
+encodes \emph{operational} structure, specifically, how closely the current
+system state precedes a human intervention decision.
+A high score on both probes would indicate that world-model representations
+are simultaneously physically informative and maintenance-schedule-aware, a
+combination directly applicable to predictive maintenance pipelines.
+
+
+\subsection{Downstream Evaluation Tasks}
+\label{sec:downstream}
+
+We evaluate the quality of the learned representations through four
+downstream tasks applied to a \emph{frozen} JEPA encoder.
+No fine-tuning of the world model is performed; a lightweight
+TransformerProbe~\citep{} is trained on top of the fixed embeddings
+for Tasks~1 and~2, while Task~3 requires no additional training.
+Together the tasks probe successively deeper properties of the
+representation: instantaneous state geometry, local degradation
+dynamics, and multi-step predictive accuracy.
+
+\paragraph{Task 1: Health-Indicator State Estimation.}
+A TransformerProbe is trained to predict the ten-dimensional
+health-indicator (HI) vector $\mathbf{s}_t \in \mathbb{R}^{10}$
+from a single encoder embedding $\mathbf{z}_t$.
+Each HI dimension corresponds to the efficiency or flow-capacity
+degradation of a turbofan component (fan, high-pressure compressor,
+high-pressure turbine, low-pressure turbine, booster).
+We report $R^2$, RMSE, and Pearson-$r$ per component and averaged
+across all ten dimensions.
+Strong performance on this task indicates that the latent space
+captures a geometrically structured representation of the current
+degradation state.
+
+\paragraph{Task 2: Degradation Velocity Estimation.}
+Rather than predicting the absolute health state, we ask whether the
+encoder captures the \emph{rate of change} of degradation.
+The target is $\Delta\mathbf{s}_t = \mathbf{s}_t - \mathbf{s}_{t-1}$,
+computed within episode boundaries and restricted to non-maintenance
+timesteps so the target reflects pure degradation drift and excludes
+the discontinuous HI reset induced by a maintenance action.
+Predicting $\Delta\mathbf{s}_t$ from a single snapshot $\mathbf{z}_t$
+is strictly harder than predicting $\mathbf{s}_t$: it requires the
+encoder to capture local curvature of the degradation manifold, not
+only its position.
+We additionally derive a maintenance alarm score by computing
+$\|\widehat{\Delta\mathbf{s}}_t\|_2$, the predicted rate magnitude,
+and evaluating binary alarm quality~(AUC-ROC, Average Precision, F1)
+for the event ``maintenance occurs within $K$ steps''
+at thresholds $K \in \{10, 20, 50, 100\}$.
+
+\paragraph{Task 3: Latent Forecasting with Action Divergence.}
+We evaluate the JEPA predictor directly by rolling out $\tau$ steps
+autoregressively from an initial context window of $H$ embeddings,
+then decoding each predicted embedding $\hat{\mathbf{z}}_{t+\tau}$
+to the HI space using the Task-1 probe (no additional training).
+Rollouts use zero actions, i.e.\ the world model propagates the
+current degradation trajectory without any maintenance intervention.
+To quantify the cost of ignoring maintenance, we split each
+$\tau$-step trajectory into \emph{clean} segments (no maintenance
+event in $(t, t{+}\tau]$) and \emph{event} segments (at least one
+maintenance event).
+We report the mean HI RMSE at each horizon $\tau$ for both splits
+and their difference
+$\delta(\tau) = \mathrm{RMSE}_{\mathrm{event}}(\tau)
+              - \mathrm{RMSE}_{\mathrm{clean}}(\tau)$,
+which we term the \emph{action-divergence gap}.
+A large gap at short horizons indicates that maintenance transitions
+are a primary source of forecast error and motivates
+action-conditioned world modelling.
+
+\subsection{Task 4: Out-of-Distribution Detection via Latent Surprise}
+\label{sec:ood}
+
+A central motivation for pairing a physics-based simulator with a learned
+world model is the ability to generate and evaluate scenarios that fall
+outside the training distribution.
+We define a \emph{latent surprise score} grounded in the JEPA predictor:
+\begin{equation}
+  \mathcal{S}(t) =
+  \bigl\|\,\mathbf{z}_{t+1}
+         - f_\theta\!\bigl(\mathbf{z}_{t-H+1:t},\,\mathbf{a}_{t-H+1:t}\bigr)
+  \bigr\|_2,
+  \label{eq:surprise}
+\end{equation}
+where $f_\theta$ is the JEPA predictor and $\mathbf{z}_{t+1}$ is the
+actual encoder output at the next timestep.
+For in-distribution degradation trajectories, $\mathcal{S}(t)$ is small
+(Task~3 establishes $\mathcal{S} \approx 0.002$ at $\tau{=}1$ for clean segments).
+We ask whether $\mathcal{S}$ rises significantly for three categories of
+out-of-distribution trajectory generated with the simulator.
+
+\paragraph{OOD scenario 1: premature maintenance.}
+A maintenance action (HI restoration) is triggered while the engine health
+is still near nominal, a configuration never present in the training set
+where maintenance always follows significant degradation.
+The predictor, calibrated to slow monotonic drift, expects continuation of
+near-nominal dynamics; the sudden restoration jump produces a spike in
+$\mathcal{S}$ localised to the event timestep.
+
+\paragraph{OOD scenario 2: accelerated degradation.}
+Degradation-rate parameters are set to values outside the training range
+(multiplied by factors of $3\times$ and $5\times$).
+The latent trajectory traverses the learned degradation manifold at an
+anomalous speed; the predictor underestimates the per-step displacement,
+causing $\mathcal{S}$ to grow proportionally to the rate multiplier.
+
+\paragraph{OOD scenario 3: correlated component failure.}
+Two turbofan components whose degradation is statistically independent in
+the training distribution (fan and turbine) are forced to degrade
+simultaneously at elevated rate.
+Even if each component's individual rate lies within the training range,
+the joint dynamics occupy a low-density region of the latent space,
+detectable via the Mahalanobis distance
+$d_M(\mathbf{z}_t) = \sqrt{(\mathbf{z}_t - \boldsymbol{\mu})^\top
+                     \boldsymbol{\Sigma}^{-1}
+                     (\mathbf{z}_t - \boldsymbol{\mu})}$
+computed from the training embedding distribution.
+
+\paragraph{Metrics.}
+For each scenario we report: (i) mean $\mathcal{S}$ on OOD segments versus
+matched in-distribution segments, (ii) AUC-ROC for binary separation of OOD
+from in-distribution samples using $\mathcal{S}$ as the score, and (iii)
+the Mahalanobis distance in encoder space.
+A high AUC indicates that the world model's own prediction error serves as
+an unsupervised anomaly detector without any OOD-specific training signal.
+
+
+
+
+\subsection{Results}
+\label{sec:results}
+
+\paragraph{Task 1: Health-Indicator State Estimation.}
+Table~\ref{tab:task1} reports per-component $R^2$, RMSE, and Pearson-$r$ for the HI state estimation probe trained on frozen JEPA embeddings.
+The snapshot encoder ($w{=}1$) achieves a mean $R^2$ of $0.834$ across all ten turbofan health-indicator dimensions, with the single-embedding probe already recovering high-amplitude components nearly perfectly ($R^2 = 0.956$ for \texttt{H/Eff}, $R^2 = 0.935$ for \texttt{Fan/Wc}).
+The temporally aggregated encoder ($w{=}10$) improves the mean to $0.852$, with gains concentrated in low-amplitude, slowly varying components: \texttt{Bst/Wc} improves by $+0.10$ and \texttt{TrbH/Eff} by $+0.06$, while high-amplitude components remain essentially unchanged.
+This pattern is consistent with the TemporalAggregator acting as a noise-smoothing mechanism: components whose instantaneous sensor signal is weak benefit from averaging over a short trajectory window, whereas already-discriminative components saturate regardless. The lowest-performing dimension, \texttt{TrbL/Wc} ($R^2 \approx 0.71$), corresponds to a slow, low-amplitude degradation mode that is hard to separate from sensor noise at any window size.
+
+\paragraph{Task 2: Degradation Velocity Estimation.}
+The velocity probe (predicting $\Delta\mathbf{s}_t = \mathbf{s}_t - \mathbf{s}_{t-1}$ from a single embedding) yields $R^2 \approx -0.02$ for both model variants, with the probe converging to predicting the mean (near zero) within 21 epochs. This result is expected and informative.
+The per-step degradation increment is approximately $2.3 \times 10^{-5}$ in normalised units, five orders of magnitude smaller than the HI amplitude, with variance so low that the RMSE of a constant-mean predictor equals the empirical standard deviation. 
+The JEPA objective only requires predicting the \emph{position} of the next latent state, not the velocity of transition; accordingly, the encoder has no gradient pressure to encode degradation rate in its geometry. We evaluate the same probe with trajectory windows of $\mathrm{seq\_len} \in \{1, 10, 50\}$:
+a probe attending over a window of consecutive embeddings can compute a finite-difference estimate of the local slope, which is the natural
+information source for velocity estimation. Whether this suffices to push $R^2$ into positive territory is an open question we report in Table~\ref{tab:task2}.
+The maintenance alarm (Task~2b), scored by the predicted $\|\Delta\hat{\mathbf{s}}_t\|_2$, yields AUC$=0.50$ at all horizons when the velocity probe is constant, confirming that snapshot embeddings carry no direct alarm signal.
+
+\paragraph{Task 2 (bis): Degradation Archetype Classification.}
+Simply from some sequence, predict the current degradation archetype. 
+
+\paragraph{Task 3: Latent Forecasting and Action Divergence.}
+Figure~\ref{fig:task3} reports the mean HI RMSE of the zero-action autoregressive rollout as a function of forecast horizon $\tau$. We distinguish \emph{clean} trajectories (no maintenance event in $(t, t{+}\tau]$) from \emph{event} trajectories (at least one maintenance event), and define the action-divergence gap $\delta(\tau) = \mathrm{RMSE}_\mathrm{event}(\tau) - \mathrm{RMSE}_\mathrm{clean}(\tau)$.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/fig_task3_curves.pdf}
+    \caption{Latent forecasting comparison of window sizes for le-wm over latent forecasting (Task 3).}
+    \label{fig:task3}
+\end{figure}
+
+Three findings stand out. First, the one-step clean RMSE of the world model matches the direct encoder RMSE from Task~1 to within numerical precision: $0.00199$ vs.\ $0.00198$ for $w{=}1$, and $0.00186$ vs.\ $0.00187$ for $w{=}10$.
+The predictor adds negligible error at $\tau{=}1$ for smooth degradation trajectories; the encoder representation is the performance bottleneck, not the dynamics model.
+
+Second, the $w{=}10$ model consistently outperforms $w{=}1$ on clean trajectories at all horizons, with RMSE at $\tau{=}50$ of $0.00480$ versus $0.00572$ (a $16\%$ reduction). Temporal aggregation at the encoder level propagates useful trajectory direction information into the initial latent state, giving the predictor a better-informed context for multi-step rollout.
+
+Third, the action-divergence gap $\delta(\tau)$ peaks at $\tau \approx 6$ (gap $\approx +0.0031$ for $w{=}1$, $+0.0029$ for $w{=}10$) and decays monotonically toward zero by $\tau{=}50$. The peak reflects the average proximity of a sampled starting frame to the next maintenance event in the dataset. The decay is a statistical dilution effect: at large $\tau$, the event set is dominated by trajectories whose maintenance event falls late in the window, contributing minimal extra error at the evaluated prediction target. The peak gap ($\approx 0.003$) is larger than the per-step degradation drift at any horizon, establishing maintenance transitions as the dominant source of forecast error. This motivates action-conditioned world modelling as a direct and quantified next step: closing the gap would require the predictor to condition on the binary maintenance signal, which is precisely the information discarded in the zero-action baseline.
+
+
+We evaluate three unsupervised OOD detectors on frozen JEPA representations. Distribution-based methods (Mahalanobis, k-NN) achieve moderate AUC (0.69-0.77), demonstrating that JEPA embeddings carry distributional information about the training regime. Notably, prediction error (Surprise) is an unreliable OOD signal — OOD trajectories are often more predictable than training ones because fast monotonic degradation is locally smooth. This motivates future work on representations explicitly trained with anomaly-sensitivity objectives.
+
+
+\subsection{Discussion}
+\label{sec:discussion}
+
+The three evaluation tasks reveal a consistent picture of what the JEPA
+world model has and has not learned. The encoder geometry faithfully represents the instantaneous degradation state of all ten turbofan health indicators ($\bar{R}^2 {=} 0.85$ from a single snapshot), confirming that the JEPA objective successfully organises the latent space by health state without any supervised signal. The dynamics model propagates this state smoothly over at least 50 steps without divergence, and with near-zero overhead at one step, suggesting that the predictor has learned a good linearised approximation of the degradation physics for maintenance-free trajectories.
+
+The velocity task (Task~2) highlights a fundamental distinction between state encoding and rate encoding. JEPA's latent space is indexed by degradation position, not by the local tangent to the degradation manifold. This is not a deficiency of the architecture but a consequence of the objective: a world model trained to predict the next latent state in a near-linear dynamical system needs to encode position but not velocity, because position alone determines the next position.
+Recovering velocity requires either a trajectory window (seq\_len~$>$~1),
+or a change to the training objective such as explicitly penalising velocity prediction error, or stronger wider temporal objectives.
+
+The action-divergence gap (Task~3) provides a principled, quantified
+motivation for moving beyond the zero-action world model. The analysis shows that maintenance transitions, not long-horizon drift, dominate forecast error. An action-conditioned world model that receives the binary maintenance signal as input to its predictor would, in principle, collapse the event and clean RMSE curves to the same trajectory, reducing peak RMSE by a factor of approximately $2.3\times$ at short horizons. This represents a concrete and measurable target for future work, directly informed by the benchmark results.
+
+\subsection{TODOs}
+Ablation for the paper would be $w \in \{1,5,10\} \times H \in \{3,10,50\}$, reporting reconstruction AUC and surprise AUC. The hypothesis: reconstruction AUC peaks at low w (richer $z_t$ for the decoder), surprise AUC peaks at high $H$ (richer context for the predictor). If that pattern holds, the two detectors are genuinely complementary and not redundant. In short: is temporality better introduced in the Encoder or in the Predictor? 
+
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|} \hline
+        Encoder & Short H (1-10) & Long H (50+)   \\ \hline
+        Thin encoder (d=32,w=1-10) & - & H is the driver \\ \hline
+        Fat encoder (d=256, w=50+) & w does the work & redundant \\ \hline
+    \end{tabular}
+    \caption{Should the encoder learn a temporality, or should the predictor alone handle it? We investigate the balance between state representation (encoder) and dynamics (predictor). $w$ being the observation window fed into the encoder, and $H$ the latent history sequence fed into the predictor.}
+    \label{tab:placeholder}
+\end{table}
+
+The prediction: thin encoder + long H $\geq$ fat encoder + short H, measured by reconstruction OOD AUC and HI probe $R^2$. If that pattern holds, it's a nice transferable lesson: in JEPA for time-series, invest parameters in predictor depth and history length, not encoder width.
+
+
+
+
+
+%% ── Table 1: Task 1 HI State Estimation ─────────────────────────────────────
+\begin{table}[t]
+\centering
+\caption{%
+  Task~1: Health-indicator state estimation.
+  A TransformerProbe is trained on frozen JEPA embeddings to predict
+  each of the ten turbofan HI dimensions.
+  Results are shown for the snapshot encoder ($w{=}1$) and the
+  temporally aggregated encoder ($w{=}10$).
+}
+\label{tab:task1}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{3}{c}{$w = 1$} & \multicolumn{3}{c}{$w = 10$} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Component & $R^2$ & RMSE & Pearson & $R^2$ & RMSE & Pearson \\
+\midrule
+Bst/Eff    & 0.847 & 0.00185 & 0.926 & 0.850 & 0.00183 & 0.930 \\
+Bst/Wc     & 0.762 & 0.00233 & 0.883 & 0.865 & 0.00176 & 0.939 \\
+Fan/Eff    & 0.782 & 0.00217 & 0.888 & 0.785 & 0.00216 & 0.891 \\
+Fan/Wc     & 0.935 & 0.00107 & 0.969 & 0.954 & 0.00090 & 0.979 \\
+H/Eff      & 0.956 & 0.00162 & 0.978 & 0.957 & 0.00159 & 0.978 \\
+H/Wc       & 0.863 & 0.00285 & 0.930 & 0.874 & 0.00274 & 0.935 \\
+TrbH/Eff   & 0.792 & 0.00202 & 0.890 & 0.850 & 0.00172 & 0.924 \\
+TrbH/Wc    & 0.869 & 0.00145 & 0.933 & 0.855 & 0.00152 & 0.926 \\
+TrbL/Eff   & 0.819 & 0.00195 & 0.906 & 0.818 & 0.00196 & 0.906 \\
+TrbL/Wc    & 0.713 & 0.00249 & 0.845 & 0.714 & 0.00248 & 0.846 \\
+\midrule
+\textbf{Mean} & \textbf{0.834} & \textbf{0.00198} & \textbf{0.915}
+              & \textbf{0.852} & \textbf{0.00187} & \textbf{0.925} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ── Table 2: Task 3 Summary ──────────────────────────────────────────────────
+\label{tab:task2}
+\begin{table}[t]
+\centering
+\caption{%
+  Task~3: Latent forecasting RMSE at selected horizons $\tau$.
+  \emph{Clean}: no maintenance event in $(t, t{+}\tau]$.
+  \emph{Event}: at least one maintenance event in $(t, t{+}\tau]$.
+  \emph{Gap}: $\delta(\tau) = \mathrm{RMSE}_\mathrm{event} -
+  \mathrm{RMSE}_\mathrm{clean}$, quantifying the action-divergence cost of the zero-action forecaster. All values are mean HI RMSE $\times 10^{3}$.
+}
+\label{tab:task3}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{r ccc ccc}
+\toprule
+& \multicolumn{3}{c}{$w = 1$} & \multicolumn{3}{c}{$w = 10$} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+$\tau$ & Clean & Event & Gap & Clean & Event & Gap \\
+\midrule
+ 1  & 1.99 & 4.52 & $+$2.54 & 1.86 & 4.28 & $+$2.42 \\
+ 5  & 2.07 & 5.10 & $+$3.04 & 1.91 & 4.75 & $+$2.83 \\
+10  & 2.22 & 5.04 & $+$2.83 & 2.03 & 4.64 & $+$2.61 \\
+20  & 3.04 & 5.03 & $+$1.99 & 2.57 & 4.43 & $+$1.86 \\
+30  & 4.21 & 5.26 & $+$1.05 & 3.47 & 4.49 & $+$1.01 \\
+50  & 5.72 & 5.89 & $+$0.17 & 4.80 & 4.75 & $-$0.05 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+
+
+
+\section{Submission of papers to NeurIPS 2026}
+
+
+Please read the instructions below carefully and follow them faithfully.
+
+
+\subsection{Style}
+
+
+Papers to be submitted to NeurIPS 2026 must be prepared according to the
+instructions presented here. Papers may only be up to {\bf nine} pages long, including figures. \textbf{Papers that exceed the page limit will not be reviewed (or in any other way considered) for presentation at the conference.}
+Additional pages \emph{containing acknowledgments, references, checklist, and optional technical appendices} do not count as content pages. 
+
+
+The margins in 2026 are the same as those in previous years.
+
+
+Authors are required to use the NeurIPS \LaTeX{} style files obtainable at the NeurIPS website as indicated below. Please make sure you use the current files and not previous versions. Tweaking the style files may be grounds for desk rejection.
+
+
+\subsection{Retrieval of style files}
+
+
+The style files for NeurIPS and other conference information are available on the website at
+\begin{center}
+  \url{https://neurips.cc}.
+\end{center}
+% The file \verb+neurips_2026.pdf+ contains these instructions and illustrates the various formatting requirements your NeurIPS paper must satisfy.
+
+
+The only supported style file for NeurIPS 2026 is \verb+neurips_2026.sty+, rewritten for \LaTeXe{}. \textbf{Previous style files for \LaTeX{} 2.09,  Microsoft Word, and RTF are no longer supported.}
+
+
+The \LaTeX{} style file contains three optional arguments: 
+\begin{itemize}
+\item \verb+final+, which creates a camera-ready copy, 
+\item \verb+preprint+, which creates a preprint for submission to, e.g., arXiv, \item \verb+nonatbib+, which will not load the \verb+natbib+ package for you in case of package clash.
+\end{itemize}
+
+
+\paragraph{Preprint option}
+If you wish to post a preprint of your work online, e.g., on arXiv, using the NeurIPS style, please use the \verb+preprint+ option. This will create a nonanonymized version of your work with the text ``Preprint. Work in progress.'' in the footer. This version may be distributed as you see fit, as long as you do not say which conference it was submitted to. Please \textbf{do not} use the \verb+final+ option, which should \textbf{only} be used for papers accepted to NeurIPS.
+
+
+At submission time, please omit the \verb+final+ and \verb+preprint+ options. This will anonymize your submission and add line numbers to aid review. Please do \emph{not} refer to these line numbers in your paper as they will be removed during generation of camera-ready copies.
+
+
+The file \verb+neurips_2026.tex+ may be used as a ``shell'' for writing your paper. All you have to do is replace the author, title, abstract, and text of the paper with your own.
+
+
+The formatting instructions contained in these style files are summarized in Sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
+
+
+\section{General formatting instructions}
+\label{gen_inst}
+
+
+The text must be confined within a rectangle 5.5~inches (33~picas) wide and
+9~inches (54~picas) long. The left margin is 1.5~inch (9~picas).  Use 10~point
+type with a vertical spacing (leading) of 11~points.  Times New Roman is the
+preferred typeface throughout, and will be selected for you by default.
+Paragraphs are separated by \nicefrac{1}{2}~line space (5.5 points), with no
+indentation.
+
+
+The paper title should be 17~point, initial caps/lower case, bold, centered
+between two horizontal rules. The top rule should be 4~points thick and the
+bottom rule should be 1~point thick. Allow \nicefrac{1}{4}~inch space above and
+below the title to rules. All pages should start at 1~inch (6~picas) from the
+top of the page.
+
+
+For the final version, authors' names are set in boldface, and each name is
+centered above the corresponding address. The lead author's name is to be listed
+first (left-most), and the co-authors' names (if different address) are set to
+follow. If there is only one co-author, list both author and co-author side by
+side.
+
+
+Please pay special attention to the instructions in Section \ref{others}
+regarding figures, tables, acknowledgments, and references.
+
+\section{Headings: first level}
+\label{headings}
+
+
+All headings should be lower case (except for first word and proper nouns),
+flush left, and bold.
+
+
+First-level headings should be in 12-point type.
+
+
+\subsection{Headings: second level}
+
+
+Second-level headings should be in 10-point type.
+
+
+\subsubsection{Headings: third level}
+
+
+Third-level headings should be in 10-point type.
+
+
+\paragraph{Paragraphs}
+
+
+There is also a \verb+\paragraph+ command available, which sets the heading in
+bold, flush left, and inline with the text, with the heading followed by 1\,em
+of space.
+
+
+\section{Citations, figures, tables, references}
+\label{others}
+
+
+These instructions apply to everyone.
+
+
+\subsection{Citations within the text}
+
+
+The \verb+natbib+ package will be loaded for you by default.  Citations may be
+author/year or numeric, as long as you maintain internal consistency.  As to the
+format of the references themselves, any style is acceptable as long as it is
+used consistently.
+
+
+The documentation for \verb+natbib+ may be found at
+\begin{center}
+  \url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
+\end{center}
+Of note is the command \verb+\citet+, which produces citations appropriate for
+use in inline text.  For example,
+\begin{verbatim}
+   \citet{hasselmo} investigated\dots
+\end{verbatim}
+produces
+\begin{quote}
+  Hasselmo, et al.\ (1995) investigated\dots
+\end{quote}
+
+
+If you wish to load the \verb+natbib+ package with options, you may add the
+following before loading the \verb+neurips_2026+ package:
+\begin{verbatim}
+   \PassOptionsToPackage{options}{natbib}
+\end{verbatim}
+
+
+If \verb+natbib+ clashes with another package you load, you can add the optional
+argument \verb+nonatbib+ when loading the style file:
+\begin{verbatim}
+   \usepackage[nonatbib]{neurips_2026}
+\end{verbatim}
+
+
+As submission is double blind, refer to your own published work in the third
+person. That is, use ``In the previous work of Jones et al.\ [4],'' not ``In our
+previous work [4].'' If you cite your other papers that are not widely available
+(e.g., a journal paper under review), use anonymous author names in the
+citation, e.g., an author of the form ``A.\ Anonymous'' and include a copy of the anonymized paper in the supplementary material.
+
+
+\subsection{Footnotes}
+
+
+Footnotes should be used sparingly.  If you do require a footnote, indicate
+footnotes with a number\footnote{Sample of the first footnote.} in the
+text. Place the footnotes at the bottom of the page on which they appear.
+Precede the footnote with a horizontal rule of 2~inches (12~picas).
+
+
+Note that footnotes are properly typeset \emph{after} punctuation
+marks.\footnote{As in this example.}
+
+
+\subsection{Figures}
+
+
+\begin{figure}
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  \caption{Sample figure caption. Explain what the figure shows and add a key take-away message to the caption.}
+\end{figure}
+
+
+All artwork must be neat, clean, and legible. Lines should be dark enough for
+ reproduction purposes. The figure number and caption always appear after the
+figure. Place one line space before the figure caption and one line space after
+the figure. The figure caption should be lower case (except for the first word and proper nouns); figures are numbered consecutively.
+
+
+You may use color figures.  However, it is best for the figure captions and the
+paper body to be legible if the paper is printed in either black/white or in
+color.
+
+
+\subsection{Tables}
+
+
+All tables must be centered, neat, clean, and legible.  The table number and
+title always appear before the table.  See Table~\ref{sample-table}.
+
+
+Place one line space before the table title, one line space after the
+table title, and one line space after the table. The table title must
+be lower case (except for the first word and proper nouns); tables are
+numbered consecutively.
+
+
+Note that publication-quality tables \emph{do not contain vertical rules}. We
+strongly suggest the use of the \verb+booktabs+ package, which allows for
+typesetting high-quality, professional tables:
+\begin{center}
+  \url{https://www.ctan.org/pkg/booktabs}
+\end{center}
+This package was used to typeset Table~\ref{sample-table}.
+
+
+\begin{table}
+  \caption{Sample table caption. Explain what the table shows and add a key take-away message to the caption.}
+  \label{sample-table}
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    \multicolumn{2}{c}{Part}                   \\
+    \cmidrule(r){1-2}
+    Name     & Description     & Size ($\mu$m) \\
+    \midrule
+    Dendrite & Input terminal  & $\approx$100     \\
+    Axon     & Output terminal & $\approx$10      \\
+    Soma     & Cell body       & up to $10^6$  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Math}
+Note that display math in bare TeX commands will not create correct line numbers for submission. Please use LaTeX (or AMSTeX) commands for unnumbered display math. (You really shouldn't be using \$\$ anyway; see \url{https://tex.stackexchange.com/questions/503/why-is-preferable-to} and \url{https://tex.stackexchange.com/questions/40492/what-are-the-differences-between-align-equation-and-displaymath} for more information.)
+
+\subsection{Final instructions}
+
+Do not change any aspects of the formatting parameters in the style files.  In
+particular, do not modify the width or length of the rectangle the text should
+fit into, and do not change font sizes. Please note that pages should be
+numbered.
+
+
+\section{Preparing PDF files}
+
+
+Please prepare submission files with paper size ``US Letter,'' and not, for
+example, ``A4.''
+
+
+Fonts were the main cause of problems in the past years. Your PDF file must only
+contain Type 1 or Embedded TrueType fonts. Here are a few instructions to
+achieve this.
+
+
+\begin{itemize}
+
+
+\item You should directly generate PDF files using \verb+pdflatex+.
+
+
+\item You can check which fonts a PDF files uses.  In Acrobat Reader, select the
+  menu Files$>$Document Properties$>$Fonts and select Show All Fonts. You can
+  also use the program \verb+pdffonts+ which comes with \verb+xpdf+ and is
+  available out-of-the-box on most Linux machines.
+
+
+\item \verb+xfig+ ``patterned'' shapes are implemented with bitmap fonts.  Use
+  "solid" shapes instead.
+
+
+\item The \verb+\bbold+ package almost always uses bitmap fonts.  You should use
+  the equivalent AMS Fonts:
+\begin{verbatim}
+   \usepackage{amsfonts}
+\end{verbatim}
+followed by, e.g., \verb+\mathbb{R}+, \verb+\mathbb{N}+, or \verb+\mathbb{C}+
+for $\mathbb{R}$, $\mathbb{N}$ or $\mathbb{C}$.  You can also use the following
+workaround for reals, natural and complex:
+\begin{verbatim}
+   \newcommand{\RR}{I\!\!R} %real numbers
+   \newcommand{\Nat}{I\!\!N} %natural numbers
+   \newcommand{\CC}{I\!\!\!\!C} %complex numbers
+\end{verbatim}
+Note that \verb+amsfonts+ is automatically loaded by the \verb+amssymb+ package.
+
+
+\end{itemize}
+
+
+If your file contains type 3 fonts or non embedded TrueType fonts, we will ask
+you to fix it.
+
+
+\subsection{Margins in \LaTeX{}}
+
+
+Most of the margin problems come from figures positioned by hand using
+\verb+\special+ or other commands. We suggest using the command
+\verb+\includegraphics+ from the \verb+graphicx+ package. Always specify the
+figure width as a multiple of the line width as in the example below:
+\begin{verbatim}
+   \usepackage[pdftex]{graphicx} ...
+   \includegraphics[width=0.8\linewidth]{myfile.pdf}
+\end{verbatim}
+See Section 4.4 in the graphics bundle documentation
+(\url{http://mirrors.ctan.org/macros/latex/required/graphics/grfguide.pdf})
+
+
+A number of width problems arise when \LaTeX{} cannot properly hyphenate a
+line. Please give LaTeX hyphenation hints using the \verb+\-+ command when
+necessary.
+
+\begin{ack}
+Use unnumbered first level headings for the acknowledgments. All acknowledgments
+go at the end of the paper before the list of references. Moreover, you are required to declare
+funding (financial activities supporting the submitted work) and competing interests (related financial activities outside the submitted work).
+More information about this disclosure can be found at: \url{https://neurips.cc/Conferences/2026/PaperInformation/FundingDisclosure}.
+
+
+Do {\bf not} include this section in the anonymized submission, only in the final paper. You can use the \texttt{ack} environment provided in the style file to automatically hide this section in the anonymized submission.
+\end{ack}
+
+\section*{References}
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+
+
+%References follow the acknowledgments in the camera-ready paper. Use unnumbered first-level heading for
+%the references. Any choice of citation style is acceptable as long as you are
+%consistent. It is permissible to reduce the font size to \verb+small+ (9 point)
+%when listing the references.
+%Note that the Reference section does not count towards the page limit.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\appendix
+
+
+\section{Technical appendices and supplementary material}
+Technical appendices with additional results, figures, graphs, and proofs may be submitted with the paper submission before the full submission deadline (see above). You can upload a ZIP file for videos or code, but do not upload a separate PDF file for the appendix. There is no page limit for the technical appendices. 
+
+Note: Think of the appendix as ``optional reading'' for reviewers. The paper must be able to stand alone without the appendix; for example, adding critical experiments that support the main claims to an appendix is inappropriate. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\include{appendix}
+
+
+
+
+\newpage
+\input{checklist.tex}
+
+
+
+\end{document}
