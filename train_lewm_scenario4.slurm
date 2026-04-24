@@ -79,7 +79,7 @@ srun python -u train.py \
     data=scenario4 \
     encoder_type=sensor \
     n_sensors=${N_SENSORS} \
-    sensor_encoder.max_sensors=${MAX_SENSORS} \
+    +sensor_encoder.max_sensors=${MAX_SENSORS} \
     obs_window_size=${WIN_SIZE} \
     wm.history_size=${HISTORY_LEN} \
     wm.h_step=${H_STEP} \
