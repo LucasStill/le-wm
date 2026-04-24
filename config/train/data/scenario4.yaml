@@ -1,0 +1,52 @@
+# Scenario-4 engine degradation dataset for le-wm training.
+#
+# PREREQUISITES — run once from le-wm/:
+#
+#   python prepare_scenario4_dataset.py \
+#       --all_splits \
+#       --data_dir /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
+#
+# Creates three pipeline-ready files in that directory:
+#   scenario4_train_lewm.h5      — full train split
+#   scenario4_test_lewm.h5       — held-out test
+#   scenario4_test_hard_lewm.h5  — OOD test (harder distribution shift)
+#
+# TRAINING — from le-wm/:
+#
+#   python train.py \
+#       data=scenario4 \
+#       n_sensors=176 \
+#       sensor_encoder.max_sensors=200 \
+#       data.dataset.cache_dir=/abs/path/to/data
+#
+# The file loaded will be: {cache_dir}/scenario4_train_lewm.h5
+#
+# DIFFERENCES FROM SCENARIO 3
+# ---------------------------
+#   pixels     : (N, 11, 16)  — 7 sensors + 4 context_params (dtamb, alt, mach, cmd)
+#                              stacked along channel axis, each of the 16 contexts
+#                              carries its own operating-point alongside sensors
+#   n_sensors  : 176  (= 11 × 16)  vs 84 (= 7 × 12) in scenario 3
+#   n_actions  : 7    (0=do_nothing, 1=fan, 2=hpc, 3=turbine, 4=full, 5=patch, 6=wash)
+#   ep_len     : variable (~13 900 flights avg), set by archetype / region / events
+#   n_hi       : 10 (same)
+#   extra meta : repaired_flight_mask, valid_flight_mask, visit_type,
+#                component_service_mask, region, flights_per_day, is_extreme
+#
+# ENCODER NOTE:
+#   Use encoder_type=sensor with n_sensors=176. The sensor encoder flattens
+#   (B, T, 11, 16) → (B, T, 176) tokens automatically. Bump
+#   sensor_encoder.max_sensors to ≥176 (default 128 is too small).
+
+dataset:
+  # With obs_window_size=w the encoder needs w-1 extra frames per sample.
+  # Total frames per sample: (H + P - 1) * s + w
+  num_steps: ${eval:'(${wm.history_size} + ${wm.num_preds} - 1) * ${wm.h_step} + ${obs_window_size}'}
+  frameskip: 1
+  name: scenario4_train_lewm
+  cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
+  keys_to_load:
+    - pixels   # (N, 11, 16) normalised sensors+context — see prepare_scenario4_dataset.py
+    - action   # scalar float32, values 0–6 — z-normalised at runtime
+  keys_to_cache:
+    - action   # pixels NOT cached here — copy HDF5 to $SCRATCH in SLURM instead (faster)

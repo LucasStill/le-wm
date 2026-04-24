@@ -210,11 +210,12 @@ def run(cfg):
         sen_cfg = cfg.get("sensor_encoder", {})
         embed_dim = cfg.wm.get("embed_dim", 64)
         encoder = SensorEncoder(
-            n_sensors  = cfg.get("n_sensors", 28),
-            d_model    = sen_cfg.get("d_model", embed_dim),
-            nhead      = sen_cfg.get("nhead", 4),
-            num_layers = sen_cfg.get("num_layers", 2),
-            dropout    = sen_cfg.get("dropout", 0.1),
+            n_sensors   = cfg.get("n_sensors", 28),
+            d_model     = sen_cfg.get("d_model", embed_dim),
+            nhead       = sen_cfg.get("nhead", 4),
+            num_layers  = sen_cfg.get("num_layers", 2),
+            dropout     = sen_cfg.get("dropout", 0.1),
+            max_sensors = sen_cfg.get("max_sensors", 128),
         )
         hidden_dim = encoder.hidden_size
         logging.info(
