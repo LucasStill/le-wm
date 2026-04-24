@@ -49,4 +49,5 @@ dataset:
     - pixels   # (N, 11, 16) normalised sensors+context — see prepare_scenario4_dataset.py
     - action   # scalar float32, values 0–6 — z-normalised at runtime
   keys_to_cache:
-    - action   # pixels NOT cached here — copy HDF5 to $SCRATCH in SLURM instead (faster)
+    - action
+    - pixels   # ~4.9 GB; avoids per-sample LZF chunk decompression thrashing
