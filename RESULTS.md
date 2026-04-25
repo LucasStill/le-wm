@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-25 19:39 UTC_
+_Last regenerated: 2026-04-25 19:49 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,12 +22,12 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Nothing training.** L1 full completed cleanly at 18:19 UTC. GPU is
-  idle (~0 %, 384 MiB). Lucas asked me not to auto-launch L2 — pending
-  next instruction.
-- **Tmux `s4_arlstm_L1`** — still alive (post-training shell). Attach
-  with `tmux attach -t s4_arlstm_L1` to see the final printout.
-- **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+- **Tmux `s4_arlstm_L2`** — L2 full 10-epoch run: H=32 S=1 P=4, bs=256,
+  accum=2 (eff. bs=512), bf16-mixed, compile_encoder=true,
+  lstm.use_cudnn=true, hi_probe enabled. Started 19:47 UTC.
+  Log: `logs/s4_arlstm_L2_20260425_2146.log`. ETA finish ~09:15 UTC
+  tomorrow (~13.5 h).
+- **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
 
 
 ---
@@ -225,8 +225,6 @@ total-param counts alongside metrics in the paper table.
 
 ### OrailixTower log
 ```
-2026-04-25T11:40Z  Dragon answered open questions: keep turbofan_S4 wandb project; lstm.hidden_dim=256 num_layers=2 is fine (don't calibrate); GREENLIGHT for L1.
-2026-04-25T11:40Z  Noted dragon's status: E3 (H=16 S=5 P=4) full 10-epoch running, ETA ~22:00 UTC; E4 queued.
 2026-04-25T11:40Z  Awaiting Lucas's launch confirmation for L1 before burning GPU.
 2026-04-25T09:44Z  Lucas greenlit. L1 probe (1 epoch, H=16 S=1 P=4 bs=512 accum=1) launched in tmux s4_arlstm_L1_probe. wandb_sync daemon also up.
 2026-04-25T10:58Z  L1 probe completed: 12307 steps in 62 min @ 3.25 it/s, peak 15.9 GB VRAM. Tmux session auto-exited (no shell wrap) — first looked like a crash; was actually clean shutdown.
@@ -235,6 +233,8 @@ total-param counts alongside metrics in the paper table.
 2026-04-25T11:17Z  L1 full 10-epoch run launched in tmux s4_arlstm_L1 (now wrapped in `exec bash` so the session stays alive after training). compile_encoder=true. Wandb offline run id: 12uiyu7c. ETA ~18:00 UTC.
 2026-04-25T18:19Z  L1 full completed (10 epochs in ~7 h, 40:16 per epoch at 5.06 it/s). Final fit/pred=0.129, fit/ar=0.078; HI mean Pearson@9=0.242, RUL R²=-0.12. See results.md for the full row.
 2026-04-25T18:19Z  Lucas asked me NOT to auto-launch L2 — paused queue, GPU idle, awaiting next instruction.
+2026-04-25T19:30Z  Read dragon's log update. Two requests noted: per-HI rows in results.md (cheap), bigger-probe diagnostic on L1 frozen encoder at ep.5 and ep.9 (~30-90 min GPU). Will queue after L2 lands.
+2026-04-25T19:47Z  Lucas said resume baselines. L2 full launched in tmux s4_arlstm_L2 (H=32 S=1 P=4 bs=256 accum=2, compile_encoder=true). ETA ~09:15 UTC tomorrow.
 ```
 
 ---

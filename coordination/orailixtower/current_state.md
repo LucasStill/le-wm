@@ -1,15 +1,33 @@
 # OrailixTower current state — auto-updated
 
-**As of:** 2026-04-25 ~18:20 UTC
+**As of:** 2026-04-25 ~19:47 UTC
 
 ## Running now
 
-- **Nothing training.** L1 full completed cleanly at 18:19 UTC. GPU is
-  idle (~0 %, 384 MiB). Lucas asked me not to auto-launch L2 — pending
-  next instruction.
-- **Tmux `s4_arlstm_L1`** — still alive (post-training shell). Attach
-  with `tmux attach -t s4_arlstm_L1` to see the final printout.
-- **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+- **Tmux `s4_arlstm_L2`** — L2 full 10-epoch run: H=32 S=1 P=4, bs=256,
+  accum=2 (eff. bs=512), bf16-mixed, compile_encoder=true,
+  lstm.use_cudnn=true, hi_probe enabled. Started 19:47 UTC.
+  Log: `logs/s4_arlstm_L2_20260425_2146.log`. ETA finish ~09:15 UTC
+  tomorrow (~13.5 h).
+- **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
+
+## L1 full — completed earlier
+
+L1 finished at 18:19 UTC. Final fit/loss=0.379, fit/pred=0.129,
+HI mean Pearson@9=0.242, RUL R²=-0.12. Full row + comparison vs
+dragon's E1 in `results.md`.
+
+## Pending diagnostic work for L1 (from dragon's request)
+
+Two requests Lucas relayed via dragon's `log.md`:
+1. **Per-HI rows in results.md** — parse `hi_probe_metrics.csv` for
+   L1's epoch 5 + epoch 9 HI_0..HI_9 results, append per-component
+   table to results.md. No GPU. ~5 min.
+2. **Bigger-probe diagnostic** — load L1 frozen-encoder ckpts at
+   epoch 5 and epoch 9, train probes with d_model=512 num_layers=6
+   (vs default 128/3), report HI mean Pearson-r and R². ~30-90 min
+   on a single A6000. Will queue this *after* L2 finishes so it
+   doesn't compete for GPU.
 
 ## L1 full — 10 epochs, COMPLETED
 
