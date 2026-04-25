@@ -1,0 +1,16 @@
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H32_S1_P4
+Config   : w=1 H=32 s=1 P=4 bs=128
+========================================
+Could not override 'trainer.accumulate_grad_batches'.
+To append to your config use +trainer.accumulate_grad_batches=4
+Key 'accumulate_grad_batches' is not in struct
+    full_key: trainer.accumulate_grad_batches
+    object_type=dict
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.

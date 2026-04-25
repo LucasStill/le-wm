@@ -1,0 +1,89 @@
+[2026-04-24T21:37:33Z] campaign orchestrator starting; waiting for tmux session 's4' to end
+[2026-04-24T21:42:03Z] s4 session ended — E1 is done; beginning campaign
+0 %, 2 MiB
+[2026-04-24T21:43:03Z] ==== START E2_probe  H=32 S=1 P=4 bs=256 accum=2 epochs=1 ====
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H32_S1_P4
+Config   : w=1 H=32 s=1 P=4 bs=256
+========================================
+Could not override 'trainer.accumulate_grad_batches'.
+To append to your config use +trainer.accumulate_grad_batches=2
+Key 'accumulate_grad_batches' is not in struct
+    full_key: trainer.accumulate_grad_batches
+    object_type=dict
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
+[2026-04-24T21:43:07Z] XX E2_probe exited with code 1
+[2026-04-24T21:43:07Z] E2 probe failed; trying smaller batch (bs=128 accum=4)
+[2026-04-24T21:43:07Z] ==== START E2_probe_fallback  H=32 S=1 P=4 bs=128 accum=4 epochs=1 ====
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H32_S1_P4
+Config   : w=1 H=32 s=1 P=4 bs=128
+========================================
+Could not override 'trainer.accumulate_grad_batches'.
+To append to your config use +trainer.accumulate_grad_batches=4
+Key 'accumulate_grad_batches' is not in struct
+    full_key: trainer.accumulate_grad_batches
+    object_type=dict
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
+[2026-04-24T21:43:10Z] XX E2_probe_fallback exited with code 1
+[2026-04-24T21:43:10Z] !! E2 cannot fit; skipping E2
+[2026-04-24T21:43:10Z] ==== START E3_probe  H=16 S=5 P=4 bs=512 accum=1 epochs=1 ====
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H16_S5_P4
+Config   : w=1 H=16 s=5 P=4 bs=512
+========================================
+Could not override 'trainer.accumulate_grad_batches'.
+To append to your config use +trainer.accumulate_grad_batches=1
+Key 'accumulate_grad_batches' is not in struct
+    full_key: trainer.accumulate_grad_batches
+    object_type=dict
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
+[2026-04-24T21:43:14Z] XX E3_probe exited with code 1
+[2026-04-24T21:43:14Z] E3 probe failed (unexpected); trying bs=256 accum=2
+[2026-04-24T21:43:14Z] ==== START E3_probe_fallback  H=16 S=5 P=4 bs=256 accum=2 epochs=1 ====
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H16_S5_P4
+Config   : w=1 H=16 s=5 P=4 bs=256
+========================================
+Could not override 'trainer.accumulate_grad_batches'.
+To append to your config use +trainer.accumulate_grad_batches=2
+Key 'accumulate_grad_batches' is not in struct
+    full_key: trainer.accumulate_grad_batches
+    object_type=dict
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
+[2026-04-24T21:43:18Z] XX E3_probe_fallback exited with code 1
+[2026-04-24T21:43:18Z] !! E3 cannot fit; skipping
+[2026-04-24T21:43:18Z] E2 did not complete cleanly — skipping E4 to be safe
+[2026-04-24T21:43:18Z] ==== CAMPAIGN COMPLETE ====
+[2026-04-24T21:43:18Z] Status summary:
+  E2_probe_fallback              failed exit=1
+  E2_probe                       failed exit=1
+  E2                             skipped (can't fit)
+  E3_probe_fallback              failed exit=1
+  E3_probe                       failed exit=1
+  E3                             skipped (can't fit)
+  E4                             skipped (E2 did not complete)

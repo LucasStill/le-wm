@@ -1,0 +1,103 @@
+[2026-04-25T07:39:45Z] daemon starting (interval=300s)
+[2026-04-25T07:39:45Z] tick — checking for unsynced runs
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T07:45:11Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T07:52:42Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T08:00:19Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T08:08:02Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T08:15:48Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T08:23:30Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T08:31:06Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T08:38:50Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.
+[2026-04-25T08:46:36Z] tick — checking for unsynced runs
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+wandb: ERROR Error while calling W&B API: run jspv9w6d was previously created and deleted; try a new run id (<Response [409]>)
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/jspv9w6d ... done.
+Syncing: https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/5qv43zup ... done.

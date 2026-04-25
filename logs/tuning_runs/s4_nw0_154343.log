@@ -1,0 +1,19 @@
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H1_S1_P1
+Config   : w=1 H=1 s=1 P=1 bs=128
+========================================
+[2026-04-24 15:43:46,199][root][INFO] - Cached 'action' from '/home/lthil/.stable_worldmodel/scenario4_train_lewm.h5'
+Error executing job with overrides: ['data=scenario4', 'encoder_type=sensor', 'n_sensors=176', '+sensor_encoder.max_sensors=200', 'obs_window_size=1', 'wm.history_size=1', 'wm.h_step=1', 'wm.num_preds=1', 'wm.zero_pad_prob=0.0', 'num_workers=0', 'loader.batch_size=128', 'loader.persistent_workers=True', 'loader.pin_memory=True', 'trainer.precision=bf16-mixed', 'data.dataset.cache_dir=/home/lthil/.stable_worldmodel', 'wandb.config.project=turbofan_S4', 'subdir=scenario4_sensor_w1_H1_S1_P1', 'output_model_name=lewm_s4_sensor_w1_H1_S1_P1', 'hi_probe.enabled=true', 'hi_probe.probe_seq_len=1']
+Traceback (most recent call last):
+  File "/home/lthil/thesis/le-wm/train.py", line 201, in run
+    train = torch.utils.data.DataLoader(train_set, **cfg.loader, shuffle=True, drop_last=True, generator=rnd_gen)
+  File "/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 281, in __init__
+    raise ValueError(
+ValueError: prefetch_factor option could only be specified in multiprocessing.let num_workers > 0 to enable multiprocessing, otherwise set prefetch_factor to None.
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.

@@ -1,0 +1,317 @@
+[2026-04-24 15:47:10,918][root][INFO] - Cached 'action' from '/home/lthil/.stable_worldmodel/scenario4_train_lewm.h5'
+/home/lthil/thesis/le-wm/jepa.py:65: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+[2026-04-24 15:47:11,358][root][INFO] - [Encoder] SensorEncoder — n_sensors=176, d_model=64
+[2026-04-24 15:47:11,361][root][INFO] - [HIProbe] Config found: True, enabled: False
+15:47:11.361 | INFO    (682220, stable_pretraining.data.module) | Setting up DataModule
+15:47:11.361 | INFO    (682220, stable_pretraining.module) | Initializing Module configuration...
+15:47:11.361 | WARNING (682220, stable_pretraining.module) | No hyperparameters provided - hyperparameter logging is disabled.
+15:47:11.362 | INFO    (682220, stable_pretraining.module) | Setting custom forward method.
+15:47:11.362 | INFO    (682220, stable_pretraining.module) | Setting attribute: self.model = <class 'jepa.JEPA'>
+15:47:11.362 | INFO    (682220, stable_pretraining.module) | Setting attribute: self.sigreg = <class 'module.SIGReg'>
+15:47:11.362 | INFO    (682220, stable_pretraining.module) | Setting attribute: self.optim = <class 'dict'>
+15:47:11.362 | INFO    (682220, stable_pretraining.module) | No metrics configuration provided - automatic metric tracking is disabled.
+Using bfloat16 Automatic Mixed Precision (AMP)
+15:47:11.378 | INFO    (682220, stable_pretraining.callbacks.env_info) | EnvironmentDumpCallback initialized (filename=environment.json, async=True)
+15:47:11.378 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) | ============================================================
+15:47:11.378 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) | Initializing CPUOffloadCallback
+15:47:11.378 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) | Configuration:
+15:47:11.378 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Offload keys: ['state_dict', 'optimizer_states', 'lr_schedulers']
+15:47:11.378 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Log all skipped objects: False
+15:47:11.378 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Will show first/last 10 skipped objects only
+15:47:11.378 | SUCCESS (682220, stable_pretraining.callbacks.cpu_offload) | ✓ CUDA available: 1 GPU(s) detected
+15:47:11.495 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - GPU 0: NVIDIA GeForce RTX 5090 (33.7 GB)
+15:47:11.496 | SUCCESS (682220, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback initialized successfully
+15:47:11.496 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) | ============================================================
+Adding 10 callbacks from entry point 'stablepretraining_callbacks': ModuleRegistryCallback, LoggingCallback, EnvironmentDumpCallback, TrainerInfo, SklearnCheckpoint, WandbCheckpoint, ModuleSummary, SLURMInfo, LogUnusedParametersOnce, CPUOffloadCallback
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/trainer/connectors/logger_connector/logger_connector.py:76: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `lightning.pytorch` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+Seed set to 3072
+💡 Tip: For seamless cloud uploads and versioning, try installing [litmodels](https://pypi.org/project/litmodels/) to enable LitModelCheckpoint, which syncs automatically with the Lightning model registry.
+You are using a CUDA device ('NVIDIA GeForce RTX 5090') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+15:47:11.563 | INFO    (682220, stable_pretraining.data.module) | dataset for fit loaded!  ✅
+15:47:11.563 | INFO    (682220, stable_pretraining.data.module) | 	● setup was done by user
+15:47:11.563 | INFO    (682220, stable_pretraining.callbacks.env_info) | ======================================================================
+15:47:11.563 | INFO    (682220, stable_pretraining.callbacks.env_info) | 🔍 Starting environment configuration dump...
+15:47:11.563 | INFO    (682220, stable_pretraining.callbacks.env_info) | ======================================================================
+15:47:11.563 | INFO    (682220, stable_pretraining.callbacks.env_info) | EnvironmentDumpCallback  log_dir=PosixPath('/home/lthil/thesis/le-wm')
+15:47:11.563 | INFO    (682220, stable_pretraining.callbacks.env_info) | ⚡ Running environment dump in background thread (non-blocking)
+15:47:11.563 | INFO    (682220, stable_pretraining.callbacks.env_info) | 📁 Log directory: /home/lthil/thesis/le-wm
+15:47:11.563 | INFO    (682220, stable_pretraining.callbacks.env_info) | 📊 Collecting environment information...
+15:47:11.564 | SUCCESS (682220, stable_pretraining.callbacks.env_info) | ✓ Background thread started successfully
+15:47:11.564 | SUCCESS (682220, stable_pretraining.callbacks.env_info) |   ✓ Python 3.10.20
+15:47:11.564 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | 	 linking trainer to DataModule! 🔧
+15:47:11.564 | SUCCESS (682220, stable_pretraining.callbacks.env_info) |   ✓ System: Linux 6.8.0-106-generic (x86_64)
+15:47:11.564 | INFO    (682220, stable_pretraining.callbacks.checkpoint_sklearn) | Setting up SklearnCheckpoint callback!
+15:47:11.564 | INFO    (682220, stable_pretraining.callbacks.env_info) |      Hostname: dragon
+15:47:11.564 | INFO    (682220, stable_pretraining.callbacks.checkpoint_sklearn) | Sklearn Modules:
+15:47:11.585 | INFO    (682220, stable_pretraining.callbacks.checkpoint_sklearn) | 
+┏━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+┃ Module   ┃ Name   ┃ Type   ┃
+┣━━━━━━━━━━╋━━━━━━━━╋━━━━━━━━┫
+┗━━━━━━━━━━┻━━━━━━━━┻━━━━━━━━┛
+15:47:11.585 | INFO    (682220, stable_pretraining.callbacks.checkpoint_sklearn) | Setting up WandbCheckpoint callback!
+15:47:11.585 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | PyTorch Modules:
+15:47:11.585 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | \n+---------------------------------------------------------+----------------------+--------------------------+--------------------------+---------+
+| Module                                                  | Trainable parameters | Non Trainable parameters | Uninitialized parameters | Buffers |
++---------------------------------------------------------+----------------------+--------------------------+--------------------------+---------+
+|                                                         |               827412 |                        0 |                        0 |    1077 |
+| callbacks_modules                                       |                    0 |                        0 |                        0 |       0 |
+| callbacks_metrics                                       |                    0 |                        0 |                        0 |       0 |
+| model                                                   |               827412 |                        0 |                        0 |    1026 |
+| model.encoder                                           |               113024 |                        0 |                        0 |       0 |
+| model.encoder.value_proj                                |                  128 |                        0 |                        0 |       0 |
+| model.encoder.transformer                               |                99968 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers                        |                99968 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0                      |                49984 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.self_attn            |                16640 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.self_attn.out_proj   |                 4160 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.linear1              |                16640 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.dropout              |                    0 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.linear2              |                16448 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.norm1                |                  128 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.norm2                |                  128 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.dropout1             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.0.dropout2             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1                      |                49984 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.self_attn            |                16640 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.self_attn.out_proj   |                 4160 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.linear1              |                16640 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.dropout              |                    0 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.linear2              |                16448 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.norm1                |                  128 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.norm2                |                  128 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.dropout1             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.transformer.layers.1.dropout2             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.norm                                      |                  128 |                        0 |                        0 |       0 |
+| model.predictor                                         |               627904 |                        0 |                        0 |       0 |
+| model.predictor.dropout                                 |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer                             |               627840 |                        0 |                        0 |       0 |
+| model.predictor.transformer.norm                        |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers                      |               627712 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0                    |               156928 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn               |                65728 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.norm          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.attend        |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_qkv        |                49152 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_out        |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_out.0      |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_out.1      |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp                |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net            |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.0          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.1          |                33280 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.2          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.3          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.4          |                32832 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.5          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.norm1              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.norm2              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.adaLN_modulation   |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.adaLN_modulation.0 |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.adaLN_modulation.1 |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1                    |               156928 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn               |                65728 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.norm          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.attend        |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_qkv        |                49152 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_out        |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_out.0      |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_out.1      |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp                |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net            |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.0          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.1          |                33280 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.2          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.3          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.4          |                32832 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.5          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.norm1              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.norm2              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.adaLN_modulation   |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.adaLN_modulation.0 |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.adaLN_modulation.1 |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2                    |               156928 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn               |                65728 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.norm          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.attend        |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_qkv        |                49152 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_out        |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_out.0      |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_out.1      |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp                |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net            |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.0          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.1          |                33280 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.2          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.3          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.4          |                32832 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.5          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.norm1              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.norm2              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.adaLN_modulation   |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.adaLN_modulation.0 |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.adaLN_modulation.1 |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3                    |               156928 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn               |                65728 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.norm          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.attend        |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_qkv        |                49152 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_out        |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_out.0      |                16448 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_out.1      |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp                |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net            |                66240 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.0          |                  128 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.1          |                33280 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.2          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.3          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.4          |                32832 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.5          |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.norm1              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.norm2              |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.adaLN_modulation   |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.adaLN_modulation.0 |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.adaLN_modulation.1 |                24960 |                        0 |                        0 |       0 |
+| model.predictor.transformer.input_proj                  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.cond_proj                   |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.output_proj                 |                    0 |                        0 |                        0 |       0 |
+| model.action_encoder                                    |                19284 |                        0 |                        0 |       0 |
+| model.action_encoder.patch_embed                        |                   20 |                        0 |                        0 |       0 |
+| model.action_encoder.embed                              |                19264 |                        0 |                        0 |       0 |
+| model.action_encoder.embed.0                            |                 2816 |                        0 |                        0 |       0 |
+| model.action_encoder.embed.1                            |                    0 |                        0 |                        0 |       0 |
+| model.action_encoder.embed.2                            |                16448 |                        0 |                        0 |       0 |
+| model.projector                                         |                33600 |                        0 |                        0 |     513 |
+| model.projector.net                                     |                33600 |                        0 |                        0 |     513 |
+| model.projector.net.0                                   |                16640 |                        0 |                        0 |       0 |
+| model.projector.net.1                                   |                  512 |                        0 |                        0 |     513 |
+| model.projector.net.2                                   |                    0 |                        0 |                        0 |       0 |
+| model.projector.net.3                                   |                16448 |                        0 |                        0 |       0 |
+| model.pred_proj                                         |                33600 |                        0 |                        0 |     513 |
+| model.pred_proj.net                                     |                33600 |                        0 |                        0 |     513 |
+| model.pred_proj.net.0                                   |                16640 |                        0 |                        0 |       0 |
+| model.pred_proj.net.1                                   |                  512 |                        0 |                        0 |     513 |
+| model.pred_proj.net.2                                   |                    0 |                        0 |                        0 |       0 |
+| model.pred_proj.net.3                                   |                16448 |                        0 |                        0 |       0 |
+| sigreg                                                  |                    0 |                        0 |                        0 |      51 |
++---------------------------------------------------------+----------------------+--------------------------+--------------------------+---------+
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | ---- SLURM INFO ---- 🔧
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Job ID: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Task ID: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Job Name: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Nodes: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Tasks: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | CPUs per node: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | CPUs per task: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Memory per node: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Memory per CPU: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Time limit: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Partition: N/A
+15:47:11.588 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Node List: N/A
+15:47:11.589 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | Submit Directory: N/A
+15:47:11.589 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Setup called for stage 'fit'
+15:47:11.589 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Trainer rank: 0/1
+15:47:11.589 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Strategy: SingleDeviceStrategy
+15:47:11.589 | SUCCESS (682220, stable_pretraining.callbacks.cpu_offload) | ✓ Strategy 'SingleDeviceStrategy' is compatible with CPU offload
+15:47:11.589 | SUCCESS (682220, stable_pretraining.callbacks.cpu_offload) | ✓ CPUOffloadCallback ENABLED for strategy 'SingleDeviceStrategy'
+15:47:11.589 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - This rank will handle checkpoint saving and CPU offload
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+15:47:11.591 | INFO    (682220, stable_pretraining.module) | Configuring optimizers and learning rate schedulers...
+15:47:11.591 | INFO    (682220, stable_pretraining.module) | 	Optimizer specified by Dict with keys ['model_opt']... 🔧
+15:47:11.592 | INFO    (682220, stable_pretraining.module) | 
+┏━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Optimizer   ┃ Pattern   ┃   Matched Modules ┃   Param Tensors ┃   Total Params ┃   RequiresGrad Tensors ┃
+┣━━━━━━━━━━━━━╋━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ model_opt   ┃ model     ┃               136 ┃             102 ┃         827412 ┃                    102 ┃
+┗━━━━━━━━━━━━━┻━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━┛
+15:47:11.592 | INFO    (682220, stable_pretraining.optim.lr_scheduler) | 	User provided a dict
+Loading `train_dataloader` to estimate number of stepping batches.
+/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/utilities/_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+15:47:11.595 | WARNING (682220, stable_pretraining.callbacks.env_info) |      ⚠️  pip freeze failed: Command '['/home/lthil/thesis/le-wm/.venv/bin/python', '-m', 'pip', 'freeze']' returned non-zero exit status 1.
+15:47:11.596 | SUCCESS (682220, stable_pretraining.callbacks.env_info) |   ✓ Packages: 0 packages collected in 0.03s
+15:47:11.773 | INFO    (682220, stable_pretraining.module) | Configured optimizer 'model_opt' (modules=136, param_tensors=102, total_params=827412) with LinearWarmupCosineAnnealingLR scheduler.
+/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/utilities/model_summary/model_summary.py:242: Precision bf16-mixed is not supported by the model summary.  Estimated model size in MB will not be accurate. Using 32 bits instead.
+15:47:11.775 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:11.775 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:11.775 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:11.775 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+┏━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃   ┃ Name              ┃ Type       ┃ Params ┃ Mode  ┃ FLOPs ┃
+┡━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│ 0 │ callbacks_modules │ ModuleDict │      0 │ train │     0 │
+│ 1 │ callbacks_metrics │ ModuleDict │      0 │ train │     0 │
+│ 2 │ model             │ JEPA       │  827 K │ train │     0 │
+│ 3 │ sigreg            │ SIGReg     │      0 │ train │     0 │
+└───┴───────────────────┴────────────┴────────┴───────┴───────┘
+Trainable params: 827 K                                                                                                                                                                                              
+Non-trainable params: 0                                                                                                                                                                                              
+Total params: 827 K                                                                                                                                                                                                  
+Total estimated model params size (MB): 3                                                                                                                                                                            
+Modules in train mode: 139                                                                                                                                                                                           
+Modules in eval mode: 0                                                                                                                                                                                              
+Total FLOPs: 0                                                                                                                                                                                                       
+15:47:11.800 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/utilities/_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/utilities/data.py:79: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 256. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+15:47:12.832 | INFO    (682220, stable_pretraining.callbacks.trainer_info) | \n+----------------------------+---------------------+
+|           Metric           |        Value        |
++----------------------------+---------------------+
+|      [0;34;40mvalidate/ar_loss[0m      |         [0;32;40m0.0[0m         |
+|   [0;34;40mvalidate/ar_loss_epoch[0m   |         [0;32;40m0.0[0m         |
+|       [0;34;40mvalidate/loss[0m        |  [0;32;40m16.72400665283203[0m  |
+|    [0;34;40mvalidate/loss_epoch[0m     |  [0;32;40m16.72400665283203[0m  |
+|     [0;34;40mvalidate/pred_loss[0m     | [0;32;40m0.09900683164596558[0m |
+|  [0;34;40mvalidate/pred_loss_epoch[0m  | [0;32;40m0.09900683164596558[0m |
+|    [0;34;40mvalidate/sigreg_loss[0m    |        [0;32;40m110.5[0m        |
+| [0;34;40mvalidate/sigreg_loss_epoch[0m |        [0;32;40m110.5[0m        |
++----------------------------+---------------------+
+15:47:12.834 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Training started
+15:47:12.834 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:12.834 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:12.834 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) | Model statistics:
+15:47:12.834 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Total parameters: 827,412
+15:47:12.834 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Trainable parameters: 827,412
+15:47:12.834 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Model size (bf16): ~0.00 GB
+15:47:12.834 | INFO    (682220, stable_pretraining.callbacks.cpu_offload) |   - Estimated checkpoint size (with optimizer): ~0.00 GB
+15:47:12.834 | INFO    (682220, stable_pretraining.module) | Double checking optimizers!
+15:47:12.834 | INFO    (682220, stable_pretraining.module) | `self.optimizers() gave us 1 optimizers
+15:47:12.834 | WARNING (682220, stable_pretraining.module) | No clip val found for optimizer default_0
+15:47:12.834 | WARNING (682220, stable_pretraining.module) | -> we will use the Trainer's value of 0.3
+15:47:12.834 | WARNING (682220, stable_pretraining.module) | No clip algorithm found for optimizer default_0
+15:47:12.834 | WARNING (682220, stable_pretraining.module) | -> we will use the Trainer's value of None
+15:47:12.834 | SUCCESS (682220, stable_pretraining.module) | We are done checking your optimizers! Here is the summary:
++------------+-----------+----------------+-----------+-----------+
+| Opt. Index | Opt. name |      opt       | clip val. | clip alg. |
++------------+-----------+----------------+-----------+-----------+
+|     0      | default_0 | LightningAdamW |    0.3    |    None   |
++------------+-----------+----------------+-----------+-----------+
+15:47:12.835 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:12.836 | INFO    (682220, stable_pretraining.callbacks.unused_parameters) | [LogUnusedParametersOnce] Registered hooks on 102 leaf parameters.
+15:47:12.885 | WARNING (682220, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+15:47:12.886 | INFO    (682220, stable_pretraining.callbacks.unused_parameters) | [LogUnusedParametersOnce] All tracked parameters received gradients on the first backward pass.
+15:47:12.886 | INFO    (682220, stable_pretraining.callbacks.unused_parameters) | [LogUnusedParametersOnce] Hooks removed, callback disabled.
+15:47:21.643 | WARNING (682220, stable_pretraining.callbacks.env_info) |      ⚠️  nvidia-smi timed out
+15:47:21.649 | SUCCESS (682220, stable_pretraining.callbacks.env_info) |   ✓ Git: feature/option-b-sensor-native @ b6d630ff
+15:47:21.649 | INFO    (682220, stable_pretraining.callbacks.env_info) |      Remote: git@github.com:LucasStill/le-wm.git
+15:47:21.649 | WARNING (682220, stable_pretraining.callbacks.env_info) |      ⚠️  Working directory has uncommitted changes!
+15:47:21.649 | SUCCESS (682220, stable_pretraining.callbacks.env_info) |   ✓ Environment: 2 relevant variables captured
+15:47:21.649 | INFO    (682220, stable_pretraining.callbacks.env_info) | 🔄 Serializing environment data...
+15:47:21.649 | INFO    (682220, stable_pretraining.callbacks.env_info) | 📋 File exists, using version 2: environment_v2.json
+15:47:21.649 | INFO    (682220, stable_pretraining.callbacks.env_info) | 📋 File exists, using version 2: requirements_frozen_v2.txt
+15:47:21.649 | INFO    (682220, stable_pretraining.callbacks.env_info) | 📁 Save directory: /home/lthil/thesis/le-wm
+15:47:21.649 | INFO    (682220, stable_pretraining.callbacks.env_info) | 💾 Writing environment to temp file...
+15:47:21.649 | INFO    (682220, stable_pretraining.callbacks.env_info) | 💾 Moving to: environment_v2.json
+15:47:21.650 | SUCCESS (682220, stable_pretraining.callbacks.env_info) | ✓ Environment file saved (1.5 KB)
+15:47:21.650 | SUCCESS (682220, stable_pretraining.callbacks.env_info) | ✓ Requirements file saved (0.1 KB)
+[rank: 0] Received SIGTERM: 15
+Epoch 0/0  ━━╸                                      1710/24645 0:04:51 • 1:05:16 5.86it/s v_num: 0.000
+15:52:03.913 | ERROR   (682220, stable_pretraining.callbacks.cpu_offload) | ============================================================
+15:52:03.913 | ERROR   (682220, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Exception occurred during training
+15:52:03.913 | ERROR   (682220, stable_pretraining.callbacks.cpu_offload) | Exception: SIGTERMException: 
+15:52:03.913 | ERROR   (682220, stable_pretraining.callbacks.cpu_offload) | Callback was enabled: True
+15:52:03.913 | ERROR   (682220, stable_pretraining.callbacks.cpu_offload) | Checkpoints saved before exception: 0
+15:52:03.913 | ERROR   (682220, stable_pretraining.callbacks.cpu_offload) | ============================================================

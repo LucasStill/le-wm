@@ -1,0 +1,25 @@
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H1_S1_P1
+Config   : w=1 H=1 s=1 P=1 bs=256
+========================================
+Traceback (most recent call last):
+  File "/home/lthil/thesis/le-wm/train.py", line 8, in <module>
+    import stable_pretraining as spt
+  File "/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/stable_pretraining/__init__.py", line 29, in <module>
+    from . import backbone, callbacks, data, losses, module, optim, static, utils
+  File "/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/stable_pretraining/callbacks/__init__.py", line 13, in <module>
+    from .trainer_info import LoggingCallback, ModuleSummary, TrainerInfo, SLURMInfo
+  File "/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/stable_pretraining/callbacks/trainer_info.py", line 8, in <module>
+    from ..data.module import DataModule
+  File "/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/stable_pretraining/data/__init__.py", line 7, in <module>
+    from . import dataset_stats, sampler, synthetic_data, transforms
+  File "/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/stable_pretraining/data/synthetic_data.py", line 15, in <module>
+    from .datasets import Dataset
+  File "/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/stable_pretraining/data/datasets.py", line 16, in <module>
+    from datasets import get_dataset_config_names
+ImportError: cannot import name 'get_dataset_config_names' from 'datasets' (/home/lthil/thesis/le-wm/.venv/lib/python3.10/site-packages/datasets/__init__.py)

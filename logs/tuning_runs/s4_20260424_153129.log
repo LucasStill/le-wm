@@ -1,0 +1,16 @@
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H1_S1_P1
+Config   : w=1 H=1 s=1 P=1 bs=256
+========================================
+Could not override 'sensor_encoder.max_sensors'.
+To append to your config use +sensor_encoder.max_sensors=200
+Key 'max_sensors' is not in struct
+    full_key: sensor_encoder.max_sensors
+    object_type=dict
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
