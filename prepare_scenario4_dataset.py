@@ -64,7 +64,10 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 
 
 EP_META_KEYS  = ["archetype", "archetype_onset", "eol_triggered",
-                 "region", "flights_per_day", "is_extreme"]
+                 "region", "flights_per_day", "is_extreme",
+                 # Carried for replay / counterfactual eval — see
+                 # scenarios.scenario4.replay.EpisodeReplayer.
+                 "seed", "ctx_fill_seed"]
 PER_STEP_KEYS = ["event_mask", "event_types", "repaired_flight_mask",
                  "valid_flight_mask", "visit_type", "component_service_mask"]
 WEATHER_KEYS  = ["weather/dtamb", "weather/summer_factor",
@@ -74,6 +77,7 @@ PROPAGATED_ATTRS = [
     "archetype_names", "context_names", "context_phases", "event_names",
     "sensor_names", "region_names", "action_names",
     "scenario", "split", "n_episodes", "n_timesteps",
+    "sim_version",  # required by scenarios.scenario4.replay.EpisodeReplayer
 ]
 
 
