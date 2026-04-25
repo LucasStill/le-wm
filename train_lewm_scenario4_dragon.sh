@@ -45,6 +45,8 @@ ZERO_PAD_PROB=${ZERO_PAD_PROB:-0.0}
 BATCH_SIZE=${BATCH_SIZE:-256}      # RTX 5090: 32 GB VRAM
 NUM_WORKERS=${NUM_WORKERS:-8}
 PRECISION=${PRECISION:-bf16-mixed} # RTX 5090 supports bf16
+MAX_EPOCHS=${MAX_EPOCHS:-100}
+ACCUM_GRAD=${ACCUM_GRAD:-1}    # gradient accumulation; use 2 to keep effective bs=512 when bs=256
 
 RUN_NAME=lewm_s4_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS}
 
@@ -72,7 +74,9 @@ python -u train.py \
     subdir=scenario4_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
-    hi_probe.probe_seq_len=${HISTORY_LEN}
+    hi_probe.probe_seq_len=${HISTORY_LEN} \
+    trainer.max_epochs=${MAX_EPOCHS} \
+    +trainer.accumulate_grad_batches=${ACCUM_GRAD}
 
 echo "========================================"
 echo "Training complete."

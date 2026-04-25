@@ -801,7 +801,9 @@ class HIProbeCallback(pl.Callback):
 
     def on_validation_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         epoch = trainer.current_epoch
-        if epoch == 0 or epoch % self.eval_interval != 0:
+        is_interval = epoch != 0 and epoch % self.eval_interval == 0
+        is_final = trainer.max_epochs is not None and epoch == trainer.max_epochs - 1
+        if not (is_interval or is_final):
             return
 
         device = next(pl_module.model.parameters()).device
