@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-25 11:17 UTC_
+_Last regenerated: 2026-04-25 11:27 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,11 +22,12 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Tmux `s4_arlstm_L1_probe`** — L1 1-epoch probe: H=16 S=1 P=4,
-  bs=512, accum=1, bf16-mixed, hi_probe enabled. Just started 09:44 UTC,
-  python PID 696301, currently loading cached pixels into RAM.
-  ETA finish ~10:10 UTC (extrapolating dragon's 26:18 epoch time on E1).
-  Log: `logs/s4_arlstm_L1_probe_20260425_1144.log`.
+- **Tmux `s4_arlstm_L1`** — L1 full 10-epoch run: H=16 S=1 P=4, bs=512,
+  accum=1, bf16-mixed, **`compile_encoder=true`**, **`lstm.use_cudnn=true`**,
+  hi_probe enabled (every 5 epochs + final). Started 11:17 UTC.
+  Wandb offline run id: `12uiyu7c`. Log:
+  `logs/s4_arlstm_L1_20260425_1317.log`.
+  ETA ~6.7 h with compile (was 10.5 h without). Finish ≈18:00 UTC.
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
 
 
@@ -212,16 +213,16 @@ total-param counts alongside metrics in the paper table.
 
 ### OrailixTower log
 ```
-2026-04-25T10:44Z  train_ar_lstm_scenario4_orailix.sh launcher created — env-var knobs mirror train_lewm_scenario4_dragon.sh.
-2026-04-25T10:46Z  Smoke test (H=16 S=1 P=4, bs=64, bf16-mixed) passed: 1,138,068 params; pred_loss≈0.57, ar_loss≈0.30, sigreg≈18 after 2 steps.
-2026-04-25T10:55Z  Read coordination/dragon/identity.md and aligned plan to (P=4, H ∈ {16,32}, S ∈ {1,5}, 10 epochs).
-2026-04-25T10:55Z  coordination/orailixtower/{identity,current_state,results,log}.md seeded.
 2026-04-25T10:55Z  Awaiting SSH key exchange + dragon IP before first sync run.
 2026-04-25T11:40Z  SSH verified to lthil@192.168.112.108. coordination/sync.env written. First push+pull successful — dragon's coordination/dragon/ now mirrored locally.
 2026-04-25T11:40Z  Dragon answered open questions: keep turbofan_S4 wandb project; lstm.hidden_dim=256 num_layers=2 is fine (don't calibrate); GREENLIGHT for L1.
 2026-04-25T11:40Z  Noted dragon's status: E3 (H=16 S=5 P=4) full 10-epoch running, ETA ~22:00 UTC; E4 queued.
 2026-04-25T11:40Z  Awaiting Lucas's launch confirmation for L1 before burning GPU.
 2026-04-25T09:44Z  Lucas greenlit. L1 probe (1 epoch, H=16 S=1 P=4 bs=512 accum=1) launched in tmux s4_arlstm_L1_probe. wandb_sync daemon also up.
+2026-04-25T10:58Z  L1 probe completed: 12307 steps in 62 min @ 3.25 it/s, peak 15.9 GB VRAM. Tmux session auto-exited (no shell wrap) — first looked like a crash; was actually clean shutdown.
+2026-04-25T11:10Z  Decision: predictor LSTMCell python loop is too slow vs cuDNN. Switched LSTMPredictor default to nn.LSTM (use_cudnn flag, fallback kept). Added optional torch.compile on the encoder.
+2026-04-25T11:13Z  Smoke-tested both. nn.LSTM alone: 3.25 → 3.61 it/s (+11%). +torch.compile(encoder): 3.61 → 5.19 it/s (+44% over baseline). No drift in losses or grads.
+2026-04-25T11:17Z  L1 full 10-epoch run launched in tmux s4_arlstm_L1 (now wrapped in `exec bash` so the session stays alive after training). compile_encoder=true. Wandb offline run id: 12uiyu7c. ETA ~18:00 UTC.
 ```
 
 ---

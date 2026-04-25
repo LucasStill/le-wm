@@ -1,15 +1,42 @@
 # OrailixTower current state — auto-updated
 
-**As of:** 2026-04-25 ~09:44 UTC
+**As of:** 2026-04-25 ~11:18 UTC
 
 ## Running now
 
-- **Tmux `s4_arlstm_L1_probe`** — L1 1-epoch probe: H=16 S=1 P=4,
-  bs=512, accum=1, bf16-mixed, hi_probe enabled. Just started 09:44 UTC,
-  python PID 696301, currently loading cached pixels into RAM.
-  ETA finish ~10:10 UTC (extrapolating dragon's 26:18 epoch time on E1).
-  Log: `logs/s4_arlstm_L1_probe_20260425_1144.log`.
+- **Tmux `s4_arlstm_L1`** — L1 full 10-epoch run: H=16 S=1 P=4, bs=512,
+  accum=1, bf16-mixed, **`compile_encoder=true`**, **`lstm.use_cudnn=true`**,
+  hi_probe enabled (every 5 epochs + final). Started 11:17 UTC.
+  Wandb offline run id: `12uiyu7c`. Log:
+  `logs/s4_arlstm_L1_20260425_1317.log`.
+  ETA ~6.7 h with compile (was 10.5 h without). Finish ≈18:00 UTC.
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
+
+## L1 probe (1 epoch) — completed 10:58 UTC
+
+- 12,307 train steps in 62 min  →  3.25 it/s, peak 15.9 GB VRAM.
+- Final val/loss=34.1, val/pred=~0.07, val/ar=~0.04, val/sigreg≈207.
+- HI probe metrics are noise (1-epoch encoder) — Pearson nan,
+  R² negative. Expected; this is just a sanity baseline.
+- Probe confirmed (a) no OOM, (b) all 1.14 M params receive gradients,
+  (c) data path is correct, (d) hi_probe + RUL probe wiring is intact.
+
+## Speed-fix landed before L1 full
+
+Two changes to `baselines/ar_lstm/`:
+
+1. `model.py`: `LSTMPredictor` now defaults to `nn.LSTM` (cuDNN-fused)
+   instead of the LSTMCell python loop. `lstm.use_cudnn=false` falls
+   back to the old path (V100 escape hatch).
+2. `train_ar_lstm.py`: optional `compile_encoder` flag — wraps
+   `world_model.encoder` with `torch.compile(mode='reduce-overhead')`.
+   On A6000 + cu13.0 + torch 2.11, the SensorEncoder forward+backward
+   speeds up enough to push 100-step throughput from 3.61 → **5.19 it/s
+   steady-state (+44 %)**. Falls back gracefully on compile errors.
+
+Mathematically equivalent to the slow path — same gates, same weights,
+same gradients (modulo ~1e-6 fp rounding). Comparison vs JEPA is
+*not* biased by these changes.
 
 ## Setup recap (done)
 
@@ -34,12 +61,16 @@
 Following your H/S grid (`P=4` constant, 10 epochs each). I will run a
 1-epoch probe before every 10-epoch run, same convention as you.
 
-| Order | ID | H  | S | bs (eff. 512)      | num_steps | Notes |
-|-------|----|----|---|--------------------|-----------|-------|
-| 1     | L1 | 16 | 1 | 512 / accum=1      | 20        | mirrors your E1 |
-| 2     | L2 | 32 | 1 | 256 / accum=2      | 36        | mirrors your E2 |
-| 3     | L3 | 16 | 5 | 128 / accum=4      | 96        | mirrors your E3 |
-| 4     | L4 | 32 | 5 | 64  / accum=8      | 176       | mirrors your E4 |
+| Order | ID | H  | S | bs (eff. 512)      | num_steps | est. 10-ep wall |
+|-------|----|----|---|--------------------|-----------|-----------------|
+| 1     | L1 | 16 | 1 | 512 / accum=1      | 20        | ~6.7 h (running) |
+| 2     | L2 | 32 | 1 | 256 / accum=2      | 36        | ~13.5 h          |
+| 3     | L3 | 16 | 5 | 128 / accum=4      | 96        | ~8.5 h           |
+| 4     | L4 | 32 | 5 | 64  / accum=8      | 176       | ~16 h            |
+
+**Total sweep ≈ 45 h** (with cuDNN LSTM + torch.compile). The 1.8× gap
+vs your ~25 h on the 5090 is almost entirely raw GPU throughput
+(5090 ≈ 1.5–2× A6000 per FLOP), not the LSTM kernel.
 
 I'm holding off on launching L1 until Lucas confirms — I want him to
 verify the SSH/sync and the grid before I burn ~25 h of GPU time.
