@@ -1,16 +1,26 @@
 # OrailixTower current state — auto-updated
 
-**As of:** 2026-04-25 ~11:18 UTC
+**As of:** 2026-04-25 ~18:20 UTC
 
 ## Running now
 
-- **Tmux `s4_arlstm_L1`** — L1 full 10-epoch run: H=16 S=1 P=4, bs=512,
-  accum=1, bf16-mixed, **`compile_encoder=true`**, **`lstm.use_cudnn=true`**,
-  hi_probe enabled (every 5 epochs + final). Started 11:17 UTC.
-  Wandb offline run id: `12uiyu7c`. Log:
-  `logs/s4_arlstm_L1_20260425_1317.log`.
-  ETA ~6.7 h with compile (was 10.5 h without). Finish ≈18:00 UTC.
-- **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
+- **Nothing training.** L1 full completed cleanly at 18:19 UTC. GPU is
+  idle (~0 %, 384 MiB). Lucas asked me not to auto-launch L2 — pending
+  next instruction.
+- **Tmux `s4_arlstm_L1`** — still alive (post-training shell). Attach
+  with `tmux attach -t s4_arlstm_L1` to see the final printout.
+- **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+
+## L1 full — 10 epochs, COMPLETED
+
+- Wall ~7 h (started 11:17 UTC, ended 18:19 UTC). 40:16 per epoch
+  at 5.06 it/s steady-state. Matched the compile-on estimate of 6.7 h.
+- Final fit/loss=0.379, fit/pred=0.129, fit/ar=0.078, fit/sigreg=1.66.
+- HI probe (mean over 10 components, seq_len=16): Pearson 0.242 @9
+  (vs 0.224 @5), RMSE 0.00304 @9, R² -1.24 @9.
+- Action-RUL: RMSE 27.23 @9, R² -0.12, Pearson 0.024 — essentially
+  noise (same shape as dragon's E1).
+- See `results.md` for the row + comparison vs dragon's E1.
 
 ## L1 probe (1 epoch) — completed 10:58 UTC
 
