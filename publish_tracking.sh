@@ -1,0 +1,93 @@
+#!/bin/bash
+# publish_tracking.sh — push the latest reports to origin/tracking branch.
+#
+# Idempotent. Safe to run repeatedly. Skips push if no diff vs origin/tracking.
+#
+# Usage:   ./publish_tracking.sh
+#
+# Local Claude / UI access:
+#   git fetch origin tracking && git checkout origin/tracking
+#   raw URLs: https://raw.githubusercontent.com/LucasStill/le-wm/tracking/<file>
+# =============================================================================
+set -u
+cd "$(dirname "$0")"
+
+WORKTREE_DIR="${WORKTREE_DIR:-/tmp/le-wm-tracking}"
+BRANCH=tracking
+TS=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+# Ensure RESULTS.md is fresh first
+./aggregate_results.sh > /dev/null
+
+# ── Bootstrap worktree if missing ───────────────────────────────────────────
+if [ ! -d "$WORKTREE_DIR/.git" ] && [ ! -f "$WORKTREE_DIR/.git" ]; then
+    rm -rf "$WORKTREE_DIR"
+    if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+        echo "[$TS] worktree bootstrap: pulling existing origin/$BRANCH"
+        git fetch origin "$BRANCH:$BRANCH" 2>&1 | tail -2
+        git worktree add "$WORKTREE_DIR" "$BRANCH" 2>&1 | tail -2
+    else
+        echo "[$TS] worktree bootstrap: creating orphan $BRANCH"
+        git worktree add --orphan -b "$BRANCH" "$WORKTREE_DIR" 2>&1 | tail -2
+        ( cd "$WORKTREE_DIR" && find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} + )
+    fi
+fi
+
+# ── Sync wanted files into the worktree ────────────────────────────────────
+mkdir -p "$WORKTREE_DIR/coordination/dragon" \
+         "$WORKTREE_DIR/coordination/orailixtower" \
+         "$WORKTREE_DIR/logs"
+
+cp -f RESULTS.md                                 "$WORKTREE_DIR/" 2>/dev/null || true
+cp -f coordination/dragon/*.md                   "$WORKTREE_DIR/coordination/dragon/" 2>/dev/null || true
+cp -f coordination/orailixtower/*.md             "$WORKTREE_DIR/coordination/orailixtower/" 2>/dev/null || true
+cp -f logs/campaign_report_*.md                  "$WORKTREE_DIR/logs/" 2>/dev/null || true
+cp -f logs/experiment_plan.md                    "$WORKTREE_DIR/logs/" 2>/dev/null || true
+cp -f logs/handoff_notes.md                      "$WORKTREE_DIR/logs/" 2>/dev/null || true
+cp -f logs/session_*.md                          "$WORKTREE_DIR/logs/" 2>/dev/null || true
+
+# README for the branch
+cat > "$WORKTREE_DIR/README.md" <<EOF
+# le-wm experiment tracking
+
+Auto-published snapshot of the active Scenario-4 TurboSens campaigns
+(JEPA on dragon, AR-LSTM on orailixtower).
+
+**Start here:** [\`RESULTS.md\`](RESULTS.md) — live cross-architecture summary.
+
+## Layout
+
+- \`RESULTS.md\` — auto-aggregated headline + per-arch tables + log tails
+- \`coordination/dragon/\` — JEPA agent's identity / state / results / log
+- \`coordination/orailixtower/\` — AR-LSTM agent's identity / state / results / log
+- \`logs/campaign_report_*.md\` — long-form retrospective
+- \`logs/experiment_plan.md\` — experimental design
+- \`logs/handoff_notes.md\` — running session log
+- \`logs/session_*.md\` — code-change notes
+
+Updated by \`publish_tracking.sh\` on dragon. Pushes only happen on actual diff.
+Last update timestamp is in \`RESULTS.md\` itself.
+EOF
+
+# ── Commit + push only if something changed ────────────────────────────────
+cd "$WORKTREE_DIR"
+
+if [ -z "$(git status --porcelain)" ]; then
+    echo "[$TS] no changes to publish"
+    exit 0
+fi
+
+git add -A
+git -c user.email="dragon@le-wm" -c user.name="dragon-agent" \
+    commit -m "tracking: snapshot $TS" --quiet
+
+# Use PIPESTATUS to capture git push's true exit code
+git push origin "$BRANCH" 2>&1 | tail -5
+PUSH_RC=${PIPESTATUS[0]}
+
+if [ "$PUSH_RC" -eq 0 ]; then
+    echo "[$TS] published to origin/$BRANCH"
+else
+    echo "[$TS] PUSH FAILED (rc=$PUSH_RC). Local commit at $WORKTREE_DIR is intact; will retry next tick."
+    exit "$PUSH_RC"
+fi
