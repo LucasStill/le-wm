@@ -1,0 +1,70 @@
+[2026-04-25T08:54:05Z] daemon starting (peer=lucas@192.168.112.35:/home/lucas/thesis/le-wm, interval=600s)
+lucas@192.168.112.35: Permission denied (publickey,password).
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: unexplained error (code 255) at io.c(232) [Receiver=3.2.7]
+[2026-04-25T08:54:05Z] PULL failed (peer probably not yet reachable / no SSH key)
+lucas@192.168.112.35: Permission denied (publickey,password).
+rsync: connection unexpectedly closed (0 bytes received so far) [sender]
+rsync error: unexplained error (code 255) at io.c(232) [sender=3.2.7]
+[2026-04-25T08:54:05Z] PUSH failed (peer probably not yet reachable / no SSH key)
+[2026-04-25T08:56:02Z] daemon starting (peer=lucas@192.168.112.35:/home/lucas/thesis/le-wm, interval=600s)
+rsync: [sender] change_dir "/home/lucas/thesis/le-wm/coordination/orailixtower" failed: No such file or directory (2)
+rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1865) [Receiver=3.2.7]
+rsync: [Receiver] write error: Broken pipe (32)
+[2026-04-25T08:56:03Z] PULL failed (peer probably not yet reachable / no SSH key)
+rsync: [Receiver] mkdir "/home/lucas/thesis/le-wm/coordination/dragon" failed: No such file or directory (2)
+rsync error: error in file IO (code 11) at main.c(791) [Receiver=3.2.7]
+[2026-04-25T08:56:03Z] PUSH failed (peer probably not yet reachable / no SSH key)
+[2026-04-25T08:57:11Z] daemon starting (peer=lucas@192.168.112.35:/home/lucas/thesis/le-wm, interval=600s)
+[2026-04-25T08:57:11Z] PULL ok
+[2026-04-25T08:57:12Z] PUSH ok
+[2026-04-25T09:07:12Z] PULL ok
+[2026-04-25T09:07:12Z] PUSH ok
+[2026-04-25T09:17:13Z] PULL ok
+[2026-04-25T09:17:13Z] PUSH ok
+[2026-04-25T09:27:14Z] PULL ok
+[2026-04-25T09:27:14Z] PUSH ok
+[2026-04-25T09:37:14Z] PULL ok
+[2026-04-25T09:37:15Z] PUSH ok
+[2026-04-25T09:47:15Z] PULL ok
+[2026-04-25T09:47:16Z] PUSH ok
+[2026-04-25T09:57:16Z] PULL ok
+[2026-04-25T09:57:16Z] PUSH ok
+[2026-04-25T10:07:17Z] PULL ok
+[2026-04-25T10:07:17Z] PUSH ok
+[2026-04-25T10:17:17Z] PULL ok
+[2026-04-25T10:17:18Z] PUSH ok
+[2026-04-25T10:27:18Z] PULL ok
+[2026-04-25T10:27:19Z] PUSH ok
+[2026-04-25T10:37:19Z] PULL ok
+[2026-04-25T10:37:19Z] PUSH ok
+[2026-04-25T10:47:20Z] PULL ok
+[2026-04-25T10:47:20Z] PUSH ok
+[2026-04-25T10:57:21Z] PULL ok
+[2026-04-25T10:57:21Z] PUSH ok
+[2026-04-25T11:07:21Z] PULL ok
+[2026-04-25T11:07:22Z] PUSH ok
+[2026-04-25T11:07:39Z] daemon starting (peer=lucas@192.168.112.35:/home/lucas/thesis/le-wm, interval=600s)
+[2026-04-25T11:07:39Z] PULL ok
+[2026-04-25T11:07:40Z] PUSH ok
+[2026-04-25T11:07:40Z] no changes to publish
+[2026-04-25T11:17:40Z] PULL ok
+[2026-04-25T11:17:40Z] PUSH ok
+To github.com:LucasStill/le-wm.git
+   c02bbdb..74be640  tracking -> tracking
+[2026-04-25T11:17:40Z] published to origin/tracking
+[2026-04-25T11:27:43Z] PULL ok
+[2026-04-25T11:27:43Z] PUSH ok
+To github.com:LucasStill/le-wm.git
+   74be640..d459a36  tracking -> tracking
+[2026-04-25T11:27:43Z] published to origin/tracking
+[2026-04-25T11:37:45Z] PULL ok
+[2026-04-25T11:37:46Z] PUSH ok
+To github.com:LucasStill/le-wm.git
+   d459a36..0ebc9fd  tracking -> tracking
+[2026-04-25T11:37:46Z] published to origin/tracking
+[2026-04-25T11:47:48Z] PULL ok
+[2026-04-25T11:47:48Z] PUSH ok
+To github.com:LucasStill/le-wm.git
+   0ebc9fd..75263d0  tracking -> tracking
+[2026-04-25T11:47:48Z] published to origin/tracking
