@@ -1,0 +1,35 @@
+INFO  Output directory: eval_results/all_ckpts_test_hard
+INFO  Loading dataset from /home/lthil/.stable_worldmodel/scenario4_test_hard_lewm.h5…
+INFO  Dataset  train=769,285  test=85,425  HI dims=10  episodes=60  archetypes=['A_compressor', 'B_fan_booster', 'C_turbine', 'D_balanced']
+INFO  GPUs available: 1  Checkpoints: 2
+INFO  
+======================================================================
+  E2_th  [cuda:0]  tasks=[1]
+======================================================================
+INFO    Loaded — 829,396 params  obs_window=1
+INFO    Encoding observations…
+INFO    Z_tr=(769285, 64)  Z_te=(85425, 64)
+INFO    Task 1 — HI State Estimation  (seq_len=1)
+INFO    [HI_sl1] windows  train=769,285  test=85,425
+INFO    [HI_sl1] early stop ep 34  best_rmse=0.003971
+INFO    Task 1 sl=1  mean R²=0.097  RMSE=0.00397  Pearson=0.447
+INFO  
+======================================================================
+  E3_th  [cuda:0]  tasks=[1]
+======================================================================
+INFO    Loaded — 828,372 params  obs_window=1
+INFO    Encoding observations…
+INFO    Z_tr=(769285, 64)  Z_te=(85425, 64)
+INFO    Task 1 — HI State Estimation  (seq_len=1)
+INFO    [HI_sl1] windows  train=769,285  test=85,425
+INFO    [HI_sl1] early stop ep 41  best_rmse=0.004240
+INFO    Task 1 sl=1  mean R²=-0.093  RMSE=0.00424  Pearson=0.370
+INFO  Summary JSON → eval_results/all_ckpts_test_hard/summary.json
+Traceback (most recent call last):
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1739, in <module>
+    main()
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1732, in main
+    write_flat_csv(all_results, hi_names, out_dir / "metrics_flat.csv")
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1460, in write_flat_csv
+    for sl_tag, sl_metrics in res.get("task2_delta_hi", {}).items():
+AttributeError: 'NoneType' object has no attribute 'items'

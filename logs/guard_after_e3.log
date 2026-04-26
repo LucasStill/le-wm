@@ -1,0 +1,5 @@
+[2026-04-25T19:49:59Z] guard starting; watching logs/campaign/E3.log for E3 completion
+[2026-04-26T05:55:40Z] E3 completion detected
+[2026-04-26T05:55:40Z] pause flag /tmp/le-wm-skip-e4 IS set — killing tmux campaign before E4 launches
+[2026-04-26T05:55:42Z] campaign tmux killed; E4 prevented
+[2026-04-26T05:55:42Z] guard exiting

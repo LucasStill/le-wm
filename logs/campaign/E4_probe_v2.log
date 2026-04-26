@@ -1,0 +1,9 @@
+========================================
+Host     : dragon
+GPU      : GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-85afedf9-1f8b-84b5-334a-931815cde3dc)
+Dir      : /home/lthil/thesis/le-wm
+STABLEWM : /home/lthil/.stable_worldmodel
+========================================
+Run name : lewm_s4_sensor_w1_H32_S5_P4
+Config   : w=1 H=32 s=5 P=4 bs=64
+========================================

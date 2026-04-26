@@ -1,0 +1,16 @@
+INFO  Output directory: eval_results/E1_test_hard
+INFO  Loading dataset from /home/lthil/.stable_worldmodel/scenario4_test_hard_lewm.h5…
+INFO  Dataset  train=769,285  test=85,425  HI dims=10  episodes=60  archetypes=['A_compressor', 'B_fan_booster', 'C_turbine', 'D_balanced']
+INFO  GPUs available: 1  Checkpoints: 1
+INFO  
+======================================================================
+  E1_th  [cuda:0]  tasks=[1]
+======================================================================
+Traceback (most recent call last):
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1739, in <module>
+    main()
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1698, in main
+    result = run_one(
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1288, in run_one
+    model.eval().to(device)
+AttributeError: 'dict' object has no attribute 'eval'

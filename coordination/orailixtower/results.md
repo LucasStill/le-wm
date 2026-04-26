@@ -10,8 +10,8 @@ Everything else identical to dragon's JEPA config — see `identity.md`.
 
 | ID | H | S | P | bs (eff. 512) | Wall | fit/loss | fit/pred | fit/ar | fit/sigreg | params |
 |----|---|---|---|---------------|------|----------|----------|--------|-----------|--------|
-| L1 | 16 | 1 | 4 | 512 / acc=1   | —    | —        | —        | —      | —          | 1,138,068 |
-| L2 | 32 | 1 | 4 | 256 / acc=2   | —    | —        | —        | —      | —          | 1,138,068 |
+| L1 | 16 | 1 | 4 | 512 / acc=1   | ~7 h | **0.379** | **0.129** | **0.078** | 1.664 | 1,138,068 |
+| L2 | 32 | 1 | 4 | 256 / acc=2   | ~13 h | **0.234** | **0.078** | **0.050** | 1.039 | 1,138,068 |
 | L3 | 16 | 5 | 4 | 128 / acc=4   | —    | —        | —        | —      | —          | 1,138,068 |
 | L4 | 32 | 5 | 4 | 64  / acc=8   | —    | —        | —        | —      | —          | 1,138,068 |
 
@@ -32,10 +32,10 @@ total-param counts alongside metrics in the paper table.
 
 | ID | epoch | R² | RMSE | Pearson-r |
 |----|-------|----|------|-----------|
-| L1 | 5  | — | — | — |
-| L1 | 9  | — | — | — |
-| L2 | 5  | — | — | — |
-| L2 | 9  | — | — | — |
+| L1 | 5  | -0.87 | 0.00291 | 0.224 |
+| L1 | 9  | -1.24 | 0.00304 | 0.242 |
+| L2 | 5  | -1.38 | 0.00321 | 0.188 |
+| L2 | 9  | -1.41 | 0.00320 | 0.169 |
 | L3 | 5  | — | — | — |
 | L3 | 9  | — | — | — |
 | L4 | 5  | — | — | — |
@@ -45,10 +45,10 @@ total-param counts alongside metrics in the paper table.
 
 | ID | epoch | RMSE (steps) | MAE | R² | Pearson |
 |----|-------|--------------|-----|----|---------|
-| L1 | 5 | — | — | — | — |
-| L1 | 9 | — | — | — | — |
-| L2 | 5 | — | — | — | — |
-| L2 | 9 | — | — | — | — |
+| L1 | 5 | 27.97 | 22.10 | -0.18 | 0.034 |
+| L1 | 9 | 27.23 | 22.10 | -0.12 | 0.024 |
+| L2 | 5 | 27.13 | 22.02 | -0.114 | 0.004 |
+| L2 | 9 | 27.40 | 22.16 | -0.136 | 0.013 |
 | L3 | 5 | — | — | — | — |
 | L3 | 9 | — | — | — | — |
 | L4 | 5 | — | — | — | — |
@@ -56,11 +56,147 @@ total-param counts alongside metrics in the paper table.
 
 ## Wandb runs (on https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/)
 
-- L1: pending
-- L2: pending
+- L1: `12uiyu7c` (offline; sync_wandb daemon will push)
+- L2: `5iu3jbtt` (offline; sync_wandb daemon will push)
 - L3: pending
 - L4: pending
 
-## Key findings so far
+## Calibrated eval_sweep task-1 — L1 + L2 (the "true Pearson" rows)
 
-(Will populate after L1 + L2 land.)
+Per dragon's request: re-evaluate L1 and L2 frozen encoders (epoch_10 ckpts)
+with `eval_sweep.py --tasks 1`, the ~770K-probe-train-window pipeline that
+gave dragon's E1 a Pearson of 0.563. These are the numbers that go into
+the paper table — directly comparable to dragon's JEPA rows.
+
+### Test set (in-distribution)
+
+| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-------------:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | **0.564** | 0.510 | 0.549 | 0.251 | 0.00235 |
+| L2 (H=32, P=4) | **0.495** | 0.533 | 0.504 | 0.237 | 0.00256 |
+| dragon E1 (ref) | 0.563 | — | — | — | — |
+
+L1's sl=1 = 0.564 ≈ E1 = 0.563. Same encoder behaviour at H=16 between
+AR-LSTM and JEPA on the in-distribution probe. L2 (H=32) is *below* L1
+at sl=1 (0.495) but pulls ahead at sl=10 (0.533) — H=32 representations
+need sequence context to be useful.
+
+### Test_hard set (OOD)
+
+| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-------------:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | **0.325** | 0.378 | 0.241 | -0.068 | 0.00416 |
+| L2 (H=32, P=4) | **-0.014** | 0.330 | 0.376 | -0.123 | 0.00448 |
+
+OOD shift is brutal for both:
+- L1 drops 0.564 → 0.325 (-42 %)
+- L2 drops 0.495 → -0.014 (-103 %, sign flip at sl=1)
+
+L2 partially recovers at sl=10/50, but at sl=1 the H=32 encoder is
+essentially anti-correlated under shift — strong evidence that H=32
+specialises to in-distribution structure that breaks OOD without
+sequence context. **At sl=10 OOD, L1 (0.378) > L2 (0.330)** — H=16
+generalises better OOD.
+
+### In-training vs calibrated Pearson — confirms data-bound probe
+
+| run | in-training (28K) | calibrated test (770K) | ratio |
+|-----|------------------:|-----------------------:|------:|
+| L1 epoch 9 | 0.242 | 0.564 | 2.33× |
+| L2 epoch 9 | 0.169 | 0.495 | 2.93× |
+
+Together with the bigger-probe diagnostic (28K + 8× capacity → 0.02,
+overfit), the picture is unambiguous: **the in-training probe was
+data-starved, not capacity-bound**. The 30K → 200K bump in
+`n_subsample` for future runs is well-motivated and will give
+in-training metrics that better track the calibrated number.
+
+### Files
+
+- Per-component results JSON: `eval_results/all_ckpts_test/summary.json`,
+  `eval_results/all_ckpts_test_hard/summary.json`
+- Note: `eval_sweep.write_flat_csv` raises `AttributeError` when
+  `--tasks 1` is the only request (`task2_delta_hi` is `None`, not `{}`).
+  Printed metrics are fine; only the flat CSV is missing. Trivial fix.
+
+## Bigger-probe diagnostic on L1
+
+Per dragon's request: load L1's frozen encoder at probe-epoch 5 and 9
+(ckpts `epoch_6_object.ckpt` and `epoch_10_object.ckpt`, same weights as
+the default-probe was run against), train a much bigger TransformerProbe
+(`d_model=512, num_layers=6`, vs the default `128, 3`), keep optimizer +
+patience identical (Adam lr=1e-3, patience=20, max 150 epochs, same
+data split, same probe_seq_len=16). Standalone script
+(`baselines/ar_lstm/bigger_probe_diag.py`) — no re-training.
+
+| ckpt | probe size            | HI mean Pearson | HI mean R² | HI mean RMSE | early-stop |
+|------|----------------------|-----------------|------------|--------------|------------|
+| ep5  | default (128 / 3)    | **+0.224**      | -0.87      | 0.00291      | ep ~31     |
+| ep5  | bigger  (512 / 6)    | **-0.071**      | -2.26      | 0.00356      | ep 29      |
+| ep9  | default (128 / 3)    | **+0.242**      | -1.24      | 0.00304      | ep ~31     |
+| ep9  | bigger  (512 / 6)    | **+0.019**      | -2.02      | 0.00351      | ep 33      |
+
+### Interpretation — neither dragon hypothesis A nor B; a third path
+
+Dragon's matrix:
+- **A**: bigger probe recovers Pearson > 0.4 → encoder fine, default probe is bottleneck.
+- **B**: bigger probe gives ~same as default → encoder lacks HI signal.
+
+Observed: **bigger probe gives WORSE Pearson than default** at both
+checkpoints (-0.07 / +0.02 vs +0.22 / +0.24). RMSE also worse. Both
+bigger probes early-stopped at best test-RMSE — not undertraining.
+
+Conclusion: **the default probe (128 / 3) is approximately the right size
+for the available probe-train budget**. The 8× bigger head has 8× more
+parameters to fit on the same 28K-window training set and overfits — it
+finds a low-RMSE solution that has poor *linear* correlation with the
+targets (likely shrinks predictions toward the mean and predicts noise
+patterns).
+
+Implications:
+1. **Encoder DOES carry HI signal.** Default probe extracts +0.24
+   Pearson from L1's frozen encoder; that's real, not noise.
+2. **Bottleneck is NOT probe capacity.** Pushing capacity destroys the
+   signal rather than recovering it. The default probe is well-sized.
+3. **The 28K probe-train budget is the real constraint.** A larger head
+   *might* help if we also raised `n_subsample` (e.g., to 200K) — that's
+   a follow-up test, not done here.
+4. **JEPA E1's default-probe Pearson 0.30 ≈ ceiling for this probe setup.**
+   Getting past 0.3-0.4 will require either (a) more probe-train data,
+   or (b) different encoder objective (not a different probe).
+
+Per-component bigger-probe results show a few HI dims with meaningful
+magnitude (e.g. ep9: HI_0 +0.34, HI_3 -0.60, HI_4 +0.32) but they mostly
+cancel in the mean — the bigger probe latches onto idiosyncratic noise
+*per component* rather than a coherent signal across all of them.
+
+CSV with per-component rows: `logs/bigger_probe_results.csv`.
+
+## Key findings so far (after L1 + L2)
+
+1. **AR-LSTM training loss is consistently lower than JEPA's** at the
+   matched H:
+   - L1 (H=16) fit/pred=0.129 vs E1 fit/pred=0.152 (LSTM 15 % lower)
+   - L2 (H=32) fit/pred=0.078 vs E2 fit/pred=0.076 (essentially equal)
+   So at H=16 the LSTM has a real advantage on the world-modeling
+   objective; at H=32 the two architectures converge. With +37 % LSTM
+   params, this isn't free — the H=16 gap may shrink under size-matched
+   comparison (dragon's E1' run is in the planning note).
+
+2. **Probe Pearson degrades with H for BOTH architectures**, confirming
+   the trend dragon flagged is not predictor-specific. Pearson @9:
+   - LSTM: L1 0.242 → L2 0.169 (-30 %)
+   - JEPA: E1 0.25  → E2 0.18  (-28 %)
+   Almost identical drop — this is a property of the H=16 vs H=32
+   *training task*, not the architecture. **Major paper-worthy finding.**
+
+3. **Non-monotonic-in-epoch pattern is mixed**: at H=16 the LSTM's
+   epoch-9 beats epoch-5 (0.242 > 0.224); at H=32 it flips to match
+   the JEPA pattern (epoch-5 0.188 > epoch-9 0.169). So both
+   architectures show degradation from epoch-5 to epoch-9 at H=32.
+   Suggests the H=32 task encourages representations that drift away
+   from HI-relevant features over training — independent of predictor.
+
+4. **Action-RUL is noise for all four runs** (LSTM L1, L2 and JEPA E1,
+   E2; R² ≈ -0.12 to -0.15, Pearson ≈ 0 to 0.03). Confirms 10 epochs
+   is not enough for RUL regardless of architecture or H.

@@ -141,3 +141,123 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   same axis is what to look for — does AR-LSTM also show "harder pretext
   → more overfit"? If yes, the finding is cross-architectural and goes in
   the paper as the headline.
+
+2026-04-26T13:30Z  Got your L1/L2 eval_sweep results — beautiful. Notes back:
+
+  ANSWER to your open questions:
+
+  - E2 calibrated Pearson: regular 0.196, test_hard 0.447. So JEPA H=32
+    shows the IN-DIST-↓ / OOD-↑ flip (specificity→generality tradeoff).
+    AR-LSTM H=32 (your L2: regular 0.495, test_hard -0.014) does NOT
+    show the flip — same in-dist drop direction but OOD also drops
+    (and catastrophically at sl=1). Architectures behave differently
+    at H=32 under shift. Cleanest cross-arch finding row for the paper:
+    L1 (0.564) ≈ E1 (0.563) at H=16, predictor doesn't matter; at H=32
+    they diverge.
+
+  - csv-fix: yes please, push the 1-line fix to feature/option-b-sensor-native.
+    Helpful infrastructure for everyone.
+
+  REFRAMED PRIORITIES (Lucas just clarified the paper goal): the headline
+  is the DATASET / SIMULATOR for evaluating world models. Algorithmic
+  findings (specificity-generality, predictor independence at H=16, etc.)
+  are appendix-or-future-paper material, not central. So we DON'T need
+  to chase deep algorithmic exploration — we need clean, well-documented
+  baselines that demonstrate the dataset's properties.
+
+  Updated priority for your plate:
+
+   GO: (b) eval_sweep on more L1/L2 epoch checkpoints (epoch_3, 5, 7
+       in addition to 10). Cheap (~10 min/ckpt). Demonstrates
+       "training trajectory of representation quality on this dataset"
+       — useful dataset-paper content showing how a baseline behaves.
+
+   GO: (e) task-2 (delta-HI / forecasting) on L1+L2. Adds a second
+       benchmarkable task (rate of degradation), strengthens the
+       dataset paper's "multi-task evaluation" angle.
+
+   SKIP (for now): (a) L3, (c) E1' parity, (d) larger S. All purely
+       algorithmic; hold for follow-up paper if findings warrant.
+
+  Take your time, no GPU pressure. Once both (b) and (e) land, append
+  to results.md and we have enough material for a strong paper section
+  on "baselines on TurboSens scenario 4".
+
+  Code sync: I just pushed dragon's coordination/log/results updates +
+  config/run_experiments_v2/guard_after_e3 to origin/feature/option-b-sensor-native
+  (commit 312129b). Pull from your side to get the new launcher safety
+  features and the n_subsample bump (already done in your local config
+  per your task B).
+
+2026-04-26T14:35Z  Lucas asked me to give you better tasks. The (b)/(e) split
+  was OK but I have a sharper plan now that better serves the dataset-paper
+  framing. Confirming all your open items first, then the new task list.
+
+  ANSWERS TO YOUR OPEN ITEMS:
+
+  (1) E2 calibrated Pearson (you asked for it twice, I'll be explicit):
+        E2 (JEPA H=32 S=1 P=4) eval_sweep task-1 sl=1:
+          regular test_lewm:  Pearson = 0.196,  R² = 0.016,  RMSE = 0.00285
+          test_hard:          Pearson = 0.447,  R² = 0.097,  RMSE = 0.00397
+        This is the row that pairs with your L2 (regular 0.495 / OOD -0.014).
+        At H=32, JEPA generalises better OOD; AR-LSTM specialises more.
+
+  (2) E1' (size-matched JEPA) spec: ON HOLD. Lucas reframed the paper
+      goal — the headline is the dataset/simulator, not algorithmic deep
+      dive. E1' is a same-arch parameter-control experiment, useful for a
+      follow-up methods paper but not for the dataset paper. Pausing.
+
+  (3) Y/N on the eval_sweep --tasks 1 CSV-writer fix: YES, please push.
+      Trivial 1-line fix, helps everyone using the script in the future.
+      Just commit straight to feature/option-b-sensor-native.
+
+  NEW TASK LIST (replaces (b)/(e)). Three tasks, all support the dataset
+  paper. Pick whichever order you prefer; they're independent.
+
+  T1 — Multi-task eval_sweep on L1 + L2 (~1.5 h)
+    Run eval_sweep with all available tasks: 1 (HI estimation), 2 (delta-HI
+    velocity), 2b (maintenance alarm), 3 (latent forecasting). Both regular
+    test and test_hard. L1 + L2 epoch_10 ckpts.
+        python eval_sweep.py --tasks 1 2 3 --no_parallel \
+            --hdf5 .../scenario4_test_lewm.h5 \
+            --out_dir eval_results/L_multi_test \
+            L1:<L1_ep10> L2:<L2_ep10>
+        # then again with --hdf5 test_hard.h5 → eval_results/L_multi_test_hard
+    (Task 2b is a sub-task of task 2 IIRC — check eval_sweep code; if it
+    needs its own flag include it.) Forecasting (task 3) is the slowest
+    — if total wall > 2h, fine to skip task 3.
+    Why: populates the full benchmark suite the dataset paper needs to
+    show "this dataset enables N evaluation tasks, here are baselines for
+    each".
+
+  T2 — Sanity / lower-bound baselines (~30 min, HIGH VALUE for dataset paper)
+    Without these, our 0.56 Pearson has no scale. Two probes:
+      (a) Raw sensors → probe head directly. Skip the encoder entirely.
+          Use the same TransformerProbe architecture from hi_probe; input
+          is raw 176-dim sensor vector instead of 64-dim embedding. Train
+          on the same 770K-window split as eval_sweep task-1.
+      (b) UNTRAINED encoder (random init, no training). Same encoder
+          architecture as L1, just don't load any weights — keep it at
+          random init, then do the same probe training/eval.
+    Both give us "raw signal in the data" and "value of pretraining"
+    baselines. Critical for ANY benchmark paper.
+    Implementation hint: easiest is to write a small standalone variant
+    of eval_sweep that loads / instantiates the encoder differently. Or
+    monkey-patch model.eval() with a random-init JEPA. You decide.
+
+  T3 — Per-archetype breakdown on L1 calibrated HI probe (~15 min)
+    The dataset has 4 archetypes: A_compressor, B_fan_booster, C_turbine,
+    D_balanced. Currently we have aggregate Pearson across all of them.
+    Split-by-archetype eval would show whether some engine families are
+    intrinsically harder. Characterises the dataset's diversity.
+    Implementation: read archetype label per-window from the H5 (look at
+    eval_sweep dataset loader — `archetypes` is one of the loaded keys);
+    after probe.predict(), compute Pearson per archetype subset and report.
+
+  SKIP THESE per Lucas's reframing: L3 (algorithmic), E1' (algorithmic),
+  larger-S (algorithmic), more L1/L2 epoch checkpoints (cheap insurance,
+  not headline-worthy).
+
+  Take any order. Append results to your results.md. The combined
+  table from T1+T2+T3 will be the meat of the dataset paper's "baselines"
+  section.

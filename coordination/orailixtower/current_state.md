@@ -1,16 +1,77 @@
 # OrailixTower current state — auto-updated
 
-**As of:** 2026-04-25 ~11:18 UTC
+**As of:** 2026-04-26 ~11:55 UTC
 
 ## Running now
 
-- **Tmux `s4_arlstm_L1`** — L1 full 10-epoch run: H=16 S=1 P=4, bs=512,
-  accum=1, bf16-mixed, **`compile_encoder=true`**, **`lstm.use_cudnn=true`**,
-  hi_probe enabled (every 5 epochs + final). Started 11:17 UTC.
-  Wandb offline run id: `12uiyu7c`. Log:
-  `logs/s4_arlstm_L1_20260425_1317.log`.
-  ETA ~6.7 h with compile (was 10.5 h without). Finish ≈18:00 UTC.
-- **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
+- **Nothing.** GPU idle. Eval_sweep done, results landed, results.md
+  updated under "Calibrated eval_sweep task-1" section. Open ask to
+  dragon in my log.md for the next task. Standing by.
+- **Tmux `eval_sweep`** — still alive (post-run shell only).
+- **Tmux `bigger_probe`** — still alive (post-run shell only).
+- **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
+- **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+
+## Headline calibrated numbers (sl=1, ~770K probe-train windows)
+
+|             | TEST    | TEST_HARD |
+|-------------|--------:|----------:|
+| L1 (H=16)   | 0.564   |  0.325    |
+| L2 (H=32)   | 0.495   | -0.014    |
+| E1 (ref)    | 0.563   |   —       |
+
+L1 sl=1 ≈ E1 sl=1 → encoder equivalence at H=16 between AR-LSTM and JEPA.
+
+## Config change applied
+
+- `config/train/lewm.yaml`: `hi_probe.n_subsample 30000 → 200000`
+- `baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml`: same.
+  (Mirror of dragon's bump. Past runs unaffected.)
+
+## Done (training)
+
+- **L1**  H=16 S=1 P=4: ~7 h, fit/loss=0.379, HI Pearson@9=0.242
+- **L2**  H=32 S=1 P=4: ~13 h, fit/loss=0.234, HI Pearson@9=0.169
+
+## Done
+
+- **L1**  H=16 S=1 P=4: ~7 h, fit/loss=0.379, HI Pearson@9=0.242
+- **L2**  H=32 S=1 P=4: ~13 h, fit/loss=0.234, HI Pearson@9=0.169
+
+Full numbers + per-row comparison vs dragon's E1 / E2 in `results.md`.
+
+## Pending
+
+- **L3** (H=16 S=5 P=4, bs=128 accum=4) — not started. ETA ~8.5 h
+- **L4** (H=32 S=5 P=4, bs=64 accum=8) — not started. ETA ~16 h
+- **Bigger-probe diagnostic on L1** (dragon's request — see dragon/log.md):
+  load L1 frozen encoder ckpts at epoch 5 + 9, train probes with
+  d_model=512, num_layers=6 (vs default 128/3); report HI mean
+  Pearson + R² for both. ~30-90 min GPU. Standalone script, no
+  re-training.
+
+## Pending diagnostic work for L1 (from dragon's request)
+
+Two requests Lucas relayed via dragon's `log.md`:
+1. **Per-HI rows in results.md** — parse `hi_probe_metrics.csv` for
+   L1's epoch 5 + epoch 9 HI_0..HI_9 results, append per-component
+   table to results.md. No GPU. ~5 min.
+2. **Bigger-probe diagnostic** — load L1 frozen-encoder ckpts at
+   epoch 5 and epoch 9, train probes with d_model=512 num_layers=6
+   (vs default 128/3), report HI mean Pearson-r and R². ~30-90 min
+   on a single A6000. Will queue this *after* L2 finishes so it
+   doesn't compete for GPU.
+
+## L1 full — 10 epochs, COMPLETED
+
+- Wall ~7 h (started 11:17 UTC, ended 18:19 UTC). 40:16 per epoch
+  at 5.06 it/s steady-state. Matched the compile-on estimate of 6.7 h.
+- Final fit/loss=0.379, fit/pred=0.129, fit/ar=0.078, fit/sigreg=1.66.
+- HI probe (mean over 10 components, seq_len=16): Pearson 0.242 @9
+  (vs 0.224 @5), RMSE 0.00304 @9, R² -1.24 @9.
+- Action-RUL: RMSE 27.23 @9, R² -0.12, Pearson 0.024 — essentially
+  noise (same shape as dragon's E1).
+- See `results.md` for the row + comparison vs dragon's E1.
 
 ## L1 probe (1 epoch) — completed 10:58 UTC
 
