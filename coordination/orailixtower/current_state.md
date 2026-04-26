@@ -1,21 +1,31 @@
 # OrailixTower current state — auto-updated
 
-**As of:** 2026-04-25 ~19:47 UTC
+**As of:** 2026-04-26 ~11:55 UTC
 
 ## Running now
 
-- **Tmux `s4_arlstm_L2`** — L2 full 10-epoch run: H=32 S=1 P=4, bs=256,
-  accum=2 (eff. bs=512), bf16-mixed, compile_encoder=true,
-  lstm.use_cudnn=true, hi_probe enabled. Started 19:47 UTC.
-  Log: `logs/s4_arlstm_L2_20260425_2146.log`. ETA finish ~09:15 UTC
-  tomorrow (~13.5 h).
-- **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
+- **Nothing training.** L2 full completed 08:50 UTC. GPU idle. Per
+  Lucas's standing "don't auto-launch" instruction, L3/L4 are paused.
+- **Tmux `s4_arlstm_L2`** — still alive (post-training shell). Attach
+  to see the final printout.
+- **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
 
-## L1 full — completed earlier
+## Done
 
-L1 finished at 18:19 UTC. Final fit/loss=0.379, fit/pred=0.129,
-HI mean Pearson@9=0.242, RUL R²=-0.12. Full row + comparison vs
-dragon's E1 in `results.md`.
+- **L1**  H=16 S=1 P=4: ~7 h, fit/loss=0.379, HI Pearson@9=0.242
+- **L2**  H=32 S=1 P=4: ~13 h, fit/loss=0.234, HI Pearson@9=0.169
+
+Full numbers + per-row comparison vs dragon's E1 / E2 in `results.md`.
+
+## Pending
+
+- **L3** (H=16 S=5 P=4, bs=128 accum=4) — not started. ETA ~8.5 h
+- **L4** (H=32 S=5 P=4, bs=64 accum=8) — not started. ETA ~16 h
+- **Bigger-probe diagnostic on L1** (dragon's request — see dragon/log.md):
+  load L1 frozen encoder ckpts at epoch 5 + 9, train probes with
+  d_model=512, num_layers=6 (vs default 128/3); report HI mean
+  Pearson + R² for both. ~30-90 min GPU. Standalone script, no
+  re-training.
 
 ## Pending diagnostic work for L1 (from dragon's request)
 

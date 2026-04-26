@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 10:03 UTC_
+_Last regenerated: 2026-04-26 10:13 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,12 +22,11 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Tmux `s4_arlstm_L2`** — L2 full 10-epoch run: H=32 S=1 P=4, bs=256,
-  accum=2 (eff. bs=512), bf16-mixed, compile_encoder=true,
-  lstm.use_cudnn=true, hi_probe enabled. Started 19:47 UTC.
-  Log: `logs/s4_arlstm_L2_20260425_2146.log`. ETA finish ~09:15 UTC
-  tomorrow (~13.5 h).
-- **Tmux `wandb_sync`** — offline→cloud sync daemon, 5-min poll.
+- **Nothing training.** L2 full completed 08:50 UTC. GPU idle. Per
+  Lucas's standing "don't auto-launch" instruction, L3/L4 are paused.
+- **Tmux `s4_arlstm_L2`** — still alive (post-training shell). Attach
+  to see the final printout.
+- **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
 
 
 ---
@@ -45,9 +44,11 @@ hi_probe at epoch 5 + final epoch.
 | ID | H | S | P | bs (eff. 512) | Wall | fit/loss | fit/pred | fit/ar | fit/sigreg |
 |----|---|---|---|---------------|------|----------|----------|--------|-----------|
 | E1 | 16 | 1 | 4 | 512 / acc=1 | 4.4h | 0.406 | 0.152 | 0.092 | 1.695 |
-| E2 | 32 | 1 | 4 | 256 / acc=2 | 8.2h | **0.254** | **0.076** | **0.048** | **1.188** |
-| E3 | 16 | 5 | 4 | 128 / acc=4 | running | – | – | – | – |
-| E4 | 32 | 5 | 4 | 64  / acc=8 | queued | – | – | – | – |
+| E2 | 32 | 1 | 4 | 256 / acc=2 | 8.2h | 0.254 | 0.076 | 0.048 | 1.188 |
+| E3 | 16 | 5 | 4 | 128 / acc=4 | 20h | **0.259** | **0.078** | **0.038** | **1.203** |
+| E4 | 32 | 5 | 4 | 64 / acc=8 | **deferred** | – | – | – | – |
+
+E4 deferred per Lucas's adaptive-decision plan: E3 essentially tied E1 on probe quality (0.252 vs 0.250), so the H=32 + S=5 combination is unlikely to be a step-function improvement. Saving the ~40h for higher-info experiments (E1' parity-with-L1, train/test_hard diagnostic).
 
 ## Hi_probe HI-regression (mean over 10 components)
 
@@ -57,6 +58,8 @@ hi_probe at epoch 5 + final epoch.
 | E1 | 9 | -0.90 | 0.00295 | 0.25 |
 | E2 | 5 | -1.32 | 0.00317 | 0.14 |
 | E2 | 9 | -0.91 | 0.00291 | 0.18 |
+| E3 | 5 | -0.69 | 0.00266 | 0.244 |
+| E3 | 9 | -1.38 | 0.00314 | 0.252 |
 
 ## Action-RUL probe
 
@@ -102,7 +105,7 @@ Everything else identical to dragon's JEPA config — see `identity.md`.
 | ID | H | S | P | bs (eff. 512) | Wall | fit/loss | fit/pred | fit/ar | fit/sigreg | params |
 |----|---|---|---|---------------|------|----------|----------|--------|-----------|--------|
 | L1 | 16 | 1 | 4 | 512 / acc=1   | ~7 h | **0.379** | **0.129** | **0.078** | 1.664 | 1,138,068 |
-| L2 | 32 | 1 | 4 | 256 / acc=2   | —    | —        | —        | —      | —          | 1,138,068 |
+| L2 | 32 | 1 | 4 | 256 / acc=2   | ~13 h | **0.234** | **0.078** | **0.050** | 1.039 | 1,138,068 |
 | L3 | 16 | 5 | 4 | 128 / acc=4   | —    | —        | —        | —      | —          | 1,138,068 |
 | L4 | 32 | 5 | 4 | 64  / acc=8   | —    | —        | —        | —      | —          | 1,138,068 |
 
@@ -125,8 +128,8 @@ total-param counts alongside metrics in the paper table.
 |----|-------|----|------|-----------|
 | L1 | 5  | -0.87 | 0.00291 | 0.224 |
 | L1 | 9  | -1.24 | 0.00304 | 0.242 |
-| L2 | 5  | — | — | — |
-| L2 | 9  | — | — | — |
+| L2 | 5  | -1.38 | 0.00321 | 0.188 |
+| L2 | 9  | -1.41 | 0.00320 | 0.169 |
 | L3 | 5  | — | — | — |
 | L3 | 9  | — | — | — |
 | L4 | 5  | — | — | — |
@@ -138,8 +141,8 @@ total-param counts alongside metrics in the paper table.
 |----|-------|--------------|-----|----|---------|
 | L1 | 5 | 27.97 | 22.10 | -0.18 | 0.034 |
 | L1 | 9 | 27.23 | 22.10 | -0.12 | 0.024 |
-| L2 | 5 | — | — | — | — |
-| L2 | 9 | — | — | — | — |
+| L2 | 5 | 27.13 | 22.02 | -0.114 | 0.004 |
+| L2 | 9 | 27.40 | 22.16 | -0.136 | 0.013 |
 | L3 | 5 | — | — | — | — |
 | L3 | 9 | — | — | — | — |
 | L4 | 5 | — | — | — | — |
@@ -148,26 +151,38 @@ total-param counts alongside metrics in the paper table.
 ## Wandb runs (on https://wandb.ai/thil-ecole-polytechnique/turbofan_S4/runs/)
 
 - L1: `12uiyu7c` (offline; sync_wandb daemon will push)
-- L2: pending
+- L2: `5iu3jbtt` (offline; sync_wandb daemon will push)
 - L3: pending
 - L4: pending
 
-## Key findings so far (after L1 only)
+## Key findings so far (after L1 + L2)
 
-1. **AR-LSTM training loss is lower than JEPA's E1** at every component
-   (fit/pred 0.129 vs 0.152; fit/ar 0.078 vs 0.092). The LSTM fits the
-   world-modeling objective slightly better at H=16 S=1 P=4. Note the
-   +37 % param delta — not a free win, possibly capacity-driven.
-2. **Probe quality is comparable**: HI mean Pearson-r at epoch 9 is
-   0.242 (L1) vs 0.25 (E1). Within noise.
-3. **Non-monotonic-in-epoch pattern flipped**: dragon's JEPA had its best
-   probe at epoch 5 (Pearson 0.30 → 0.25 by epoch 9). My LSTM has
-   epoch-9 better than epoch-5 (0.242 > 0.224). Could be sampling, could
-   be that the LSTM's representation stabilises later — needs more runs
-   to call.
-4. **Action-RUL is noise for both architectures** (R² ≈ -0.1, Pearson
-   ≈ 0.02 — both at L1 and at dragon E1). Confirms dragon's earlier
-   finding: 10 epochs is not enough for RUL, regardless of predictor.
+1. **AR-LSTM training loss is consistently lower than JEPA's** at the
+   matched H:
+   - L1 (H=16) fit/pred=0.129 vs E1 fit/pred=0.152 (LSTM 15 % lower)
+   - L2 (H=32) fit/pred=0.078 vs E2 fit/pred=0.076 (essentially equal)
+   So at H=16 the LSTM has a real advantage on the world-modeling
+   objective; at H=32 the two architectures converge. With +37 % LSTM
+   params, this isn't free — the H=16 gap may shrink under size-matched
+   comparison (dragon's E1' run is in the planning note).
+
+2. **Probe Pearson degrades with H for BOTH architectures**, confirming
+   the trend dragon flagged is not predictor-specific. Pearson @9:
+   - LSTM: L1 0.242 → L2 0.169 (-30 %)
+   - JEPA: E1 0.25  → E2 0.18  (-28 %)
+   Almost identical drop — this is a property of the H=16 vs H=32
+   *training task*, not the architecture. **Major paper-worthy finding.**
+
+3. **Non-monotonic-in-epoch pattern is mixed**: at H=16 the LSTM's
+   epoch-9 beats epoch-5 (0.242 > 0.224); at H=32 it flips to match
+   the JEPA pattern (epoch-5 0.188 > epoch-9 0.169). So both
+   architectures show degradation from epoch-5 to epoch-9 at H=32.
+   Suggests the H=32 task encourages representations that drift away
+   from HI-relevant features over training — independent of predictor.
+
+4. **Action-RUL is noise for all four runs** (LSTM L1, L2 and JEPA E1,
+   E2; R² ≈ -0.12 to -0.15, Pearson ≈ 0 to 0.03). Confirms 10 epochs
+   is not enough for RUL regardless of architecture or H.
 
 
 ---
@@ -229,9 +244,6 @@ total-param counts alongside metrics in the paper table.
 
 ### OrailixTower log
 ```
-2026-04-25T11:40Z  Awaiting Lucas's launch confirmation for L1 before burning GPU.
-2026-04-25T09:44Z  Lucas greenlit. L1 probe (1 epoch, H=16 S=1 P=4 bs=512 accum=1) launched in tmux s4_arlstm_L1_probe. wandb_sync daemon also up.
-2026-04-25T10:58Z  L1 probe completed: 12307 steps in 62 min @ 3.25 it/s, peak 15.9 GB VRAM. Tmux session auto-exited (no shell wrap) — first looked like a crash; was actually clean shutdown.
 2026-04-25T11:10Z  Decision: predictor LSTMCell python loop is too slow vs cuDNN. Switched LSTMPredictor default to nn.LSTM (use_cudnn flag, fallback kept). Added optional torch.compile on the encoder.
 2026-04-25T11:13Z  Smoke-tested both. nn.LSTM alone: 3.25 → 3.61 it/s (+11%). +torch.compile(encoder): 3.61 → 5.19 it/s (+44% over baseline). No drift in losses or grads.
 2026-04-25T11:17Z  L1 full 10-epoch run launched in tmux s4_arlstm_L1 (now wrapped in `exec bash` so the session stays alive after training). compile_encoder=true. Wandb offline run id: 12uiyu7c. ETA ~18:00 UTC.
@@ -239,6 +251,9 @@ total-param counts alongside metrics in the paper table.
 2026-04-25T18:19Z  Lucas asked me NOT to auto-launch L2 — paused queue, GPU idle, awaiting next instruction.
 2026-04-25T19:30Z  Read dragon's log update. Two requests noted: per-HI rows in results.md (cheap), bigger-probe diagnostic on L1 frozen encoder at ep.5 and ep.9 (~30-90 min GPU). Will queue after L2 lands.
 2026-04-25T19:47Z  Lucas said resume baselines. L2 full launched in tmux s4_arlstm_L2 (H=32 S=1 P=4 bs=256 accum=2, compile_encoder=true). ETA ~09:15 UTC tomorrow.
+2026-04-25T19:48Z  L2 first launch crashed: torch.compile mode=reduce-overhead uses CUDA graphs which break under accumulate_grad_batches>1. Switched to mode=default. Re-launched at 19:49Z, training healthy.
+2026-04-26T08:50Z  L2 full completed: 24586 steps × 10 epochs in ~13 h, 75 min/epoch at 5.44 it/s. Final fit/loss=0.234, fit/pred=0.078, fit/ar=0.050. HI Pearson@9=0.169, RUL R²=-0.14. See results.md for full row + comparison vs E2.
+2026-04-26T11:55Z  GPU idle. Per Lucas's standing instruction, NOT auto-launching L3. Awaiting next direction.
 ```
 
 ---

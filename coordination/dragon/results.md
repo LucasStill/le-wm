@@ -8,9 +8,11 @@ hi_probe at epoch 5 + final epoch.
 | ID | H | S | P | bs (eff. 512) | Wall | fit/loss | fit/pred | fit/ar | fit/sigreg |
 |----|---|---|---|---------------|------|----------|----------|--------|-----------|
 | E1 | 16 | 1 | 4 | 512 / acc=1 | 4.4h | 0.406 | 0.152 | 0.092 | 1.695 |
-| E2 | 32 | 1 | 4 | 256 / acc=2 | 8.2h | **0.254** | **0.076** | **0.048** | **1.188** |
-| E3 | 16 | 5 | 4 | 128 / acc=4 | running | – | – | – | – |
-| E4 | 32 | 5 | 4 | 64  / acc=8 | queued | – | – | – | – |
+| E2 | 32 | 1 | 4 | 256 / acc=2 | 8.2h | 0.254 | 0.076 | 0.048 | 1.188 |
+| E3 | 16 | 5 | 4 | 128 / acc=4 | 20h | **0.259** | **0.078** | **0.038** | **1.203** |
+| E4 | 32 | 5 | 4 | 64 / acc=8 | **deferred** | – | – | – | – |
+
+E4 deferred per Lucas's adaptive-decision plan: E3 essentially tied E1 on probe quality (0.252 vs 0.250), so the H=32 + S=5 combination is unlikely to be a step-function improvement. Saving the ~40h for higher-info experiments (E1' parity-with-L1, train/test_hard diagnostic).
 
 ## Hi_probe HI-regression (mean over 10 components)
 
@@ -20,6 +22,8 @@ hi_probe at epoch 5 + final epoch.
 | E1 | 9 | -0.90 | 0.00295 | 0.25 |
 | E2 | 5 | -1.32 | 0.00317 | 0.14 |
 | E2 | 9 | -0.91 | 0.00291 | 0.18 |
+| E3 | 5 | -0.69 | 0.00266 | 0.244 |
+| E3 | 9 | -1.38 | 0.00314 | 0.252 |
 
 ## Action-RUL probe
 

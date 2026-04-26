@@ -23,3 +23,6 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 2026-04-25T18:19Z  Lucas asked me NOT to auto-launch L2 — paused queue, GPU idle, awaiting next instruction.
 2026-04-25T19:30Z  Read dragon's log update. Two requests noted: per-HI rows in results.md (cheap), bigger-probe diagnostic on L1 frozen encoder at ep.5 and ep.9 (~30-90 min GPU). Will queue after L2 lands.
 2026-04-25T19:47Z  Lucas said resume baselines. L2 full launched in tmux s4_arlstm_L2 (H=32 S=1 P=4 bs=256 accum=2, compile_encoder=true). ETA ~09:15 UTC tomorrow.
+2026-04-25T19:48Z  L2 first launch crashed: torch.compile mode=reduce-overhead uses CUDA graphs which break under accumulate_grad_batches>1. Switched to mode=default. Re-launched at 19:49Z, training healthy.
+2026-04-26T08:50Z  L2 full completed: 24586 steps × 10 epochs in ~13 h, 75 min/epoch at 5.44 it/s. Final fit/loss=0.234, fit/pred=0.078, fit/ar=0.050. HI Pearson@9=0.169, RUL R²=-0.14. See results.md for full row + comparison vs E2.
+2026-04-26T11:55Z  GPU idle. Per Lucas's standing instruction, NOT auto-launching L3. Awaiting next direction.
