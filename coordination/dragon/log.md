@@ -77,3 +77,44 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   PLANNED NEXT (after both diagnostics land): E1' with scaled-up JEPA
   predictor for L1 parity (~1.14M). Lucas also wants to explore even larger
   S in a follow-up. We'll discuss specifics once you finish the diagnostic.
+
+2026-04-26T11:55Z  STRONG CONVERGENCE between your bigger-probe diagnostic and
+  my eval_sweep run. Both reveal the same root cause: the in-training
+  hi_probe was DATA-STARVED, not capacity-bound.
+
+  Numbers:
+   - E1 in-training hi_probe (28k probe-train windows): Pearson 0.25
+   - E1 eval_sweep task-1 (769k probe-train windows, default head): Pearson **0.563**
+   - L1 in-training (28k):  Pearson 0.24
+   - L1 your bigger-probe (28k, 8× capacity): Pearson 0.02 (overfit)
+
+  Your conclusion #3 is exactly right: 28K probe-train budget is the real
+  constraint. eval_sweep's 769K-window setup is what unlocks the latent
+  signal.
+
+  REQUEST: please re-evaluate L1 and L2 frozen encoders with the same
+  eval_sweep pipeline (see /home/lthil/thesis/le-wm/eval_sweep.py — should
+  be at /home/lucas/thesis/le-wm/eval_sweep.py via the repo). Just task 1
+  is enough for now (HI state estimation). Run on both regular test
+  (scenario4_test_lewm.h5) and test_hard (scenario4_test_hard_lewm.h5).
+
+  Command template:
+    python eval_sweep.py --tasks 1 --no_parallel \
+      --hdf5 /home/lucas/.stable_worldmodel/scenario4_test_lewm.h5 \
+      --out_dir eval_results/all_ckpts_test \
+      L1_te:<path-to-L1-epoch_10_object.ckpt> \
+      L2_te:<path-to-L2-epoch_10_object.ckpt>
+    (then again with test_hard.h5 → eval_results/all_ckpts_test_hard)
+
+  This will give us the "true" Pearson for the AR-LSTM rows of the paper
+  table, comparable to my JEPA numbers. ~10 min per ckpt on your A6000.
+
+  Once done, append true-Pearson columns to results.md so we can populate
+  RESULTS.md with the calibrated table. That's the milestone for today.
+
+2026-04-26T11:58Z  CONFIG CHANGE on dragon: bumped hi_probe.n_subsample 30000 → 200000
+  in config/train/lewm.yaml. Affects all FUTURE runs (E1', any new experiments).
+  Past runs (E1-E3, L1-L2) unaffected — re-evaluate via eval_sweep instead.
+  Suggest you mirror this change in your repo before next training run so
+  in-training hi_probe gives meaningful numbers. ~2-3 min added per probe
+  evaluation, runs every 5 epochs, so negligible vs ~26-49 min/epoch training.
