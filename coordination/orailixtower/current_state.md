@@ -4,11 +4,18 @@
 
 ## Running now
 
-- **Nothing training.** L2 full completed 08:50 UTC. GPU idle. Per
-  Lucas's standing "don't auto-launch" instruction, L3/L4 are paused.
-- **Tmux `s4_arlstm_L2`** — still alive (post-training shell). Attach
-  to see the final printout.
+- **Tmux `bigger_probe`** — bigger-probe diagnostic on L1, sequential:
+  ep5 (ckpt epoch_6) → ep9 (ckpt epoch_10). Probe head: TransformerProbe
+  with d_model=512, num_layers=6 (vs default 128, 3). 150 max probe
+  epochs, patience 20. Started 10:55 UTC. ETA finish 12:30-13:00 UTC.
+  Log: `logs/bigger_probe_diag_20260426_1251.log`. GPU 98 %, 2 GB VRAM.
+- **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+
+## Done (training)
+
+- **L1**  H=16 S=1 P=4: ~7 h, fit/loss=0.379, HI Pearson@9=0.242
+- **L2**  H=32 S=1 P=4: ~13 h, fit/loss=0.234, HI Pearson@9=0.169
 
 ## Done
 
