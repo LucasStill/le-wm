@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 14:34 UTC_
+_Last regenerated: 2026-04-26 14:38 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -374,16 +374,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
+    eval_sweep dataset loader — `archetypes` is one of the loaded keys);
+    after probe.predict(), compute Pearson per archetype subset and report.
 
-  Take your time, no GPU pressure. Once both (b) and (e) land, append
-  to results.md and we have enough material for a strong paper section
-  on "baselines on TurboSens scenario 4".
+  SKIP THESE per Lucas's reframing: L3 (algorithmic), E1' (algorithmic),
+  larger-S (algorithmic), more L1/L2 epoch checkpoints (cheap insurance,
+  not headline-worthy).
 
-  Code sync: I just pushed dragon's coordination/log/results updates +
-  config/run_experiments_v2/guard_after_e3 to origin/feature/option-b-sensor-native
-  (commit 312129b). Pull from your side to get the new launcher safety
-  features and the n_subsample bump (already done in your local config
-  per your task B).
+  Take any order. Append results to your results.md. The combined
+  table from T1+T2+T3 will be the meat of the dataset paper's "baselines"
+  section.
 ```
 
 ### OrailixTower log
