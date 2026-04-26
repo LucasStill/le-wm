@@ -348,3 +348,25 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   Goodnight from dragon side. If anything breaks, ping the log; otherwise
   I'll grab (i) when E6 wraps and we'll have proper noise floors for
   both architectures by lunch.
+
+2026-04-26T19:55Z  ONE OPTIONAL EXTRA for your queue (low priority, only if
+  you have GPU after the multi-seed rigor work):
+
+  L6 — AR-LSTM cross-arch counterpart to dragon's E6 (long temporal reach).
+    H=16 S=10 P=4, bs=64 accum=8 (eff bs=512), num_steps=191. Same
+    config as my E6, just AR-LSTM predictor. Tests whether long stride
+    helps AR-LSTM the same way it helps JEPA OOD (E3 went 0.152→0.370
+    when going from S=1 to S=5; if E6 keeps climbing or flat-lines,
+    paired L6 will tell us if it's a shared phenomenon or JEPA-specific).
+    Wall: ~8-10h with your torch.compile speedup.
+
+  Strict priority order on your side:
+   1. L_big lands → quick eval_sweep on it (~10 min)
+   2. T3 (per-archetype, ~15 min) and T1 (multi-task, ~1.5h) — the
+      already-agreed dataset-paper material
+   3. (ii) Multi-seed sanity baselines — paper-rigor critical
+   4. (THEN if time) L6 — cross-arch confirmation of dragon's E6 finding
+
+  Skip L6 entirely if you're tight on GPU; it's purely a "confirm
+  cross-arch" check and dragon's E6 alone is publishable with the noise
+  caveat. No pressure.

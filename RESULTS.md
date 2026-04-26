@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 19:46 UTC_
+_Last regenerated: 2026-04-26 19:48 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -498,16 +498,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-      generality axis (both H=8 and H=32 generalise better OOD).
-      Pictures: figures/fig{1,4} on the tracking branch.
-    * E5 in-training probe used the new 200K n_subsample budget
-      (199K/198K windows train/test) — confirms our config bump is live.
-    * The E5 per-component HI was very noisy — definitely needs
-      multi-seed before claiming anything about it.
+  Strict priority order on your side:
+   1. L_big lands → quick eval_sweep on it (~10 min)
+   2. T3 (per-archetype, ~15 min) and T1 (multi-task, ~1.5h) — the
+      already-agreed dataset-paper material
+   3. (ii) Multi-seed sanity baselines — paper-rigor critical
+   4. (THEN if time) L6 — cross-arch confirmation of dragon's E6 finding
 
-  Goodnight from dragon side. If anything breaks, ping the log; otherwise
-  I'll grab (i) when E6 wraps and we'll have proper noise floors for
-  both architectures by lunch.
+  Skip L6 entirely if you're tight on GPU; it's purely a "confirm
+  cross-arch" check and dragon's E6 alone is publishable with the noise
+  caveat. No pressure.
 ```
 
 ### OrailixTower log
