@@ -1457,11 +1457,11 @@ def write_flat_csv(all_results, hi_names, path):
             for comp, m in sl_metrics.items():
                 for metric, val in m.items():
                     rows.append([name, w, "task1_hi", sl_tag, comp, metric, val])
-        for sl_tag, sl_metrics in res.get("task2_delta_hi", {}).items():
+        for sl_tag, sl_metrics in (res.get("task2_delta_hi") or {}).items():
             for comp, m in sl_metrics.items():
                 for metric, val in m.items():
                     rows.append([name, w, "task2_delta_hi", sl_tag, comp, metric, val])
-        for k_str, m in res.get("task2b_alarm", {}).items():
+        for k_str, m in (res.get("task2b_alarm") or {}).items():
             for metric, val in (m or {}).items():
                 if val is not None:
                     rows.append([name, w, "task2b_alarm", "-", k_str, metric, val])

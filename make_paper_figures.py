@@ -92,6 +92,11 @@ JEPA_RUNS = {
         "test_hard": ROOT / "eval_results/all_ckpts_test_hard/E3_th.json",
         "H": 16, "S": 5, "params_M": 0.828, "arch": "JEPA",
     },
+    "E5": {
+        "regular": ROOT / "eval_results/E5_test/E5_te.json",
+        "test_hard": ROOT / "eval_results/E5_test_hard/E5_th.json",
+        "H": 8, "S": 1, "params_M": 0.828, "arch": "JEPA",
+    },
 }
 
 # AR-LSTM numbers (from OT's pushed results.md — they live on OT machine, hardcoded here)
