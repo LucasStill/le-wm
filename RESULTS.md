@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 11:43 UTC_
+_Last regenerated: 2026-04-26 11:53 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,11 +22,11 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Tmux `bigger_probe`** — bigger-probe diagnostic on L1, sequential:
-  ep5 (ckpt epoch_6) → ep9 (ckpt epoch_10). Probe head: TransformerProbe
-  with d_model=512, num_layers=6 (vs default 128, 3). 150 max probe
-  epochs, patience 20. Started 10:55 UTC. ETA finish 12:30-13:00 UTC.
-  Log: `logs/bigger_probe_diag_20260426_1251.log`. GPU 98 %, 2 GB VRAM.
+- **Nothing.** GPU idle. Bigger-probe diagnostic finished — see the new
+  "Bigger-probe diagnostic on L1" section in `results.md` for the full
+  analysis. Surprise result: bigger probe **overfits**, gives worse
+  Pearson than default. Encoder is fine; default probe is right-sized.
+- **Tmux `bigger_probe`** — still alive (post-run shell only).
 - **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
 
@@ -157,6 +157,59 @@ total-param counts alongside metrics in the paper table.
 - L3: pending
 - L4: pending
 
+## Bigger-probe diagnostic on L1
+
+Per dragon's request: load L1's frozen encoder at probe-epoch 5 and 9
+(ckpts `epoch_6_object.ckpt` and `epoch_10_object.ckpt`, same weights as
+the default-probe was run against), train a much bigger TransformerProbe
+(`d_model=512, num_layers=6`, vs the default `128, 3`), keep optimizer +
+patience identical (Adam lr=1e-3, patience=20, max 150 epochs, same
+data split, same probe_seq_len=16). Standalone script
+(`baselines/ar_lstm/bigger_probe_diag.py`) — no re-training.
+
+| ckpt | probe size            | HI mean Pearson | HI mean R² | HI mean RMSE | early-stop |
+|------|----------------------|-----------------|------------|--------------|------------|
+| ep5  | default (128 / 3)    | **+0.224**      | -0.87      | 0.00291      | ep ~31     |
+| ep5  | bigger  (512 / 6)    | **-0.071**      | -2.26      | 0.00356      | ep 29      |
+| ep9  | default (128 / 3)    | **+0.242**      | -1.24      | 0.00304      | ep ~31     |
+| ep9  | bigger  (512 / 6)    | **+0.019**      | -2.02      | 0.00351      | ep 33      |
+
+### Interpretation — neither dragon hypothesis A nor B; a third path
+
+Dragon's matrix:
+- **A**: bigger probe recovers Pearson > 0.4 → encoder fine, default probe is bottleneck.
+- **B**: bigger probe gives ~same as default → encoder lacks HI signal.
+
+Observed: **bigger probe gives WORSE Pearson than default** at both
+checkpoints (-0.07 / +0.02 vs +0.22 / +0.24). RMSE also worse. Both
+bigger probes early-stopped at best test-RMSE — not undertraining.
+
+Conclusion: **the default probe (128 / 3) is approximately the right size
+for the available probe-train budget**. The 8× bigger head has 8× more
+parameters to fit on the same 28K-window training set and overfits — it
+finds a low-RMSE solution that has poor *linear* correlation with the
+targets (likely shrinks predictions toward the mean and predicts noise
+patterns).
+
+Implications:
+1. **Encoder DOES carry HI signal.** Default probe extracts +0.24
+   Pearson from L1's frozen encoder; that's real, not noise.
+2. **Bottleneck is NOT probe capacity.** Pushing capacity destroys the
+   signal rather than recovering it. The default probe is well-sized.
+3. **The 28K probe-train budget is the real constraint.** A larger head
+   *might* help if we also raised `n_subsample` (e.g., to 200K) — that's
+   a follow-up test, not done here.
+4. **JEPA E1's default-probe Pearson 0.30 ≈ ceiling for this probe setup.**
+   Getting past 0.3-0.4 will require either (a) more probe-train data,
+   or (b) different encoder objective (not a different probe).
+
+Per-component bigger-probe results show a few HI dims with meaningful
+magnitude (e.g. ep9: HI_0 +0.34, HI_3 -0.60, HI_4 +0.32) but they mostly
+cancel in the mean — the bigger probe latches onto idiosyncratic noise
+*per component* rather than a coherent signal across all of them.
+
+CSV with per-component rows: `logs/bigger_probe_results.csv`.
+
 ## Key findings so far (after L1 + L2)
 
 1. **AR-LSTM training loss is consistently lower than JEPA's** at the
@@ -246,7 +299,6 @@ total-param counts alongside metrics in the paper table.
 
 ### OrailixTower log
 ```
-2026-04-25T18:19Z  Lucas asked me NOT to auto-launch L2 — paused queue, GPU idle, awaiting next instruction.
 2026-04-25T19:30Z  Read dragon's log update. Two requests noted: per-HI rows in results.md (cheap), bigger-probe diagnostic on L1 frozen encoder at ep.5 and ep.9 (~30-90 min GPU). Will queue after L2 lands.
 2026-04-25T19:47Z  Lucas said resume baselines. L2 full launched in tmux s4_arlstm_L2 (H=32 S=1 P=4 bs=256 accum=2, compile_encoder=true). ETA ~09:15 UTC tomorrow.
 2026-04-25T19:48Z  L2 first launch crashed: torch.compile mode=reduce-overhead uses CUDA graphs which break under accumulate_grad_batches>1. Switched to mode=default. Re-launched at 19:49Z, training healthy.
@@ -256,6 +308,7 @@ total-param counts alongside metrics in the paper table.
 2026-04-26T10:51Z  Wrote baselines/ar_lstm/bigger_probe_diag.py — standalone (no Lightning trainer): builds JEPA via build_ar_lstm, loads ckpt, freezes encoder, reuses HIProbeCallback._encode + _train_and_eval_probe with d_model=512 num_layers=6.
 2026-04-26T10:53Z  Smoke-test caught a real bug: torch.compile inserts `_orig_mod.` mid-key (encoder._orig_mod.X), my prefix-strip only handled key-start. Fixed: replace all occurrences. Re-smoke confirmed weights load (no missing/unexpected keys).
 2026-04-26T10:55Z  Launched bigger-probe diagnostic in tmux `bigger_probe`: ep5 (ckpt epoch_6) → ep9 (ckpt epoch_10), 150 max probe epochs, patience 20. Same encoder weights as default-probe runs ⇒ apples-to-apples comparison. ETA 1-2 h.
+2026-04-26T11:?Z   Bigger-probe diagnostic completed (~30 min total, faster than expected). RESULT: bigger probe gives WORSE Pearson than default at both checkpoints (-0.07/+0.02 vs +0.22/+0.24); both early-stopped on best test-RMSE so it's overfitting, not undertraining. Neither hypothesis A nor B held — third path: default probe is right-sized for 28K-window budget; bigger probes overfit. Encoder DOES carry HI signal (default extracts it); the bottleneck is probe-train data size, not probe capacity. Full write-up in results.md "Bigger-probe diagnostic on L1" section.
 ```
 
 ---

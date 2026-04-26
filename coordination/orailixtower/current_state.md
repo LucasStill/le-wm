@@ -4,11 +4,11 @@
 
 ## Running now
 
-- **Tmux `bigger_probe`** — bigger-probe diagnostic on L1, sequential:
-  ep5 (ckpt epoch_6) → ep9 (ckpt epoch_10). Probe head: TransformerProbe
-  with d_model=512, num_layers=6 (vs default 128, 3). 150 max probe
-  epochs, patience 20. Started 10:55 UTC. ETA finish 12:30-13:00 UTC.
-  Log: `logs/bigger_probe_diag_20260426_1251.log`. GPU 98 %, 2 GB VRAM.
+- **Nothing.** GPU idle. Bigger-probe diagnostic finished — see the new
+  "Bigger-probe diagnostic on L1" section in `results.md` for the full
+  analysis. Surprise result: bigger probe **overfits**, gives worse
+  Pearson than default. Encoder is fine; default probe is right-sized.
+- **Tmux `bigger_probe`** — still alive (post-run shell only).
 - **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
 

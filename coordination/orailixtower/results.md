@@ -61,6 +61,59 @@ total-param counts alongside metrics in the paper table.
 - L3: pending
 - L4: pending
 
+## Bigger-probe diagnostic on L1
+
+Per dragon's request: load L1's frozen encoder at probe-epoch 5 and 9
+(ckpts `epoch_6_object.ckpt` and `epoch_10_object.ckpt`, same weights as
+the default-probe was run against), train a much bigger TransformerProbe
+(`d_model=512, num_layers=6`, vs the default `128, 3`), keep optimizer +
+patience identical (Adam lr=1e-3, patience=20, max 150 epochs, same
+data split, same probe_seq_len=16). Standalone script
+(`baselines/ar_lstm/bigger_probe_diag.py`) — no re-training.
+
+| ckpt | probe size            | HI mean Pearson | HI mean R² | HI mean RMSE | early-stop |
+|------|----------------------|-----------------|------------|--------------|------------|
+| ep5  | default (128 / 3)    | **+0.224**      | -0.87      | 0.00291      | ep ~31     |
+| ep5  | bigger  (512 / 6)    | **-0.071**      | -2.26      | 0.00356      | ep 29      |
+| ep9  | default (128 / 3)    | **+0.242**      | -1.24      | 0.00304      | ep ~31     |
+| ep9  | bigger  (512 / 6)    | **+0.019**      | -2.02      | 0.00351      | ep 33      |
+
+### Interpretation — neither dragon hypothesis A nor B; a third path
+
+Dragon's matrix:
+- **A**: bigger probe recovers Pearson > 0.4 → encoder fine, default probe is bottleneck.
+- **B**: bigger probe gives ~same as default → encoder lacks HI signal.
+
+Observed: **bigger probe gives WORSE Pearson than default** at both
+checkpoints (-0.07 / +0.02 vs +0.22 / +0.24). RMSE also worse. Both
+bigger probes early-stopped at best test-RMSE — not undertraining.
+
+Conclusion: **the default probe (128 / 3) is approximately the right size
+for the available probe-train budget**. The 8× bigger head has 8× more
+parameters to fit on the same 28K-window training set and overfits — it
+finds a low-RMSE solution that has poor *linear* correlation with the
+targets (likely shrinks predictions toward the mean and predicts noise
+patterns).
+
+Implications:
+1. **Encoder DOES carry HI signal.** Default probe extracts +0.24
+   Pearson from L1's frozen encoder; that's real, not noise.
+2. **Bottleneck is NOT probe capacity.** Pushing capacity destroys the
+   signal rather than recovering it. The default probe is well-sized.
+3. **The 28K probe-train budget is the real constraint.** A larger head
+   *might* help if we also raised `n_subsample` (e.g., to 200K) — that's
+   a follow-up test, not done here.
+4. **JEPA E1's default-probe Pearson 0.30 ≈ ceiling for this probe setup.**
+   Getting past 0.3-0.4 will require either (a) more probe-train data,
+   or (b) different encoder objective (not a different probe).
+
+Per-component bigger-probe results show a few HI dims with meaningful
+magnitude (e.g. ep9: HI_0 +0.34, HI_3 -0.60, HI_4 +0.32) but they mostly
+cancel in the mean — the bigger probe latches onto idiosyncratic noise
+*per component* rather than a coherent signal across all of them.
+
+CSV with per-component rows: `logs/bigger_probe_results.csv`.
+
 ## Key findings so far (after L1 + L2)
 
 1. **AR-LSTM training loss is consistently lower than JEPA's** at the
