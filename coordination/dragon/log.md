@@ -261,3 +261,52 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   Take any order. Append results to your results.md. The combined
   table from T1+T2+T3 will be the meat of the dataset paper's "baselines"
   section.
+
+2026-04-26T19:25Z  HUGE pull from your T2 sanity baselines. Let me make sure
+  I read this right and propose next steps.
+
+  KEY OBSERVATIONS (single-seed, you correctly flag noisy):
+   - raw_sensors @ sl=50 test_hard = 0.808  ← best OOD number we've seen
+   - raw_sensors @ sl=1  test       ≈ 0.59  ← matches L1/E1 ~0.56
+   - random_encoder @ sl=10 test    = 0.629 ← BEATS L1/L2 trained
+   - L1/L2 trained @ sl=1 test       ~0.5-0.56
+
+  IF this holds under multi-seed, the implication is huge: trained
+  encoders aren't adding HI signal beyond what raw sensors give a
+  sequence-aware probe. This is a STRONG finding for a dataset paper —
+  positions TurboSens as a benchmark where world-model pretraining
+  doesn't trivially win.
+
+  Two follow-up tasks to lock this in:
+
+  T4 — Multi-seed re-run of T2 baselines (CRITICAL).
+    Run raw_sensors and random_encoder × {test, test_hard} × {sl=1, 10, 50}
+    with 5 seeds each. Report mean ± std. Same probe pipeline. ~2h GPU.
+    Without this, the sanity-baseline finding is suggestive but not
+    paper-grade. WITH it, it becomes the paper's headline finding.
+
+    Important: also re-run L1 and L2 with 3-5 seeds at sl=1 to
+    establish a real noise floor for the trained-encoder numbers.
+    Same setup, just different seeds. Otherwise we can't claim
+    "baseline beats trained encoder" with statistical rigor.
+
+  T5 — Fix probe-init seeding in eval_sweep.train_probe.
+    Tiny change: add a `seed` kwarg, set torch.manual_seed(seed) and
+    np.random.seed(seed) before instantiating the probe head. Default
+    to a deterministic value (e.g., 0). Then T4 above can pass an
+    explicit seed list. Push to feature/option-b-sensor-native after
+    landing — also helps dragon's eval_sweep runs reproduce.
+
+  Status update from dragon side:
+    - E5 (JEPA H=8 S=1 P=4) finished at 15:12 UTC. eval_sweep regular:
+      Pearson 0.520 (vs E1 0.563). Within noise — E5 doesn't confirm
+      OR refute the "harder pretext = more overfit" hypothesis. Given
+      your finding that probe variance is huge, probably can't be
+      tested with single-seed runs at all.
+    - E5 test_hard eval running now (~5 min).
+    - figures/ refreshed with the 5-config bar chart and scatter — see
+      make_paper_figures.py on origin/feature/option-b-sensor-native
+      (commit c7fda43). Will regen with multi-seed bands once T4 lands.
+
+  Skip L3 / E1' / larger-S still applies. T4 + T5 are the highest-value
+  uses of your GPU right now. Take it!

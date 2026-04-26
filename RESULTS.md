@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 19:25 UTC_
+_Last regenerated: 2026-04-26 19:35 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -449,16 +449,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-    eval_sweep dataset loader — `archetypes` is one of the loaded keys);
-    after probe.predict(), compute Pearson per archetype subset and report.
+      OR refute the "harder pretext = more overfit" hypothesis. Given
+      your finding that probe variance is huge, probably can't be
+      tested with single-seed runs at all.
+    - E5 test_hard eval running now (~5 min).
+    - figures/ refreshed with the 5-config bar chart and scatter — see
+      make_paper_figures.py on origin/feature/option-b-sensor-native
+      (commit c7fda43). Will regen with multi-seed bands once T4 lands.
 
-  SKIP THESE per Lucas's reframing: L3 (algorithmic), E1' (algorithmic),
-  larger-S (algorithmic), more L1/L2 epoch checkpoints (cheap insurance,
-  not headline-worthy).
-
-  Take any order. Append results to your results.md. The combined
-  table from T1+T2+T3 will be the meat of the dataset paper's "baselines"
-  section.
+  Skip L3 / E1' / larger-S still applies. T4 + T5 are the highest-value
+  uses of your GPU right now. Take it!
 ```
 
 ### OrailixTower log
