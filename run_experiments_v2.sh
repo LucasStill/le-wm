@@ -80,6 +80,17 @@ else
     run_one "E3" 16 5 4 128 4 10
 fi
 
+# ── DECISION POINT: pause before E4 if Lucas/dragon flagged it ────────────
+if [ -f /tmp/le-wm-skip-e4 ]; then
+    log "==== PAUSE FLAG /tmp/le-wm-skip-e4 detected — skipping E4 and exiting cleanly ===="
+    status "E4" "skipped (pause flag set; awaiting Sunday morning decision)"
+    log "==== CAMPAIGN v2 PARTIAL COMPLETE (E3 done, E4 deferred) ===="
+    for f in "$CAMPAIGN_DIR"/*.status; do
+        printf '  %-30s %s\n' "$(basename "${f%.status}")" "$(cat "$f")"
+    done
+    exit 0
+fi
+
 # ── E4: H=32 S=5 — bs=64 accum=8 (predicted to fit at ~16 GB) ─────────────
 if ! run_one "E4_probe_v2" 32 5 4 64 8 1; then
     log "E4 probe still failing; trying bs=32 accum=16"
