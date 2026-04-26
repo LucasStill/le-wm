@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 19:15 UTC_
+_Last regenerated: 2026-04-26 19:25 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -185,6 +185,79 @@ total-param counts alongside metrics in the paper table.
 - L2: `5iu3jbtt` (offline; sync_wandb daemon will push)
 - L3: pending
 - L4: pending
+
+## Sanity / lower-bound baselines (T2) — single-seed, **NOISY**
+
+⚠️ **All numbers below are single-seed point estimates and are highly
+unstable.** `eval_sweep.train_probe` does NOT seed the probe-head init or
+the DataLoader shuffle. Two back-to-back runs of the *same* config give
+swings of up to ~0.5 in mean Pearson (raw_sensors @ sl=1 test: smoke 0.593
+vs full-run nan, same code path, different probe-init seed). All single-
+seed Pearson numbers in this document — including the calibrated L1/L2
+rows below — should be treated as ±0.2 minimum until we re-run with
+multiple seeds.
+
+`baselines/ar_lstm/sanity_baselines.py` — runs the eval_sweep task-1
+pipeline (~770K probe-train windows, default TransformerProbe head) on
+two encoder-free / random baselines:
+
+- **raw_sensors**: skip the encoder. Probe input is the raw 176-dim
+  sensor vector.
+- **random_encoder**: build JEPA + LSTMPredictor via `build_ar_lstm`,
+  keep at random init (no checkpoint), encode normally → 64-dim
+  embeddings → probe.
+
+### Single-seed numbers (caveat: noisy)
+
+|                 | sl=1   | sl=10 | sl=50 |
+|-----------------|-------:|------:|------:|
+| **TEST**        |        |       |       |
+| raw_sensors     | nan¹   | nan¹  | 0.373 |
+| random_encoder  | 0.157  | **0.629** | 0.247 |
+| L1 trained (ref)| 0.564  | 0.510 | 0.549 |
+| L2 trained (ref)| 0.495  | 0.533 | 0.504 |
+| **TEST_HARD**   |        |       |       |
+| raw_sensors     | 0.474  | 0.468 | **0.808** |
+| random_encoder  | 0.002  | 0.360 | nan¹  |
+| L1 trained (ref)| 0.325  | 0.378 | 0.241 |
+| L2 trained (ref)| -0.014 | 0.330 | 0.376 |
+
+¹ `nan` when probe predictions have zero variance on a column → degenerate
+local minimum. Different probe-init seed avoids it.
+
+### What stands out even through the noise
+
+1. **random_encoder @ sl=10 test = 0.629** beats every trained encoder at
+   the same sl (L1 0.510, L2 0.533). A random-init JEPA + 10-frame probe
+   windows extracts more HI signal than the trained encoders. Strong
+   suggestion that **trained-encoder benefit is small or zero on this
+   benchmark task**.
+2. **raw_sensors @ sl=50 test_hard = 0.808** — by far the best OOD number
+   we've seen. Direct readout from raw sensors with sequence context
+   generalises better than any encoder pipeline.
+3. **raw_sensors @ sl=1 test smoke = 0.593** (single sample, but matches
+   in spirit) is *higher* than L1's 0.564 and E1's 0.563. Encoders may
+   be losing HI-relevant signal in service of the JEPA / AR-rollout
+   objective.
+
+### Implication for the dataset paper
+
+If these patterns hold under multi-seed evaluation, the dataset-paper
+headline becomes: **"This benchmark task is hard enough that trained
+encoders do not outperform raw-feature linear-on-transformer probes."**
+That's a positive finding for a dataset paper — it positions the dataset
+as a real challenge rather than something where pretraining trivially
+wins.
+
+### NEXT STEP STRONGLY RECOMMENDED — multi-seed re-run
+
+Run each baseline (raw_sensors, random_encoder, L1, L2) × {test, test_hard}
+× {sl=1, 10, 50} with at least **3 seeds** and report mean ± std. Cost
+estimate: ~1.5 h GPU. Without this, none of the T2 / calibrated numbers
+are paper-grade.
+
+Files: `logs/sanity_baselines_results.csv` (per-component), 
+`logs/sanity_baselines_20260426_1652.log` (full run log).
 
 ## Calibrated eval_sweep task-1 — L1 + L2 (the "true Pearson" rows)
 
