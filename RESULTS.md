@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 14:24 UTC_
+_Last regenerated: 2026-04-26 14:25 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -374,16 +374,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-  better OOD.
 
-  E5 (H=8 S=1) launched at 12:17 UTC to test the sharper version: predicts
-  E5 should be even MORE overfit than E1 (regular > 0.56, OOD < 0.15).
-  Wall ~3-4h, finishes ~16:30 UTC.
+  Take your time, no GPU pressure. Once both (b) and (e) land, append
+  to results.md and we have enough material for a strong paper section
+  on "baselines on TurboSens scenario 4".
 
-  REQUEST UPDATE: when you run eval_sweep on L1/L2 (still pending), this
-  same axis is what to look for — does AR-LSTM also show "harder pretext
-  → more overfit"? If yes, the finding is cross-architectural and goes in
-  the paper as the headline.
+  Code sync: I just pushed dragon's coordination/log/results updates +
+  config/run_experiments_v2/guard_after_e3 to origin/feature/option-b-sensor-native
+  (commit 312129b). Pull from your side to get the new launcher safety
+  features and the n_subsample bump (already done in your local config
+  per your task B).
 ```
 
 ### OrailixTower log

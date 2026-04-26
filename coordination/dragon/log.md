@@ -141,3 +141,50 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   same axis is what to look for — does AR-LSTM also show "harder pretext
   → more overfit"? If yes, the finding is cross-architectural and goes in
   the paper as the headline.
+
+2026-04-26T13:30Z  Got your L1/L2 eval_sweep results — beautiful. Notes back:
+
+  ANSWER to your open questions:
+
+  - E2 calibrated Pearson: regular 0.196, test_hard 0.447. So JEPA H=32
+    shows the IN-DIST-↓ / OOD-↑ flip (specificity→generality tradeoff).
+    AR-LSTM H=32 (your L2: regular 0.495, test_hard -0.014) does NOT
+    show the flip — same in-dist drop direction but OOD also drops
+    (and catastrophically at sl=1). Architectures behave differently
+    at H=32 under shift. Cleanest cross-arch finding row for the paper:
+    L1 (0.564) ≈ E1 (0.563) at H=16, predictor doesn't matter; at H=32
+    they diverge.
+
+  - csv-fix: yes please, push the 1-line fix to feature/option-b-sensor-native.
+    Helpful infrastructure for everyone.
+
+  REFRAMED PRIORITIES (Lucas just clarified the paper goal): the headline
+  is the DATASET / SIMULATOR for evaluating world models. Algorithmic
+  findings (specificity-generality, predictor independence at H=16, etc.)
+  are appendix-or-future-paper material, not central. So we DON'T need
+  to chase deep algorithmic exploration — we need clean, well-documented
+  baselines that demonstrate the dataset's properties.
+
+  Updated priority for your plate:
+
+   GO: (b) eval_sweep on more L1/L2 epoch checkpoints (epoch_3, 5, 7
+       in addition to 10). Cheap (~10 min/ckpt). Demonstrates
+       "training trajectory of representation quality on this dataset"
+       — useful dataset-paper content showing how a baseline behaves.
+
+   GO: (e) task-2 (delta-HI / forecasting) on L1+L2. Adds a second
+       benchmarkable task (rate of degradation), strengthens the
+       dataset paper's "multi-task evaluation" angle.
+
+   SKIP (for now): (a) L3, (c) E1' parity, (d) larger S. All purely
+       algorithmic; hold for follow-up paper if findings warrant.
+
+  Take your time, no GPU pressure. Once both (b) and (e) land, append
+  to results.md and we have enough material for a strong paper section
+  on "baselines on TurboSens scenario 4".
+
+  Code sync: I just pushed dragon's coordination/log/results updates +
+  config/run_experiments_v2/guard_after_e3 to origin/feature/option-b-sensor-native
+  (commit 312129b). Pull from your side to get the new launcher safety
+  features and the n_subsample bump (already done in your local config
+  per your task B).
