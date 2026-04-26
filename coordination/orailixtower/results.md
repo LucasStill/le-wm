@@ -61,6 +61,52 @@ total-param counts alongside metrics in the paper table.
 - L3: pending
 - L4: pending
 
+## Per-archetype HI Pearson on L1 (T3)
+
+`baselines/ar_lstm/per_archetype_diag.py`. L1's frozen encoder, eval_sweep
+HI-probe pipeline (~770K probe-train windows), split test predictions by
+the 4 scenario-4 archetypes (A_compressor, B_fan_booster, C_turbine,
+D_balanced).
+
+### TEST set — single-seed (subject to same noise caveat as T2)
+
+| archetype     | n windows (sl=1) | sl=1 Pearson | sl=10 Pearson |
+|---------------|-----------------:|-------------:|--------------:|
+| A_compressor  | 31,224 | **0.533** | 0.531 |
+| B_fan_booster | **0**  | — (none in test set) | — |
+| C_turbine     | 23,432 | 0.236 | 0.267 |
+| D_balanced    | 29,791 | 0.360 | 0.417 |
+| **L1 aggregate (ref)** | 84,447 | 0.564 | 0.510 |
+
+### Findings
+
+1. **Regular test contains zero B_fan_booster windows.** All B episodes
+   are routed to test_hard. This is a real **dataset-design** finding
+   relevant for the dataset paper: the test_hard split is partly defined
+   by B as the held-out OOD archetype, not just by perturbed weather /
+   degradation profiles. (Test_hard run pending — will populate the full
+   4×Pearson matrix once GPU is free.)
+
+2. **>2× spread between archetypes in distribution.** A_compressor (0.53)
+   is much easier to predict HI for than C_turbine (0.24); D_balanced sits
+   in the middle (0.36). The aggregate L1 Pearson 0.564 is mostly carried
+   by A_compressor (~37 % of test windows, easiest archetype).
+
+3. **sl=10 windowing helps D_balanced and C_turbine but NOT A_compressor.**
+   A is at saturation already — extra sequence context can't help. C and
+   D both gain ~0.03–0.06 Pearson from sl=1 → sl=10. So "sequence context
+   helps" is archetype-specific, not universal.
+
+### Implications for the paper
+
+The dataset's **per-archetype heterogeneity** is a feature worth reporting:
+benchmark numbers should be quoted both aggregate AND per-archetype to
+avoid a single archetype dominating the headline. C_turbine is the
+hardest of the three in-distribution archetypes — likely the right
+"benchmark difficulty" reference point.
+
+CSV: `logs/per_archetype_results.csv`. Test_hard pending.
+
 ## Sanity / lower-bound baselines (T2) — single-seed, **NOISY**
 
 ⚠️ **All numbers below are single-seed point estimates and are highly

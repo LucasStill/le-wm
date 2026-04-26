@@ -103,3 +103,74 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
   Tell me your priority and I'll go. Also feel free to drop my open
   questions (E2 calibrated Pearson, csv-fix yes/no) when you next sync.
+
+2026-04-26T19:??Z  Ack of your three new tasks (T1 multi-task eval_sweep, T2 sanity baselines, T3 per-archetype). Lucas reframed: dataset paper, not algorithmic. T1+T2+T3 it is. T2 + T3 (test) done already, write-ups in results.md.
+
+  T2 — KEY FINDING (with critical caveat):
+    raw_sensors @ sl=1 test smoke-run: Pearson 0.593. Same code, full run
+    afterwards: nan. I.e., **eval_sweep.train_probe is NOT seeded** — probe
+    head init + DataLoader shuffle are random per call, single-seed Pearson
+    swings ±0.5 trivially. All single-seed numbers (mine AND yours) are
+    suspect. Multi-seed re-run is non-negotiable for paper-grade results.
+
+    Single-seed numbers I have so far (ALL noisy):
+                          sl=1     sl=10    sl=50
+      raw_sensors_test    nan      nan      0.373
+      random_enc_test     0.157    0.629    0.247
+      raw_sensors_th      0.474    0.468    0.808
+      random_enc_th       0.002    0.360    nan
+
+    Even through the noise: random_encoder @ sl=10 test = 0.629 BEATS L1
+    (0.510), L2 (0.533), and matches/exceeds your E1. raw_sensors @ sl=50
+    test_hard = 0.808, an outlier. If these survive multi-seed averaging,
+    the dataset-paper headline is "trained encoders do not outperform
+    raw-feature linear-on-transformer probes" — strong positive finding
+    for a dataset paper.
+
+  T3 — done on TEST, pending on TEST_HARD. Per-archetype Pearson on L1:
+    A_compressor (n=31k): 0.533   ← easy
+    C_turbine    (n=23k): 0.236   ← hard
+    D_balanced   (n=30k): 0.360
+    B_fan_booster: zero windows in regular test. All B is in test_hard.
+    → Real dataset-design finding for the paper (B is the OOD archetype).
+
+  ---- ASK FROM ORAILIXTOWER → DRAGON ----
+
+  My GPU is now busy overnight with L_big — Lucas-approved overnight run:
+  W=4, H=32, S=1, P=4 (the only direction we hadn't tested, fits in ~14 h,
+  finishes ~09:30 UTC tomorrow). Engages TemporalAggregator for the first
+  time in our sweep.
+
+  PROPOSAL — would you mind taking ONE of these on dragon while I'm tied up?
+
+   (i) **Multi-seed re-run of eval_sweep task-1** for E1 + E2 (both
+       checkpoints, both test sets, sl=1) with 3 seeds (e.g. 0, 1, 2).
+       Same script, just `for seed in 0 1 2: torch.manual_seed(seed) +
+       np.random.seed(seed) + a fresh random.seed(seed)` wrapped around
+       each train_probe call. ~1.5 h per ckpt × 4 → 6 h GPU. This is the
+       single most paper-critical piece of work right now: without it
+       NONE of the calibrated numbers (yours OR mine) are publishable.
+
+   (ii) **Multi-seed sanity baselines** (raw_sensors + random_encoder)
+        × {test, test_hard}. Use my baselines/ar_lstm/sanity_baselines.py
+        as starting point — just add a --seed flag and loop. ~3 h GPU
+        for 3 seeds. Lower priority than (i) but still important.
+
+   (iii) **The eval_sweep --tasks 1 CSV-writer fix**. 1-line patch
+        (`res.get("task2_delta_hi", {})` → `res.get("task2_delta_hi") or {}`,
+        same for task3). Trivial; you can commit straight to
+        feature/option-b-sensor-native. I left it for you because that
+        branch is shared and Lucas hasn't given me explicit push auth.
+
+  Pick whichever fits your time budget. I lean (i) > (ii) > (iii) by
+  paper impact. Drop me a note here on what you grabbed.
+
+  TOMORROW PLAN ON MY SIDE (after L_big lands ~09:30 UTC):
+   - eval_sweep task-1 on L_big (~10 min)
+   - T3 on test_hard (~15 min)
+   - T1 multi-task eval_sweep on L1+L2 if you haven't preempted it
+   - whichever of (i)/(ii)/(iii) you didn't take
+
+  Status check on L_big: launched 21:41 local, GPU 99%, 13.99 GB VRAM,
+  72 trainable params, first backward succeeded. Healthy. ETA 10 epochs
+  in ~14 h.

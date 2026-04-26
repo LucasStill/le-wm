@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 19:35 UTC_
+_Last regenerated: 2026-04-26 19:45 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,13 +22,14 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Nothing.** GPU idle. Eval_sweep done, results landed, results.md
-  updated under "Calibrated eval_sweep task-1" section. Open ask to
-  dragon in my log.md for the next task. Standing by.
-- **Tmux `eval_sweep`** — still alive (post-run shell only).
-- **Tmux `bigger_probe`** — still alive (post-run shell only).
-- **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
+- **Tmux `s4_arlstm_Lbig`** — overnight run: W=4, H=32, S=1, P=4
+  (TemporalAggregator engaged for first time in sweep). bs=256 accum=2,
+  bf16-mixed, compile_encoder=true, 10 epochs. Started 19:41 UTC. Healthy:
+  GPU 99 %, 13.99 GB VRAM, 72 trainable params, first backward ✓.
+  ETA ~09:30 UTC tomorrow. Log: `logs/s4_arlstm_Lbig_20260426_2141.log`.
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+- Other tmux sessions are zombie post-run shells (bigger_probe,
+  eval_sweep, sanity, s4_arlstm_L2) — keep-alive only.
 
 
 ---
@@ -185,6 +186,52 @@ total-param counts alongside metrics in the paper table.
 - L2: `5iu3jbtt` (offline; sync_wandb daemon will push)
 - L3: pending
 - L4: pending
+
+## Per-archetype HI Pearson on L1 (T3)
+
+`baselines/ar_lstm/per_archetype_diag.py`. L1's frozen encoder, eval_sweep
+HI-probe pipeline (~770K probe-train windows), split test predictions by
+the 4 scenario-4 archetypes (A_compressor, B_fan_booster, C_turbine,
+D_balanced).
+
+### TEST set — single-seed (subject to same noise caveat as T2)
+
+| archetype     | n windows (sl=1) | sl=1 Pearson | sl=10 Pearson |
+|---------------|-----------------:|-------------:|--------------:|
+| A_compressor  | 31,224 | **0.533** | 0.531 |
+| B_fan_booster | **0**  | — (none in test set) | — |
+| C_turbine     | 23,432 | 0.236 | 0.267 |
+| D_balanced    | 29,791 | 0.360 | 0.417 |
+| **L1 aggregate (ref)** | 84,447 | 0.564 | 0.510 |
+
+### Findings
+
+1. **Regular test contains zero B_fan_booster windows.** All B episodes
+   are routed to test_hard. This is a real **dataset-design** finding
+   relevant for the dataset paper: the test_hard split is partly defined
+   by B as the held-out OOD archetype, not just by perturbed weather /
+   degradation profiles. (Test_hard run pending — will populate the full
+   4×Pearson matrix once GPU is free.)
+
+2. **>2× spread between archetypes in distribution.** A_compressor (0.53)
+   is much easier to predict HI for than C_turbine (0.24); D_balanced sits
+   in the middle (0.36). The aggregate L1 Pearson 0.564 is mostly carried
+   by A_compressor (~37 % of test windows, easiest archetype).
+
+3. **sl=10 windowing helps D_balanced and C_turbine but NOT A_compressor.**
+   A is at saturation already — extra sequence context can't help. C and
+   D both gain ~0.03–0.06 Pearson from sl=1 → sl=10. So "sequence context
+   helps" is archetype-specific, not universal.
+
+### Implications for the paper
+
+The dataset's **per-archetype heterogeneity** is a feature worth reporting:
+benchmark numbers should be quoted both aggregate AND per-archetype to
+avoid a single archetype dominating the headline. C_turbine is the
+hardest of the three in-distribution archetypes — likely the right
+"benchmark difficulty" reference point.
+
+CSV: `logs/per_archetype_results.csv`. Test_hard pending.
 
 ## Sanity / lower-bound baselines (T2) — single-seed, **NOISY**
 
@@ -408,6 +455,7 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 | epoch | global_step | seq_len | R²    | RMSE     | Pearson-r |
 |-------|-------------|---------|-------|----------|-----------|
+| 0 | 0 | 16 | -0.0412 | 0.003529 | 0.0000 |
 | 0 | 0 | 16 | -0.3201 | 0.002349 | 0.2431 |
 | 0 | 0 | 16 | -0.3280 | 0.002368 | 0.2461 |
 | 0 | 0 | 16 | -0.3971 | 0.002551 | 0.1171 |
@@ -430,6 +478,7 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 | 0 | 0 | 16 | -0.1547 | 27.6228 | 0.0166 |
 | 0 | 0 | 16 | -0.1561 | 27.6384 | 0.0000 |
 | 0 | 0 | 16 | -0.1635 | 27.7273 | 0.0130 |
+| 0 | 0 | 16 | -0.1750 | 33.8323 | 0.0669 |
 | 0 | 0 | 32 | -0.1524 | 27.5914 | -0.0044 |
 | 0 | 12240 | 16 | -0.1613 | 27.7005 | 0.0327 |
 | 0 | 12293 | 32 | -0.1330 | 27.3584 | 0.0233 |
@@ -463,16 +512,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-       paper row. Standing by until you share the spec.
 
-   (d) Larger-S follow-up Lucas mentioned (S>5)? Define on dragon's side?
+  TOMORROW PLAN ON MY SIDE (after L_big lands ~09:30 UTC):
+   - eval_sweep task-1 on L_big (~10 min)
+   - T3 on test_hard (~15 min)
+   - T1 multi-task eval_sweep on L1+L2 if you haven't preempted it
+   - whichever of (i)/(ii)/(iii) you didn't take
 
-   (e) Help OOD eval pipeline you ran on E1 — would running task-2
-       (delta-HI / forecasting) on L1+L2 add anything for the paper, or
-       is task 1 alone enough for the headline rows?
-
-  Tell me your priority and I'll go. Also feel free to drop my open
-  questions (E2 calibrated Pearson, csv-fix yes/no) when you next sync.
+  Status check on L_big: launched 21:41 local, GPU 99%, 13.99 GB VRAM,
+  72 trainable params, first backward succeeded. Healthy. ETA 10 epochs
+  in ~14 h.
 ```
 
 ---
