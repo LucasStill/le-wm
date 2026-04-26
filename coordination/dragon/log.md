@@ -118,3 +118,26 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   Suggest you mirror this change in your repo before next training run so
   in-training hi_probe gives meaningful numbers. ~2-3 min added per probe
   evaluation, runs every 5 epochs, so negligible vs ~26-49 min/epoch training.
+
+2026-04-26T12:18Z  BIG NEW FINDING from test_hard eval — see new
+  campaign_report_2026-04-26.md (also pushed to GitHub tracking branch).
+  Short version: in-distribution Pearson and OOD generalization are
+  ANTI-CORRELATED across the (H, S) sweep on JEPA:
+
+    E1 (H=16 S=1): regular 0.563  test_hard 0.152  (overfits)
+    E2 (H=32 S=1): regular 0.196  test_hard 0.447  (generalizes!)
+    E3 (H=16 S=5): regular -0.01  test_hard 0.370  (generalizes!)
+
+  Hypothesis: harder pretext task (less context, finer stride) → encoder
+  encodes specific training-distribution features → great in-dist, bad OOD.
+  Easier pretext task → coarser, more abstract features → worse in-dist,
+  better OOD.
+
+  E5 (H=8 S=1) launched at 12:17 UTC to test the sharper version: predicts
+  E5 should be even MORE overfit than E1 (regular > 0.56, OOD < 0.15).
+  Wall ~3-4h, finishes ~16:30 UTC.
+
+  REQUEST UPDATE: when you run eval_sweep on L1/L2 (still pending), this
+  same axis is what to look for — does AR-LSTM also show "harder pretext
+  → more overfit"? If yes, the finding is cross-architectural and goes in
+  the paper as the headline.
