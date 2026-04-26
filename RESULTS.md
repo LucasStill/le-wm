@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 12:24 UTC_
+_Last regenerated: 2026-04-26 12:34 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,10 +22,11 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Nothing.** GPU idle. Bigger-probe diagnostic finished — see the new
-  "Bigger-probe diagnostic on L1" section in `results.md` for the full
-  analysis. Surprise result: bigger probe **overfits**, gives worse
-  Pearson than default. Encoder is fine; default probe is right-sized.
+- **Tmux `eval_sweep`** — eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts ×
+  {test, test_hard}. Started 12:15 UTC. ETA ~40 min total. This is the
+  "true Pearson" pipeline dragon used (~770K probe-train windows) — the
+  numbers we get here are what go in the paper table. Log:
+  `logs/eval_sweep_L1L2_20260426_1415.log`.
 - **Tmux `bigger_probe`** — still alive (post-run shell only).
 - **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
@@ -328,9 +329,6 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-2026-04-25T19:30Z  Read dragon's log update. Two requests noted: per-HI rows in results.md (cheap), bigger-probe diagnostic on L1 frozen encoder at ep.5 and ep.9 (~30-90 min GPU). Will queue after L2 lands.
-2026-04-25T19:47Z  Lucas said resume baselines. L2 full launched in tmux s4_arlstm_L2 (H=32 S=1 P=4 bs=256 accum=2, compile_encoder=true). ETA ~09:15 UTC tomorrow.
-2026-04-25T19:48Z  L2 first launch crashed: torch.compile mode=reduce-overhead uses CUDA graphs which break under accumulate_grad_batches>1. Switched to mode=default. Re-launched at 19:49Z, training healthy.
 2026-04-26T08:50Z  L2 full completed: 24586 steps × 10 epochs in ~13 h, 75 min/epoch at 5.44 it/s. Final fit/loss=0.234, fit/pred=0.078, fit/ar=0.050. HI Pearson@9=0.169, RUL R²=-0.14. See results.md for full row + comparison vs E2.
 2026-04-26T11:55Z  GPU idle. Per Lucas's standing instruction, NOT auto-launching L3. Awaiting next direction.
 2026-04-26T10:24Z  Pulled dragon's update: E3 finished (essentially tied E1 on probes), E4 deferred. Dragon running OOD eval on E1 in parallel. Dragon requests bigger-probe diagnostic on L1 frozen encoder NOW since our GPU is free.
@@ -338,6 +336,9 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 2026-04-26T10:53Z  Smoke-test caught a real bug: torch.compile inserts `_orig_mod.` mid-key (encoder._orig_mod.X), my prefix-strip only handled key-start. Fixed: replace all occurrences. Re-smoke confirmed weights load (no missing/unexpected keys).
 2026-04-26T10:55Z  Launched bigger-probe diagnostic in tmux `bigger_probe`: ep5 (ckpt epoch_6) → ep9 (ckpt epoch_10), 150 max probe epochs, patience 20. Same encoder weights as default-probe runs ⇒ apples-to-apples comparison. ETA 1-2 h.
 2026-04-26T11:?Z   Bigger-probe diagnostic completed (~30 min total, faster than expected). RESULT: bigger probe gives WORSE Pearson than default at both checkpoints (-0.07/+0.02 vs +0.22/+0.24); both early-stopped on best test-RMSE so it's overfitting, not undertraining. Neither hypothesis A nor B held — third path: default probe is right-sized for 28K-window budget; bigger probes overfit. Encoder DOES carry HI signal (default extracts it); the bottleneck is probe-train data size, not probe capacity. Full write-up in results.md "Bigger-probe diagnostic on L1" section.
+2026-04-26T12:13Z  Pulled dragon's strong-corroboration: eval_sweep at 769K windows on E1 → Pearson 0.563 (vs in-training 0.25). Validates our "data-bound" conclusion. Two new tasks accepted: (A) eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts × {test, test_hard}; (B) mirror n_subsample bump 30000 → 200000 in lewm.yaml + ar_lstm scenario4 yaml.
+2026-04-26T12:14Z  TASK B done: bumped n_subsample in config/train/lewm.yaml and baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml to 200000. Past runs unaffected.
+2026-04-26T12:15Z  TASK A launched in tmux `eval_sweep`: 4 sequential runs (L1_te, L2_te, L1_th, L2_th) with --tasks 1 --no_parallel. ETA ~40 min total. eval_sweep already encoding L1_te: Z_tr=(746309, 64), Z_te=(84447, 64).
 ```
 
 ---

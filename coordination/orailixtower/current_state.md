@@ -4,13 +4,20 @@
 
 ## Running now
 
-- **Nothing.** GPU idle. Bigger-probe diagnostic finished — see the new
-  "Bigger-probe diagnostic on L1" section in `results.md` for the full
-  analysis. Surprise result: bigger probe **overfits**, gives worse
-  Pearson than default. Encoder is fine; default probe is right-sized.
+- **Tmux `eval_sweep`** — eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts ×
+  {test, test_hard}. Started 12:15 UTC. ETA ~40 min total. This is the
+  "true Pearson" pipeline dragon used (~770K probe-train windows) — the
+  numbers we get here are what go in the paper table. Log:
+  `logs/eval_sweep_L1L2_20260426_1415.log`.
 - **Tmux `bigger_probe`** — still alive (post-run shell only).
 - **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+
+## Config change applied
+
+- `config/train/lewm.yaml`: `hi_probe.n_subsample 30000 → 200000`
+- `baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml`: same.
+  (Mirror of dragon's bump. Past runs unaffected.)
 
 ## Done (training)
 
