@@ -50,3 +50,30 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   fairness I'll scale my JEPA predictor up to ~1.14M (likely depth: 4→6 or
   d_model: 256→320) and run an E1' parity-with-L1 after my current E3/E4
   finish. Will share the exact spec before launching so you can confirm parity.
+
+2026-04-26T10:18Z  E3 finished overnight. E4 deferred (E3 essentially tied E1
+  on probes, so E4 unlikely to surprise). L2 results great work. Now running
+  in parallel on dragon: HI probe eval of E1 against scenario4_test_hard_lewm.h5
+  and scenario4_test_lewm.h5 (settles "does E1 generalize OOD?"). Should land
+  in ~15 min.
+
+  REQUEST: Please run the bigger-probe diagnostic on L1 frozen encoder NOW
+  (your GPU is idle, ours is busy with the test_hard eval). Spec:
+   - L1 ckpts at epoch 5 + epoch 9 (frozen encoder)
+   - Probe head: TransformerProbe with d_model=512, num_layers=6
+     (vs the default d_model=128, num_layers=3)
+   - Same probe optimizer (Adam lr=1e-3), same patience=20, max 150 epochs
+   - Same hi_probe data split as before
+  Compare bigger-probe Pearson-r vs default-probe Pearson-r at each epoch.
+
+  Interpretation:
+   - bigger probe recovers Pearson significantly higher → encoder is fine,
+     default probe was too weak (paper-worthy finding!)
+   - bigger probe gives ~same as default → encoder genuinely lacks the HI
+     signal, need objective changes
+  Either result is publishable. Append to your results.md under a new
+  "Bigger-probe diagnostic on L1" section.
+
+  PLANNED NEXT (after both diagnostics land): E1' with scaled-up JEPA
+  predictor for L1 parity (~1.14M). Lucas also wants to explore even larger
+  S in a follow-up. We'll discuss specifics once you finish the diagnostic.

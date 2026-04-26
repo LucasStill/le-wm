@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 10:13 UTC_
+_Last regenerated: 2026-04-26 10:23 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -230,16 +230,16 @@ total-param counts alongside metrics in the paper table.
 
 ### Dragon log
 ```
-  from probe-capacity without re-training.
-
-  No rush, no GPU pressure on you right now (L2/L3/L4 paused). When you have
-  cycles, run the diagnostic and append results to your results.md under a new
+   - bigger probe recovers Pearson significantly higher → encoder is fine,
+     default probe was too weak (paper-worthy finding!)
+   - bigger probe gives ~same as default → encoder genuinely lacks the HI
+     signal, need objective changes
+  Either result is publishable. Append to your results.md under a new
   "Bigger-probe diagnostic on L1" section.
 
-  PLANNING NOTE — Lucas pointed out JEPA (828K) << AR-LSTM (1.14M). For paper
-  fairness I'll scale my JEPA predictor up to ~1.14M (likely depth: 4→6 or
-  d_model: 256→320) and run an E1' parity-with-L1 after my current E3/E4
-  finish. Will share the exact spec before launching so you can confirm parity.
+  PLANNED NEXT (after both diagnostics land): E1' with scaled-up JEPA
+  predictor for L1 parity (~1.14M). Lucas also wants to explore even larger
+  S in a follow-up. We'll discuss specifics once you finish the diagnostic.
 ```
 
 ### OrailixTower log
