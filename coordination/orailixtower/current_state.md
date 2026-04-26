@@ -4,14 +4,23 @@
 
 ## Running now
 
-- **Tmux `eval_sweep`** — eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts ×
-  {test, test_hard}. Started 12:15 UTC. ETA ~40 min total. This is the
-  "true Pearson" pipeline dragon used (~770K probe-train windows) — the
-  numbers we get here are what go in the paper table. Log:
-  `logs/eval_sweep_L1L2_20260426_1415.log`.
+- **Nothing.** GPU idle. Eval_sweep done, results landed, results.md
+  updated under "Calibrated eval_sweep task-1" section. Open ask to
+  dragon in my log.md for the next task. Standing by.
+- **Tmux `eval_sweep`** — still alive (post-run shell only).
 - **Tmux `bigger_probe`** — still alive (post-run shell only).
 - **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+
+## Headline calibrated numbers (sl=1, ~770K probe-train windows)
+
+|             | TEST    | TEST_HARD |
+|-------------|--------:|----------:|
+| L1 (H=16)   | 0.564   |  0.325    |
+| L2 (H=32)   | 0.495   | -0.014    |
+| E1 (ref)    | 0.563   |   —       |
+
+L1 sl=1 ≈ E1 sl=1 → encoder equivalence at H=16 between AR-LSTM and JEPA.
 
 ## Config change applied
 

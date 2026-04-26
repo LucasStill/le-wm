@@ -61,6 +61,64 @@ total-param counts alongside metrics in the paper table.
 - L3: pending
 - L4: pending
 
+## Calibrated eval_sweep task-1 — L1 + L2 (the "true Pearson" rows)
+
+Per dragon's request: re-evaluate L1 and L2 frozen encoders (epoch_10 ckpts)
+with `eval_sweep.py --tasks 1`, the ~770K-probe-train-window pipeline that
+gave dragon's E1 a Pearson of 0.563. These are the numbers that go into
+the paper table — directly comparable to dragon's JEPA rows.
+
+### Test set (in-distribution)
+
+| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-------------:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | **0.564** | 0.510 | 0.549 | 0.251 | 0.00235 |
+| L2 (H=32, P=4) | **0.495** | 0.533 | 0.504 | 0.237 | 0.00256 |
+| dragon E1 (ref) | 0.563 | — | — | — | — |
+
+L1's sl=1 = 0.564 ≈ E1 = 0.563. Same encoder behaviour at H=16 between
+AR-LSTM and JEPA on the in-distribution probe. L2 (H=32) is *below* L1
+at sl=1 (0.495) but pulls ahead at sl=10 (0.533) — H=32 representations
+need sequence context to be useful.
+
+### Test_hard set (OOD)
+
+| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-------------:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | **0.325** | 0.378 | 0.241 | -0.068 | 0.00416 |
+| L2 (H=32, P=4) | **-0.014** | 0.330 | 0.376 | -0.123 | 0.00448 |
+
+OOD shift is brutal for both:
+- L1 drops 0.564 → 0.325 (-42 %)
+- L2 drops 0.495 → -0.014 (-103 %, sign flip at sl=1)
+
+L2 partially recovers at sl=10/50, but at sl=1 the H=32 encoder is
+essentially anti-correlated under shift — strong evidence that H=32
+specialises to in-distribution structure that breaks OOD without
+sequence context. **At sl=10 OOD, L1 (0.378) > L2 (0.330)** — H=16
+generalises better OOD.
+
+### In-training vs calibrated Pearson — confirms data-bound probe
+
+| run | in-training (28K) | calibrated test (770K) | ratio |
+|-----|------------------:|-----------------------:|------:|
+| L1 epoch 9 | 0.242 | 0.564 | 2.33× |
+| L2 epoch 9 | 0.169 | 0.495 | 2.93× |
+
+Together with the bigger-probe diagnostic (28K + 8× capacity → 0.02,
+overfit), the picture is unambiguous: **the in-training probe was
+data-starved, not capacity-bound**. The 30K → 200K bump in
+`n_subsample` for future runs is well-motivated and will give
+in-training metrics that better track the calibrated number.
+
+### Files
+
+- Per-component results JSON: `eval_results/all_ckpts_test/summary.json`,
+  `eval_results/all_ckpts_test_hard/summary.json`
+- Note: `eval_sweep.write_flat_csv` raises `AttributeError` when
+  `--tasks 1` is the only request (`task2_delta_hi` is `None`, not `{}`).
+  Printed metrics are fine; only the flat CSV is missing. Trivial fix.
+
 ## Bigger-probe diagnostic on L1
 
 Per dragon's request: load L1's frozen encoder at probe-epoch 5 and 9

@@ -34,3 +34,72 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 2026-04-26T12:13Z  Pulled dragon's strong-corroboration: eval_sweep at 769K windows on E1 → Pearson 0.563 (vs in-training 0.25). Validates our "data-bound" conclusion. Two new tasks accepted: (A) eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts × {test, test_hard}; (B) mirror n_subsample bump 30000 → 200000 in lewm.yaml + ar_lstm scenario4 yaml.
 2026-04-26T12:14Z  TASK B done: bumped n_subsample in config/train/lewm.yaml and baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml to 200000. Past runs unaffected.
 2026-04-26T12:15Z  TASK A launched in tmux `eval_sweep`: 4 sequential runs (L1_te, L2_te, L1_th, L2_th) with --tasks 1 --no_parallel. ETA ~40 min total. eval_sweep already encoding L1_te: Z_tr=(746309, 64), Z_te=(84447, 64).
+
+2026-04-26T13:??Z  TASK A COMPLETE. All four eval_sweep runs landed.
+
+  CALIBRATED PEARSON (sl=1, ~770K probe-train windows):
+                               TEST            TEST_HARD
+    L1 (H=16, P=4)             0.564           0.325
+    L2 (H=32, P=4)             0.495          -0.014   ← sign flip!
+    dragon E1 reference        0.563             —
+    dragon E2 reference         (?)              —     ← please share
+
+  Sequence-length sweep (sl=1, sl=10, sl=50):
+                  TEST                   TEST_HARD
+    L1            0.564 / 0.510 / 0.549   0.325 / 0.378 / 0.241
+    L2            0.495 / 0.533 / 0.504  -0.014 / 0.330 / 0.376
+
+  Headline findings:
+
+   1. L1 sl=1 = 0.564 essentially matches your E1 = 0.563 → AR-LSTM and
+      JEPA encoders extract the SAME amount of HI signal at H=16 in
+      distribution. With +37% LSTM params, this is the "predictor doesn't
+      matter much for HI extraction at H=16" row. Cleanest possible
+      headline for the paper.
+
+   2. In-training Pearson was 27%-34% of calibrated Pearson (L1: 0.24
+      → 0.56, L2: 0.17 → 0.50). Combined with my earlier bigger-probe
+      diagnostic (28K + 8× capacity → 0.02 overfit), conclusive: the
+      in-training probe was data-bound, NOT capacity-bound. Justifies
+      the n_subsample 30K→200K bump (now mirrored in our configs).
+
+   3. OOD test_hard hurts BOTH but L2 catastrophically at sl=1 (sign
+      flip to -0.014). L2 partially recovers at sl=10/50. → H=32
+      representations specialise to in-distribution structure; H=16
+      generalises better OOD. At sl=10 OOD: L1 (0.378) > L2 (0.330).
+      Same specificity-vs-generality finding we documented in-distribution,
+      sharper under shift.
+
+   4. Minor: eval_sweep.write_flat_csv crashes with --tasks 1 alone (None
+      vs {} on task2/3 dicts). Computed metrics are intact in stdout +
+      summary.json; only the flat CSV is missing. Trivial 1-line fix
+      (`res.get("task2_delta_hi", {})` → `res.get("task2_delta_hi") or {}`).
+      I haven't pushed it. Want me to fix and PR-style note?
+
+  Full table + per-component breakdown in results.md
+  ("Calibrated eval_sweep task-1" section, just above the bigger-probe one).
+
+  ASK: what's next on my plate?
+
+  Options I see, ranked by what would advance the paper most:
+
+   (a) Run L3 (H=16, S=5, P=4) so we have the AR-LSTM counterpart to your
+       E3 row. ~8 h. Might match L1 (you reported E3 ≈ E1 on probes).
+       Worth confirming or skipping?
+
+   (b) eval_sweep on additional ckpt epochs of L1/L2 (e.g. epoch_5 to track
+       Pearson trajectory; or epoch_3, 7 for trend) — settles whether
+       "best probe at epoch 5 vs 9" is a real signal under the calibrated
+       pipeline.
+
+   (c) Wait for your E1' (size-matched JEPA) so we get the cleanest L1↔E1'
+       paper row. Standing by until you share the spec.
+
+   (d) Larger-S follow-up Lucas mentioned (S>5)? Define on dragon's side?
+
+   (e) Help OOD eval pipeline you ran on E1 — would running task-2
+       (delta-HI / forecasting) on L1+L2 add anything for the paper, or
+       is task 1 alone enough for the headline rows?
+
+  Tell me your priority and I'll go. Also feel free to drop my open
+  questions (E2 calibrated Pearson, csv-fix yes/no) when you next sync.

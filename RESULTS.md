@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 14:04 UTC_
+_Last regenerated: 2026-04-26 14:14 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,11 +22,10 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Tmux `eval_sweep`** — eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts ×
-  {test, test_hard}. Started 12:15 UTC. ETA ~40 min total. This is the
-  "true Pearson" pipeline dragon used (~770K probe-train windows) — the
-  numbers we get here are what go in the paper table. Log:
-  `logs/eval_sweep_L1L2_20260426_1415.log`.
+- **Nothing.** GPU idle. Eval_sweep done, results landed, results.md
+  updated under "Calibrated eval_sweep task-1" section. Open ask to
+  dragon in my log.md for the next task. Standing by.
+- **Tmux `eval_sweep`** — still alive (post-run shell only).
 - **Tmux `bigger_probe`** — still alive (post-run shell only).
 - **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
@@ -187,6 +186,64 @@ total-param counts alongside metrics in the paper table.
 - L3: pending
 - L4: pending
 
+## Calibrated eval_sweep task-1 — L1 + L2 (the "true Pearson" rows)
+
+Per dragon's request: re-evaluate L1 and L2 frozen encoders (epoch_10 ckpts)
+with `eval_sweep.py --tasks 1`, the ~770K-probe-train-window pipeline that
+gave dragon's E1 a Pearson of 0.563. These are the numbers that go into
+the paper table — directly comparable to dragon's JEPA rows.
+
+### Test set (in-distribution)
+
+| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-------------:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | **0.564** | 0.510 | 0.549 | 0.251 | 0.00235 |
+| L2 (H=32, P=4) | **0.495** | 0.533 | 0.504 | 0.237 | 0.00256 |
+| dragon E1 (ref) | 0.563 | — | — | — | — |
+
+L1's sl=1 = 0.564 ≈ E1 = 0.563. Same encoder behaviour at H=16 between
+AR-LSTM and JEPA on the in-distribution probe. L2 (H=32) is *below* L1
+at sl=1 (0.495) but pulls ahead at sl=10 (0.533) — H=32 representations
+need sequence context to be useful.
+
+### Test_hard set (OOD)
+
+| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-------------:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | **0.325** | 0.378 | 0.241 | -0.068 | 0.00416 |
+| L2 (H=32, P=4) | **-0.014** | 0.330 | 0.376 | -0.123 | 0.00448 |
+
+OOD shift is brutal for both:
+- L1 drops 0.564 → 0.325 (-42 %)
+- L2 drops 0.495 → -0.014 (-103 %, sign flip at sl=1)
+
+L2 partially recovers at sl=10/50, but at sl=1 the H=32 encoder is
+essentially anti-correlated under shift — strong evidence that H=32
+specialises to in-distribution structure that breaks OOD without
+sequence context. **At sl=10 OOD, L1 (0.378) > L2 (0.330)** — H=16
+generalises better OOD.
+
+### In-training vs calibrated Pearson — confirms data-bound probe
+
+| run | in-training (28K) | calibrated test (770K) | ratio |
+|-----|------------------:|-----------------------:|------:|
+| L1 epoch 9 | 0.242 | 0.564 | 2.33× |
+| L2 epoch 9 | 0.169 | 0.495 | 2.93× |
+
+Together with the bigger-probe diagnostic (28K + 8× capacity → 0.02,
+overfit), the picture is unambiguous: **the in-training probe was
+data-starved, not capacity-bound**. The 30K → 200K bump in
+`n_subsample` for future runs is well-motivated and will give
+in-training metrics that better track the calibrated number.
+
+### Files
+
+- Per-component results JSON: `eval_results/all_ckpts_test/summary.json`,
+  `eval_results/all_ckpts_test_hard/summary.json`
+- Note: `eval_sweep.write_flat_csv` raises `AttributeError` when
+  `--tasks 1` is the only request (`task2_delta_hi` is `None`, not `{}`).
+  Printed metrics are fine; only the flat CSV is missing. Trivial fix.
+
 ## Bigger-probe diagnostic on L1
 
 Per dragon's request: load L1's frozen encoder at probe-epoch 5 and 9
@@ -331,16 +388,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-2026-04-26T08:50Z  L2 full completed: 24586 steps × 10 epochs in ~13 h, 75 min/epoch at 5.44 it/s. Final fit/loss=0.234, fit/pred=0.078, fit/ar=0.050. HI Pearson@9=0.169, RUL R²=-0.14. See results.md for full row + comparison vs E2.
-2026-04-26T11:55Z  GPU idle. Per Lucas's standing instruction, NOT auto-launching L3. Awaiting next direction.
-2026-04-26T10:24Z  Pulled dragon's update: E3 finished (essentially tied E1 on probes), E4 deferred. Dragon running OOD eval on E1 in parallel. Dragon requests bigger-probe diagnostic on L1 frozen encoder NOW since our GPU is free.
-2026-04-26T10:51Z  Wrote baselines/ar_lstm/bigger_probe_diag.py — standalone (no Lightning trainer): builds JEPA via build_ar_lstm, loads ckpt, freezes encoder, reuses HIProbeCallback._encode + _train_and_eval_probe with d_model=512 num_layers=6.
-2026-04-26T10:53Z  Smoke-test caught a real bug: torch.compile inserts `_orig_mod.` mid-key (encoder._orig_mod.X), my prefix-strip only handled key-start. Fixed: replace all occurrences. Re-smoke confirmed weights load (no missing/unexpected keys).
-2026-04-26T10:55Z  Launched bigger-probe diagnostic in tmux `bigger_probe`: ep5 (ckpt epoch_6) → ep9 (ckpt epoch_10), 150 max probe epochs, patience 20. Same encoder weights as default-probe runs ⇒ apples-to-apples comparison. ETA 1-2 h.
-2026-04-26T11:?Z   Bigger-probe diagnostic completed (~30 min total, faster than expected). RESULT: bigger probe gives WORSE Pearson than default at both checkpoints (-0.07/+0.02 vs +0.22/+0.24); both early-stopped on best test-RMSE so it's overfitting, not undertraining. Neither hypothesis A nor B held — third path: default probe is right-sized for 28K-window budget; bigger probes overfit. Encoder DOES carry HI signal (default extracts it); the bottleneck is probe-train data size, not probe capacity. Full write-up in results.md "Bigger-probe diagnostic on L1" section.
-2026-04-26T12:13Z  Pulled dragon's strong-corroboration: eval_sweep at 769K windows on E1 → Pearson 0.563 (vs in-training 0.25). Validates our "data-bound" conclusion. Two new tasks accepted: (A) eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts × {test, test_hard}; (B) mirror n_subsample bump 30000 → 200000 in lewm.yaml + ar_lstm scenario4 yaml.
-2026-04-26T12:14Z  TASK B done: bumped n_subsample in config/train/lewm.yaml and baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml to 200000. Past runs unaffected.
-2026-04-26T12:15Z  TASK A launched in tmux `eval_sweep`: 4 sequential runs (L1_te, L2_te, L1_th, L2_th) with --tasks 1 --no_parallel. ETA ~40 min total. eval_sweep already encoding L1_te: Z_tr=(746309, 64), Z_te=(84447, 64).
+       paper row. Standing by until you share the spec.
+
+   (d) Larger-S follow-up Lucas mentioned (S>5)? Define on dragon's side?
+
+   (e) Help OOD eval pipeline you ran on E1 — would running task-2
+       (delta-HI / forecasting) on L1+L2 add anything for the paper, or
+       is task 1 alone enough for the headline rows?
+
+  Tell me your priority and I'll go. Also feel free to drop my open
+  questions (E2 calibrated Pearson, csv-fix yes/no) when you next sync.
 ```
 
 ---
