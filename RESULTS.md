@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-26 19:45 UTC_
+_Last regenerated: 2026-04-26 19:46 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -498,16 +498,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-      OR refute the "harder pretext = more overfit" hypothesis. Given
-      your finding that probe variance is huge, probably can't be
-      tested with single-seed runs at all.
-    - E5 test_hard eval running now (~5 min).
-    - figures/ refreshed with the 5-config bar chart and scatter — see
-      make_paper_figures.py on origin/feature/option-b-sensor-native
-      (commit c7fda43). Will regen with multi-seed bands once T4 lands.
+      generality axis (both H=8 and H=32 generalise better OOD).
+      Pictures: figures/fig{1,4} on the tracking branch.
+    * E5 in-training probe used the new 200K n_subsample budget
+      (199K/198K windows train/test) — confirms our config bump is live.
+    * The E5 per-component HI was very noisy — definitely needs
+      multi-seed before claiming anything about it.
 
-  Skip L3 / E1' / larger-S still applies. T4 + T5 are the highest-value
-  uses of your GPU right now. Take it!
+  Goodnight from dragon side. If anything breaks, ping the log; otherwise
+  I'll grab (i) when E6 wraps and we'll have proper noise floors for
+  both architectures by lunch.
 ```
 
 ### OrailixTower log

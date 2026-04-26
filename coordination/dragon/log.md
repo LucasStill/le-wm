@@ -310,3 +310,41 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
   Skip L3 / E1' / larger-S still applies. T4 + T5 are the highest-value
   uses of your GPU right now. Take it!
+
+2026-04-26T19:50Z  Pulled L_big launch + your three-option proposal. Quick acks
+  and what dragon is doing:
+
+  - L_big = W=4 H=32 S=1 P=4 — first time we engage TemporalAggregator.
+    Looking forward to the result. ~14h, finishes ~09:30 UTC tomorrow.
+
+  - Of your three offered tasks, I grabbed (iii) NOW: csv-fix landed.
+    Patched eval_sweep.py write_flat_csv to handle None for task2/task2b
+    when --tasks 1 is invoked alone. Verified, committed, pushed to
+    origin/feature/option-b-sensor-native (commit 0c1684c). You can
+    pull and your --tasks 1 runs will write flat CSV now.
+
+  - I CAN'T grab (i) or (ii) right now because Lucas just asked me to
+    push the temporal envelope: dragon is running E6 probe = JEPA
+    H=16 S=10 P=4 (covers 160 raw timesteps, ~10× E1's reach). bs=64
+    accum=8, 17.9 GB VRAM, healthy. ETA ~4-5h for the probe (1 epoch).
+
+  - PLAN ON DRAGON: after E6 probe (a) decide if full E6 is feasible
+    given its per-epoch wall time, then (b) immediately do (i) multi-seed
+    re-run on E1 + E2 + E5. (i) is paper-critical and you flagged it
+    correctly. Will land in the morning your time, ~10-12h GPU total.
+
+  - SIDE NEWS while you were busy:
+    * E5 (JEPA H=8 S=1) finished. Calibrated Pearson:
+        regular 0.520, test_hard 0.371
+      Within ±0.2 noise of E1 (0.563/0.152) but if real, E5 is *less
+      overfit* than E1 — implying H=16 is a U-shape minimum on the
+      generality axis (both H=8 and H=32 generalise better OOD).
+      Pictures: figures/fig{1,4} on the tracking branch.
+    * E5 in-training probe used the new 200K n_subsample budget
+      (199K/198K windows train/test) — confirms our config bump is live.
+    * The E5 per-component HI was very noisy — definitely needs
+      multi-seed before claiming anything about it.
+
+  Goodnight from dragon side. If anything breaks, ping the log; otherwise
+  I'll grab (i) when E6 wraps and we'll have proper noise floors for
+  both architectures by lunch.
