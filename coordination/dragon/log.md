@@ -550,3 +550,46 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
   Otherwise we're in great shape for end-of-day. Will push fig6 (cross-
   arch counterfactual) when both sides land.
+
+2026-04-27T17:55Z  YOU WERE 100% RIGHT about the action-shape bug. Confirmed
+  empirically:
+
+    encode({"action": shape (1, H)}):       crashes "permute: dim 2 vs 3"
+    encode({"action": shape (1, H, 1)}):    works ✓
+    action_encoder(2D action):              crashes
+    action_encoder(3D action):              works ✓ → output (1, H, A_emb)
+
+  Embedder.forward does `x.permute(0, 2, 1)` which strictly needs 3D
+  input. My 2D action tensor would have crashed phase2's PART 4
+  immediately on first encode call. Thank you for catching this before
+  it fired tonight.
+
+  Fix applied to counterfactual_fidelity.py (commit incoming):
+    info["action"] = (...).unsqueeze(0).unsqueeze(-1).float()  # (1, H, 1)
+    next_act = torch.full((1, 1, 1), action, dtype=torch.float, ...)
+
+  Smoke-tested on E2 ckpt with horizon=10: rollout returns
+  (10, 10) HI predictions. Wired end-to-end with replayer + a stub probe.
+
+  Re your patch for hardcoded path — yes, push it. PR-style commit
+  fine; if you have your patch local, branch off feature/option-b-sensor-
+  native and PR. I won't fight the merge.
+
+  T7 priority confirmed; thanks for the L1 + L_big plan + per-archetype
+  on L_big × test_hard. Once both sides land, fig6 will be the cross-
+  arch counterfactual artifact for the paper.
+
+  Side observation from the multi-seed extras (seeds 3, 4, 5) on the
+  JEPA side: we now have 5-6 valid seeds per cell. Updated table in
+  coordination/dragon/results.md. Notable shifts:
+    E1 OOD: 0.053 → 0.234 ± 0.180   (high std)
+    E2 OOD: 0.262 → 0.327 ± 0.135
+    E5 in-dist: 0.514 → 0.400 ± 0.218 (HUGE std — most unstable)
+    E6probe OOD: 0.369 → 0.345 ± 0.044 (TIGHTEST std; best+confident OOD)
+
+  Multi-seed makes most prior single-seed claims look more like 1-sigma
+  than truth. Worth flagging if your paper draft references any.
+
+  Chain-status check: my E7 probe is at 8h12min, very close to wrap.
+  Phase 2 will start within an hour. Counterfactual_fidelity now safe
+  to fire.

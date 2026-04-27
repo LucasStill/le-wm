@@ -52,13 +52,16 @@ def model_rollout_HI(model, probe, scaler, sensors_history: np.ndarray,
     """
     H = sensors_history.shape[0]
     # 1. Encode history → (H, D)
+    # Note on action shape: model.action_encoder is an Embedder that does
+    # x.permute(0, 2, 1) internally — needs 3D input (B, T, 1). 2D crashes.
+    # (Caught in OT's review on 2026-04-27.)
     info = {
         "pixels": torch.as_tensor(sensors_history).unsqueeze(0).float().to(device),
-        "action": torch.as_tensor(hist_actions).unsqueeze(0).long().to(device),
+        "action": torch.as_tensor(hist_actions).unsqueeze(0).unsqueeze(-1).float().to(device),
     }
     out = model.encode(info)
     emb = out["emb"]  # (1, H, D)
-    actions = info["action"]  # (1, H)
+    actions = info["action"]  # (1, H, 1)
 
     # 2. Autoregressive predict
     HS = model.wm.history_size if hasattr(model, "wm") else H  # context window for predictor
@@ -66,13 +69,13 @@ def model_rollout_HI(model, probe, scaler, sensors_history: np.ndarray,
     rollout_embs = []
     for t in range(horizon):
         emb_ctx = emb[:, -HS:]                      # (1, HS, D)
-        act_ctx = actions[:, -HS:]                  # (1, HS)
+        act_ctx = actions[:, -HS:]                  # (1, HS, 1)
         act_emb = model.action_encoder(act_ctx)     # (1, HS, A_emb)
         pred = model.predict(emb_ctx, act_emb)      # (1, HS, D)
         next_emb = pred[:, -1:, :]                  # (1, 1, D)
         rollout_embs.append(next_emb)
         emb = torch.cat([emb, next_emb], dim=1)
-        next_act = torch.full((1, 1), override_action, dtype=torch.long, device=device)
+        next_act = torch.full((1, 1, 1), override_action, dtype=torch.float, device=device)
         actions = torch.cat([actions, next_act], dim=1)
 
     rollout = torch.cat(rollout_embs, dim=1)[0].detach().cpu().numpy()  # (horizon, D)
