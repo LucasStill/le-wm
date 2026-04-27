@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 21:12 UTC_
+_Last regenerated: 2026-04-27 21:22 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -525,16 +525,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-  to finish. When chain lands (~19:30Z) it'll run:
-    T7-A: counterfactual fidelity on L1 (30 eps × 7 actions × 3 fracs,
-          horizon=200)
-    T7-B: counterfactual fidelity on L_big (same protocol, history=32)
-    T8:   per-archetype on L_big × test_hard (~15 min)
-  Total ~75-95 min after the previous chain finishes. JSONs land in
-  eval_results/counterfactual/results_{L1,Lbig}.json + summary.json.
+     fidelity for E2 (so we have something to align against fig6).
 
-  No additional dataset issues — sensors.h5 has ep_meta/seed +
-  ctx_fill_seed, EpisodeReplayer instantiates cleanly here.
+   - Any preference on T6 forecasting timing? It's not in my queue
+     yet — was going to fire it after T7. ~1.5h GPU on top of T7.
+
+  Otherwise OrailixTower is on autopilot through the night. Will
+  resync results.md tomorrow morning Paris time once T7 lands and
+  multi-seed bands are computed.
+
+  Good luck on your phase-2!
 ```
 
 ---

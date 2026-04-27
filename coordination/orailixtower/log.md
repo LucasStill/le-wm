@@ -320,3 +320,63 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
   No additional dataset issues — sensors.h5 has ep_meta/seed +
   ctx_fill_seed, EpisodeReplayer instantiates cleanly here.
+
+2026-04-27T20:55Z  END-OF-DAY QUEUE STATE — informational, no action needed.
+
+  Overnight chain still in step 4 (T4 multi-seed sanity baselines).
+  Pace is slower than I'd estimated — each (seed, dataset) sanity
+  invocation takes ~60-70 min (6 probe trainings × 770K windows).
+  Currently on seed=2 / test (4 of 10 invocations done). Step 5
+  (multi-seed L1+L2) follows. **Chain ETA finish ~04:00-05:00 UTC.**
+
+  T7 chain (tmux `t7chain`) follows automatically — first counterfactual
+  JSONs (results_L1.json, results_Lbig.json) should land ~07:00-08:00
+  UTC tomorrow morning Paris time.
+
+  TWO MINOR WRINKLES, FYI:
+
+  (a) **bash buffered the old seed list** before my edit took effect,
+      so step 4 is iterating seeds {0, 1, 2, 3, 4} instead of the
+      patched {0, 2, 3, 4, 5}. Result: seed=1 produces NaN Pearson
+      as you predicted. RMSE/R² values are still populated for seed=1.
+      Net: we get 4 valid Pearson seeds + 1 missing — enough for
+      mean ± std bands, just lose one sample.
+
+  (b) **Step 1 + 1b L_big eval_sweep** ran with the OLD eval_sweep.py
+      (chain started before I pulled your csv-fix commit 0c1684c).
+      Flat CSV write crashed → only summary.json saved. The Pearson
+      numbers I quoted in my last update (L_big test sl=1=0.559,
+      sl=10=0.555, sl=50=0.559; test_hard sl=1=0.329, sl=10=0.243,
+      sl=50=0.051) are from stdout, real and valid. If you want flat
+      CSVs for plotting, I'll re-run them in a few minutes (~20 min)
+      after the T7 chain lands.
+
+  PRELIMINARY OBSERVATION FROM STEP 4 (seed=2 just landed):
+    random_encoder × test × sl=1 → Pearson 0.719
+    (vs single-seed unseeded earlier: 0.157
+     vs seed=0 (today): need to grep — ballpark 0.55)
+  Big seed-spread, exactly the noise concern that motivated multi-seed.
+  Mean ± std over 4 valid seeds will be the canonical paper number.
+  random_encoder potentially BEATING trained encoders cleanly is
+  starting to look real, not seed-noise. I'll write up the full table
+  once chain finishes.
+
+  ASKS / OPEN ITEMS for whenever you next sync:
+
+   - Did you confirm the action-shape question (your script's
+     `info["action"] = ...long()` 2D vs Embedder's permute(0,2,1)
+     requiring 3D)? My patch to (1, H, 1).float() is in my local copy;
+     ready to push if you confirm and want it in the shared branch.
+
+   - Phase-2 chain on dragon side — any results to share when ready?
+     Especially E1/E5/E6 calibrated multi-seed and counterfactual
+     fidelity for E2 (so we have something to align against fig6).
+
+   - Any preference on T6 forecasting timing? It's not in my queue
+     yet — was going to fire it after T7. ~1.5h GPU on top of T7.
+
+  Otherwise OrailixTower is on autopilot through the night. Will
+  resync results.md tomorrow morning Paris time once T7 lands and
+  multi-seed bands are computed.
+
+  Good luck on your phase-2!
