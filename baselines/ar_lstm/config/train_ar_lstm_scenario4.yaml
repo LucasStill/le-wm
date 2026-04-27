@@ -1,0 +1,122 @@
+defaults:
+  - _self_
+  # Scenario-4 variant of the AR-LSTM baseline.
+  # Mirrors config/train/data/scenario4.yaml so the run is directly comparable
+  # to the JEPA scenario4 experiments launched by train_lewm_scenario4_dragon.sh.
+
+output_model_name: ar_lstm_s4
+subdir: ${hydra:job.id}
+
+num_workers: 6
+train_split: 0.9
+seed: 3072
+
+# ── Data ─────────────────────────────────────────────────────────────────────
+# Reads scenario4_train_lewm.h5 (created by prepare_scenario4_dataset.py).
+# pixels: (N, 11, 16) = 7 sensors + 4 context_params, action: scalar 0-6.
+data:
+  dataset:
+    num_steps: ${eval:'(${wm.history_size} + ${wm.num_preds} - 1) * ${wm.h_step} + ${obs_window_size}'}
+    frameskip: 1
+    name: scenario4_train_lewm
+    cache_dir: /home/lucas/.stable_worldmodel
+    keys_to_load:
+      - pixels   # (N, 11, 16) normalised sensors+context
+      - action   # scalar float32, values 0–6 — z-normalised at runtime
+    keys_to_cache:
+      - action
+      - pixels   # ~4.9 GB; avoids per-sample LZF chunk decompression thrashing
+
+# ── Encoder ──────────────────────────────────────────────────────────────────
+# n_sensors = 176 = 11 channels × 16 contexts (scenario4)
+# Pos-emb sized to max_sensors=200 to leave headroom (default 128 is too small).
+encoder_type: sensor
+n_sensors: 176
+img_size: 28          # kept for HIProbeCallback compat; unused by sensor encoder
+
+sensor_encoder:
+  d_model: 64         # must equal wm.embed_dim to avoid projection bottleneck
+  nhead: 4
+  num_layers: 2
+  dropout: 0.1
+  max_sensors: 200    # >= n_sensors; default 128 is too small for scenario4
+
+obs_window_size: 1    # 1 = snapshot encoder; >1 enables TemporalAggregator
+
+compile_encoder: true # torch.compile the SensorEncoder. ~+44% throughput on A6000+cu13.0.
+                      # Falls back gracefully if compile errors; harmless to disable.
+
+# ── World model ───────────────────────────────────────────────────────────────
+wm:
+  type: ar_lstm
+  history_size: 16    # context window (matches dragon's "real" config)
+  h_step: 1           # stride between history latents
+  num_preds: 4        # autoregressive rollout length (matches dragon)
+  embed_dim: 64       # latent dimension
+  zero_pad_prob: 0.0  # prob of zeroing a context prefix per batch (data aug)
+
+# ── LSTM predictor ────────────────────────────────────────────────────────────
+lstm:
+  hidden_dim: 256
+  num_layers: 2
+  dropout: 0.1
+  use_cudnn: true   # nn.LSTM (cuDNN-fused) — ~3-5x faster than LSTMCell python loop.
+                    # Set false to fall back to the LSTMCell path (V100 SM 7.0 escape
+                    # hatch; cuDNN ≥ 9.x init fails there).
+
+# ── Training ──────────────────────────────────────────────────────────────────
+trainer:
+  max_epochs: 10            # matches dragon's per-config budget (E1..E4)
+  devices: auto
+  accelerator: gpu
+  precision: bf16-mixed     # A6000/5090 both support bf16; matches dragon
+  gradient_clip_val: 0.3
+
+loader:
+  batch_size: 512           # L1 default; halve + double accum for L2/L3/L4 (see launcher)
+  num_workers: ${num_workers}
+  persistent_workers: True
+  prefetch_factor: 3
+  pin_memory: True
+
+optimizer:
+  type: AdamW
+  lr: 7e-5
+  weight_decay: 1e-3
+
+# ── Regularization (same as JEPA baseline) ───────────────────────────────────
+loss:
+  sigreg:
+    weight: 0.15
+    kwargs:
+      knots: 17
+      num_proj: 1024
+
+# ── WandB ─────────────────────────────────────────────────────────────────────
+wandb:
+  enabled: True
+  config:
+    entity: thil-ecole-polytechnique
+    project: turbofan_S4
+    name: ${output_model_name}
+    resume: never
+    log_model: False
+
+# ── Downstream HI probe (identical to JEPA scenario4 config) ─────────────────
+hi_probe:
+  enabled: false          # override via CLI: hi_probe.enabled=true
+  eval_interval: 5
+  n_probe_epochs: 150
+  probe_lr: 1e-3
+  probe_patience: 20
+  d_model: 128
+  nhead: 4
+  num_layers: 3
+  probe_dropout: 0.1
+  probe_batch_size: 256
+  probe_seq_len: 1
+  n_subsample: 200000     # bumped from 30000 to mirror dragon (2026-04-26).
+                          # 30K was probe-data-bound; 200K gives meaningful Pearson
+                          # in-training (~2-3 min added per probe call, every 5 epochs).
+  enc_batch_size: 2048
+  rul_max_horizon: 300

@@ -62,19 +62,32 @@ class LSTMPredictor(nn.Module):
         hidden_dim: int  = 256,
         num_layers: int  = 2,
         dropout: float   = 0.1,
+        use_cudnn: bool  = True,
     ):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.drop = nn.Dropout(dropout) if (num_layers > 1 and dropout > 0) else nn.Identity()
+        self.use_cudnn  = use_cudnn
 
-        # LSTMCell loop instead of nn.LSTM — avoids flatten_parameters() / cuDNN init,
-        # which fails on V100 (SM 7.0) when PyTorch is compiled with cuDNN >= 9.x.
-        # Semantics are identical: same weights, same computation, same gradients.
-        self.cells = nn.ModuleList()
-        for i in range(num_layers):
-            in_dim = (embed_dim + act_emb_dim) if i == 0 else hidden_dim
-            self.cells.append(nn.LSTMCell(in_dim, hidden_dim))
+        # Two equivalent paths (same gate equations / weights / gradients):
+        #   use_cudnn=True : nn.LSTM — cuDNN-fused, ~3-5x faster on Ampere/Ada/Hopper.
+        #   use_cudnn=False: LSTMCell python loop — V100 fallback (cuDNN 9.x init
+        #                    fails on SM 7.0). Kept as escape hatch.
+        if use_cudnn:
+            self.lstm = nn.LSTM(
+                input_size  = embed_dim + act_emb_dim,
+                hidden_size = hidden_dim,
+                num_layers  = num_layers,
+                dropout     = dropout if num_layers > 1 else 0.0,
+                batch_first = True,
+            )
+            self.drop = nn.Identity()  # dropout is internal to nn.LSTM
+        else:
+            self.drop = nn.Dropout(dropout) if (num_layers > 1 and dropout > 0) else nn.Identity()
+            self.cells = nn.ModuleList()
+            for i in range(num_layers):
+                in_dim = (embed_dim + act_emb_dim) if i == 0 else hidden_dim
+                self.cells.append(nn.LSTMCell(in_dim, hidden_dim))
 
         # Map hidden state back to embedding space
         self.output_head = nn.Sequential(
@@ -94,23 +107,27 @@ class LSTMPredictor(nn.Module):
         (B, T, embed_dim)  — predicted next-step embeddings (causal)
         """
         inp = torch.cat([x, c], dim=-1)          # (B, T, embed_dim + act_emb_dim)
-        B, T, _ = inp.shape
 
-        # Initialise hidden + cell states to zero
+        if self.use_cudnn:
+            out, _ = self.lstm(inp)              # (B, T, hidden_dim)
+            return self.output_head(out)         # (B, T, embed_dim)
+
+        # ── LSTMCell fallback path ──────────────────────────────────────────
+        B, T, _ = inp.shape
         h = [torch.zeros(B, self.hidden_dim, device=inp.device, dtype=inp.dtype)
              for _ in self.cells]
         c_state = [torch.zeros_like(h[i]) for i in range(self.num_layers)]
 
         outs = []
         for t in range(T):
-            x_t = inp[:, t]                      # (B, input_dim)
+            x_t = inp[:, t]
             for i, cell in enumerate(self.cells):
                 h[i], c_state[i] = cell(x_t, (h[i], c_state[i]))
-                x_t = self.drop(h[i])            # inter-layer dropout; Identity if disabled
-            outs.append(h[-1])                   # top-layer hidden state
+                x_t = self.drop(h[i])
+            outs.append(h[-1])
 
-        out = torch.stack(outs, dim=1)            # (B, T, hidden_dim)
-        return self.output_head(out)              # (B, T, embed_dim)
+        out = torch.stack(outs, dim=1)
+        return self.output_head(out)
 
 
 # ── Factory: build a JEPA container with an LSTM predictor ───────────────────
@@ -141,11 +158,12 @@ def build_ar_lstm(cfg) -> JEPA:
 
     # ── Encoder (identical to JEPA sensor baseline) ───────────────────────────
     encoder = SensorEncoder(
-        n_sensors  = cfg.get("n_sensors", 28),
-        d_model    = sen_cfg.get("d_model", embed_dim),
-        nhead      = sen_cfg.get("nhead", 4),
-        num_layers = sen_cfg.get("num_layers", 2),
-        dropout    = sen_cfg.get("dropout", 0.1),
+        n_sensors   = cfg.get("n_sensors", 28),
+        d_model     = sen_cfg.get("d_model", embed_dim),
+        nhead       = sen_cfg.get("nhead", 4),
+        num_layers  = sen_cfg.get("num_layers", 2),
+        dropout     = sen_cfg.get("dropout", 0.1),
+        max_sensors = sen_cfg.get("max_sensors", 128),
     )
     hidden_dim = encoder.hidden_size  # == embed_dim for sensor encoder
 
@@ -157,6 +175,7 @@ def build_ar_lstm(cfg) -> JEPA:
         hidden_dim  = lstm_cfg.get("hidden_dim", 256),
         num_layers  = lstm_cfg.get("num_layers", 2),
         dropout     = lstm_cfg.get("dropout", 0.1),
+        use_cudnn   = lstm_cfg.get("use_cudnn", True),
     )
 
     # ── Action encoder (identical to JEPA) ───────────────────────────────────

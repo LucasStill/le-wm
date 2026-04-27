@@ -160,6 +160,21 @@ def run(cfg):
     param_count = sum(p.numel() for p in world_model.parameters() if p.requires_grad)
     logging.info(f"Total trainable parameters: {param_count:,}")
 
+    # Optional torch.compile on the encoder (the throughput bottleneck).
+    # Skip silently if compile fails — keeps the run alive on weird envs.
+    if cfg.get("compile_encoder", False):
+        # mode="default" — kernel fusion only, NO CUDA graphs.
+        # mode="reduce-overhead" uses cudagraphs which break under
+        # accumulate_grad_batches>1 (encoder is called twice before
+        # backward; cudagraph overwrites the first call's output).
+        try:
+            world_model.encoder = torch.compile(
+                world_model.encoder, mode="default", fullgraph=False,
+            )
+            logging.info("[compile] encoder wrapped with torch.compile (mode=default)")
+        except Exception as e:
+            logging.warning(f"[compile] torch.compile failed, running uncompiled: {e}")
+
     # ── Optimizer ─────────────────────────────────────────────────────────────
     optimizers = {
         "model_opt": {
