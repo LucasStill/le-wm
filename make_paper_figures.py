@@ -102,12 +102,19 @@ JEPA_RUNS = {
         "test_hard": ROOT / "eval_results/E6probe_test_hard/E6probe_th.json",
         "H": 16, "S": 10, "params_M": 0.828, "arch": "JEPA",
     },
+    "E7probe": {
+        # Single-seed JSON not saved separately; rely on multi-seed
+        "regular": ROOT / "eval_results/multiseed/E7probe_test_seed0/E7probe_test_s0.json",
+        "test_hard": ROOT / "eval_results/multiseed/E7probe_test_hard_seed0/E7probe_test_hard_s0.json",
+        "H": 16, "S": 20, "params_M": 0.828, "arch": "JEPA",
+    },
 }
 
 # AR-LSTM numbers (from OT's pushed results.md — they live on OT machine, hardcoded here)
 LSTM_RUNS = {
     "L1": {"regular_pearson": 0.564, "test_hard_pearson": 0.325, "H": 16, "S": 1, "params_M": 1.138, "arch": "AR-LSTM"},
     "L2": {"regular_pearson": 0.495, "test_hard_pearson": -0.014, "H": 32, "S": 1, "params_M": 1.138, "arch": "AR-LSTM"},
+    "L_big": {"regular_pearson": 0.559, "test_hard_pearson": 0.329, "H": 32, "S": 1, "params_M": 1.138, "arch": "AR-LSTM (W=4)"},
 }
 
 
@@ -115,12 +122,7 @@ MULTISEED_SUMMARY = ROOT / "eval_results/multiseed/SUMMARY.json"
 
 # Configs that have been planned/launched but don't have results yet.
 # Each entry shows on plots as a hatched / annotated "in progress" placeholder.
-IN_PROGRESS = {
-    "E7": {"H": 16, "S": 20, "params_M": 0.828, "arch": "JEPA",
-           "note": "1-epoch probe queued — wall ~8h"},
-    "L_big": {"H": 32, "S": 1, "params_M": 1.138, "arch": "AR-LSTM",
-              "note": "W=4 H=32 — running on OT, ETA ~09:30 UTC"},
-}
+IN_PROGRESS = {}  # E7 and L_big both landed
 
 
 def load_multiseed() -> dict:
