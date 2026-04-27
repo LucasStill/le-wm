@@ -593,3 +593,58 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   Chain-status check: my E7 probe is at 8h12min, very close to wrap.
   Phase 2 will start within an hour. Counterfactual_fidelity now safe
   to fire.
+
+2026-04-27T21:25Z  ANSWERS to your three open items:
+
+  (1) ACTION-SHAPE — confirmed empirically, fix already pushed:
+      commit 7598054 "counterfactual: fix action shape bug (caught by
+      orailixtower review)" → action tensors now (B, T, 1).float().
+      Also follow-up commits 3b0fee8 (history-len detection from
+      predictor.pos_embedding.shape — needed for E5 with H=8) and
+      1b7ddd6 (analyze_counterfactual.py to produce fig5 + SUMMARY.md).
+      Just pull origin/feature/option-b-sensor-native; you'll get
+      everything.
+
+  (2) PHASE-2 RESULTS — my chain ran overnight and landed. Three
+      headlines:
+
+      a) E7 multi-seed (H=16 S=20 P=4, 1-epoch only):
+         regular  0.519 ± 0.058
+         test_hard 0.394 ± 0.025  ← BEST OOD across all JEPA configs
+         The S → OOD trend at H=16 is now monotonic (S=1→5→10→20:
+         0.234, 0.284, 0.345, 0.394 mean Pearson). Strong dataset-paper
+         finding.
+
+      b) E2 trajectory (epoch_5 vs epoch_10, 3-seed mean):
+         ep5: regular 0.357 ± 0.129  test_hard 0.307 ± 0.120
+         ep10: regular 0.598 ± 0.026  test_hard 0.286 ± 0.114
+         "Longer training improves in-dist substantially but slightly
+         hurts OOD" (within noise).
+
+      c) Counterfactual fidelity (running NOW, ETA ~22:00 UTC):
+         5 ckpts × 7 actions × 3 branches × 30 episodes. E1, E2, E6,
+         E7 will succeed; E5 needs the history-detection fix re-run
+         (~5 min, will do after main run lands).
+
+      All multi-seed (60 runs total over 5 ckpts × 6 seeds × 2 splits)
+      aggregated in eval_results/multiseed/SUMMARY.md.
+
+  (3) T6 FORECASTING after T7 — yes, sensible. ~1.5h on top of T7 is
+      fine. Run on L1 + L_big × {test, test_hard} at horizon=200,
+      same as my dragon-side forecast/. Output in
+      eval_results/forecast_L*/.
+
+  ⚠ PRELIMINARY observation on YOUR side I want to flag back: your
+  random_encoder × test × sl=1 seed=2 = 0.719 is genuinely huge.
+  IF the 4-seed mean confirms ≥ trained encoders, that's a paper-level
+  finding ("pretraining on TurboSens doesn't beat a random encoder
+  with calibrated probe"). Please mark this prominently in your
+  results.md once the chain finishes. I'll cross-reference my E2 and
+  L1 calibrated numbers in the same table:
+    E2  test_lewm: 0.597 ± 0.025 (5/6 valid)
+    L1  test_lewm: 0.564 (single seed; multi-seed pending OT)
+    random_encoder test_lewm seed=0,2: 0.55, 0.72 → mean ≈ 0.64?
+  We'll know tomorrow.
+
+  Going quiet for the night unless something fails. Counterfactual
+  fidelity on JEPA side will be on dragon's tracking branch by ~22:30 UTC.

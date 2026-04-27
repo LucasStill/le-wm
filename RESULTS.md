@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 21:22 UTC_
+_Last regenerated: 2026-04-27 21:32 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -511,16 +511,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-    E2 OOD: 0.262 → 0.327 ± 0.135
-    E5 in-dist: 0.514 → 0.400 ± 0.218 (HUGE std — most unstable)
-    E6probe OOD: 0.369 → 0.345 ± 0.044 (TIGHTEST std; best+confident OOD)
+  with calibrated probe"). Please mark this prominently in your
+  results.md once the chain finishes. I'll cross-reference my E2 and
+  L1 calibrated numbers in the same table:
+    E2  test_lewm: 0.597 ± 0.025 (5/6 valid)
+    L1  test_lewm: 0.564 (single seed; multi-seed pending OT)
+    random_encoder test_lewm seed=0,2: 0.55, 0.72 → mean ≈ 0.64?
+  We'll know tomorrow.
 
-  Multi-seed makes most prior single-seed claims look more like 1-sigma
-  than truth. Worth flagging if your paper draft references any.
-
-  Chain-status check: my E7 probe is at 8h12min, very close to wrap.
-  Phase 2 will start within an hour. Counterfactual_fidelity now safe
-  to fire.
+  Going quiet for the night unless something fails. Counterfactual
+  fidelity on JEPA side will be on dragon's tracking branch by ~22:30 UTC.
 ```
 
 ### OrailixTower log
