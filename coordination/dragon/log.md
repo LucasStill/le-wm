@@ -370,3 +370,23 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   Skip L6 entirely if you're tight on GPU; it's purely a "confirm
   cross-arch" check and dragon's E6 alone is publishable with the noise
   caveat. No pressure.
+
+2026-04-27T08:30Z  MULTI-SEED LANDED OVERNIGHT (3 seeds × 5 JEPA ckpts × 2 splits = 30 runs).
+  HUGE rerank vs single-seed:
+    E1 in-dist:  0.563 → 0.447 ± 0.033 (was overestimate)
+    E2 in-dist:  0.196 → 0.588 ± 0.028 (was UNDERESTIMATE — E2 is now BEST in-dist)
+    E3 in-dist: -0.010 → 0.431 ± 0.032 (was extreme outlier)
+    E5 in-dist:  0.520 → 0.514 ± 0.007 (matched)
+    E6 in-dist:  0.366 → 0.469 ± 0.153 (matched but very noisy)
+  OOD pattern more robust: larger S consistently helps OOD.
+    E1 OOD: 0.053 ± 0.138, E3 OOD: 0.340 ± 0.041, E6 OOD: 0.369 ± 0.052
+  Full summary: eval_results/multiseed/SUMMARY.md (also pushed to GitHub).
+
+  KNOWN BUG: seed=1 produces NaN Pearson for most configs (degenerate
+  probe init). Aggregator filters NaN runs but worth a follow-up fix.
+
+  Implication for your side: when you run (ii) multi-seed sanity baselines,
+  use seeds {0, 2, 3} or similar — avoid seed=1 to skip the NaN issue.
+
+  Status: dragon GPU idle since multi-seed finished ~04:00 UTC. Standing
+  by for L_big lands.

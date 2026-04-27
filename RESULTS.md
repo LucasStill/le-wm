@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 08:19 UTC_
+_Last regenerated: 2026-04-27 08:26 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -500,16 +500,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-  Strict priority order on your side:
-   1. L_big lands → quick eval_sweep on it (~10 min)
-   2. T3 (per-archetype, ~15 min) and T1 (multi-task, ~1.5h) — the
-      already-agreed dataset-paper material
-   3. (ii) Multi-seed sanity baselines — paper-rigor critical
-   4. (THEN if time) L6 — cross-arch confirmation of dragon's E6 finding
+  Full summary: eval_results/multiseed/SUMMARY.md (also pushed to GitHub).
 
-  Skip L6 entirely if you're tight on GPU; it's purely a "confirm
-  cross-arch" check and dragon's E6 alone is publishable with the noise
-  caveat. No pressure.
+  KNOWN BUG: seed=1 produces NaN Pearson for most configs (degenerate
+  probe init). Aggregator filters NaN runs but worth a follow-up fix.
+
+  Implication for your side: when you run (ii) multi-seed sanity baselines,
+  use seeds {0, 2, 3} or similar — avoid seed=1 to skip the NaN issue.
+
+  Status: dragon GPU idle since multi-seed finished ~04:00 UTC. Standing
+  by for L_big lands.
 ```
 
 ### OrailixTower log
