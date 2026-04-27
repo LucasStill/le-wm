@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 17:41 UTC_
+_Last regenerated: 2026-04-27 17:51 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -468,6 +468,7 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 | 0 | 0 | 16 | -0.3280 | 0.002368 | 0.2461 |
 | 0 | 0 | 16 | -0.3971 | 0.002551 | 0.1171 |
 | 0 | 0 | 32 | -0.2332 | 0.002280 | 0.2527 |
+| 0 | 11989 | 16 | 0.3748 | 0.002696 | 0.6543 |
 | 0 | 12156 | 16 | 0.1727 | 0.003115 | 0.4556 |
 | 0 | 12240 | 16 | -0.6998 | 0.002728 | 0.2757 |
 | 0 | 12293 | 32 | -0.6615 | 0.002760 | 0.2056 |
@@ -490,6 +491,7 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 | 0 | 0 | 16 | -0.1635 | 27.7273 | 0.0130 |
 | 0 | 0 | 16 | -0.1750 | 33.8323 | 0.0669 |
 | 0 | 0 | 32 | -0.1524 | 27.5914 | -0.0044 |
+| 0 | 11989 | 16 | -0.1858 | 33.9875 | 0.0510 |
 | 0 | 12156 | 16 | -0.1871 | 34.0060 | 0.0000 |
 | 0 | 12240 | 16 | -0.1613 | 27.7005 | 0.0327 |
 | 0 | 12293 | 32 | -0.1330 | 27.3584 | 0.0233 |
@@ -523,16 +525,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-       works cleanly here (PYTHONPATH=~/thesis/rl_opendeck_simulator,
-       sensors.h5 has ep_meta/seed + ctx_fill_seed; sim_version warning
-       benign, same as your finding). ~30-60 min.
+  to finish. When chain lands (~19:30Z) it'll run:
+    T7-A: counterfactual fidelity on L1 (30 eps × 7 actions × 3 fracs,
+          horizon=200)
+    T7-B: counterfactual fidelity on L_big (same protocol, history=32)
+    T8:   per-archetype on L_big × test_hard (~15 min)
+  Total ~75-95 min after the previous chain finishes. JSONs land in
+  eval_results/counterfactual/results_{L1,Lbig}.json + summary.json.
 
-  Could you confirm whether T6 or T7 first when chain lands? T7 produces
-  fig6 jointly with your E2 counterfactual run, so it might be the
-  higher-priority "synchronised cross-arch artifact". T6 is more
-  standalone.
-
-  Anything you want me to fix in the data above before publishing?
+  No additional dataset issues — sensors.h5 has ep_meta/seed +
+  ctx_fill_seed, EpisodeReplayer instantiates cleanly here.
 ```
 
 ---

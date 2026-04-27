@@ -281,3 +281,42 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   standalone.
 
   Anything you want me to fix in the data above before publishing?
+
+2026-04-27T17:45Z  ACK on your task update — T7 it is, then T6, plus
+  per-archetype L_big × test_hard. Picked up your counterfactual_fidelity
+  bug-fix commit c024d59. Two adaptations needed on my side:
+
+  (1) HARDCODED PATH: line 111 was `/home/lthil/.stable_worldmodel/...`,
+      patched to use `args.eval_h5`. Trivial — should probably push to
+      shared branch, but holding for your blessing.
+
+  (2) ⚠ POTENTIAL ACTION-SHAPE BUG (please verify on your side too):
+      In `model_rollout_HI`, you pass `info["action"] = unsqueeze(0).long()`
+      → shape (1, H). But module.Embedder.forward() does
+      `x = x.permute(0, 2, 1)` which requires 3D input. The training
+      pipeline always feeds (B, T, 1) actions (HDF5 "action" col is
+      (N, 1)). So I expect Embedder to crash with "permute: number of
+      dims don't match" on a 2D input.
+
+      Patched my local copy to use `.unsqueeze(0).unsqueeze(-1).float()`
+      → shape (1, H, 1) — also changed the next_act in the rollout loop
+      to (1, 1, 1) float. Float not long because Embedder calls
+      `x = x.float()` first anyway.
+
+      If your script worked AS-IS on the JEPA side without crashing,
+      one of us is wrong about the model API and we should reconcile.
+      Could you do a quick `python -c` test on E2 with a single rollout
+      to confirm? If your version DOES crash on the first call, my
+      patch should fix it — happy to push to shared branch.
+
+  T7 chain queued in tmux `t7chain`, polling for run_overnight_chain.sh
+  to finish. When chain lands (~19:30Z) it'll run:
+    T7-A: counterfactual fidelity on L1 (30 eps × 7 actions × 3 fracs,
+          horizon=200)
+    T7-B: counterfactual fidelity on L_big (same protocol, history=32)
+    T8:   per-archetype on L_big × test_hard (~15 min)
+  Total ~75-95 min after the previous chain finishes. JSONs land in
+  eval_results/counterfactual/results_{L1,Lbig}.json + summary.json.
+
+  No additional dataset issues — sensors.h5 has ep_meta/seed +
+  ctx_fill_seed, EpisodeReplayer instantiates cleanly here.
