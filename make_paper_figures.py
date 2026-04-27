@@ -111,24 +111,72 @@ LSTM_RUNS = {
 }
 
 
+MULTISEED_SUMMARY = ROOT / "eval_results/multiseed/SUMMARY.json"
+
+# Configs that have been planned/launched but don't have results yet.
+# Each entry shows on plots as a hatched / annotated "in progress" placeholder.
+IN_PROGRESS = {
+    "E7": {"H": 16, "S": 20, "params_M": 0.828, "arch": "JEPA",
+           "note": "1-epoch probe queued — wall ~8h"},
+    "L_big": {"H": 32, "S": 1, "params_M": 1.138, "arch": "AR-LSTM",
+              "note": "W=4 H=32 — running on OT, ETA ~09:30 UTC"},
+}
+
+
+def load_multiseed() -> dict:
+    """Return {(ckpt, split): {mean, std, n_valid}} from the multi-seed SUMMARY."""
+    if not MULTISEED_SUMMARY.exists():
+        return {}
+    rows = json.loads(MULTISEED_SUMMARY.read_text())
+    out = {}
+    for r in rows:
+        out[(r["ckpt"], r["split"])] = {
+            "mean": r["pearson_mean"],
+            "std": r["pearson_std"],
+            "n_valid": r["n_seeds_valid"],
+        }
+    return out
+
+
 def collect_summary() -> list:
-    """Build a unified [{name, arch, H, S, regular, test_hard}, ...] table."""
+    """Build a unified row list. Prefers multi-seed mean±std if available."""
+    multiseed = load_multiseed()
     rows = []
     for name, info in JEPA_RUNS.items():
-        reg = hi_mean(info["regular"])
-        th = hi_mean(info["test_hard"])
+        ms_reg = multiseed.get((name, "test"))
+        ms_th = multiseed.get((name, "test_hard"))
+        # Fallback to single-seed JSON if no multi-seed
+        reg = hi_mean(info["regular"]) if not ms_reg else None
+        th = hi_mean(info["test_hard"]) if not ms_th else None
         rows.append({
             "name": name, "arch": info["arch"], "H": info["H"], "S": info["S"],
             "params_M": info["params_M"],
-            "regular": reg["pearson"] if reg else None,
-            "test_hard": th["pearson"] if th else None,
+            "regular": (ms_reg["mean"] if ms_reg else (reg["pearson"] if reg else None)),
+            "regular_std": ms_reg["std"] if ms_reg else None,
+            "test_hard": (ms_th["mean"] if ms_th else (th["pearson"] if th else None)),
+            "test_hard_std": ms_th["std"] if ms_th else None,
+            "n_seeds": ms_reg["n_valid"] if ms_reg else 1,
+            "is_in_progress": False,
         })
     for name, info in LSTM_RUNS.items():
         rows.append({
             "name": name, "arch": info["arch"], "H": info["H"], "S": info["S"],
             "params_M": info["params_M"],
             "regular": info["regular_pearson"],
+            "regular_std": None,
             "test_hard": info["test_hard_pearson"],
+            "test_hard_std": None,
+            "n_seeds": 1,
+            "is_in_progress": False,
+        })
+    for name, info in IN_PROGRESS.items():
+        rows.append({
+            "name": name, "arch": info["arch"], "H": info["H"], "S": info["S"],
+            "params_M": info["params_M"],
+            "regular": None, "regular_std": None,
+            "test_hard": None, "test_hard_std": None,
+            "n_seeds": 0, "is_in_progress": True,
+            "note": info["note"],
         })
     return rows
 
@@ -136,30 +184,59 @@ def collect_summary() -> list:
 # ── Figure 1: cross-arch × cross-config Pearson, in-dist vs OOD ──────────────
 def fig1():
     rows = collect_summary()
-    rows = [r for r in rows if r["regular"] is not None and r["test_hard"] is not None]
+    # Order: real results first (sorted by name), then in-progress
+    real = [r for r in rows if not r["is_in_progress"]]
+    in_progress = [r for r in rows if r["is_in_progress"]]
+    real = sorted(real, key=lambda r: (r["arch"], r["H"], r["S"]))
+    rows_ord = real + in_progress
 
-    labels = [f"{r['name']}\n{r['arch']}\nH={r['H']} S={r['S']}" for r in rows]
-    in_d = [r["regular"] for r in rows]
-    ood = [r["test_hard"] for r in rows]
+    labels = []
+    for r in rows_ord:
+        tag = "\n(in progress)" if r["is_in_progress"] else (f"\n(n={r['n_seeds']} seeds)" if r["n_seeds"] > 1 else "")
+        labels.append(f"{r['name']}\n{r['arch']}\nH={r['H']} S={r['S']}{tag}")
+    in_d = [(r["regular"] if r["regular"] is not None else 0) for r in rows_ord]
+    ood = [(r["test_hard"] if r["test_hard"] is not None else 0) for r in rows_ord]
+    in_d_err = [(r["regular_std"] or 0) for r in rows_ord]
+    ood_err = [(r["test_hard_std"] or 0) for r in rows_ord]
+    is_ip = [r["is_in_progress"] for r in rows_ord]
 
-    x = np.arange(len(rows))
+    x = np.arange(len(rows_ord))
     w = 0.38
-    fig, ax = plt.subplots(figsize=(8, 4.2))
-    ax.bar(x - w/2, in_d, w, label="In-distribution (test_lewm)", color=C_INDIST)
-    ax.bar(x + w/2, ood, w, label="OOD (test_hard_lewm)", color=C_OOD)
+    fig, ax = plt.subplots(figsize=(11, 4.5))
+    in_colors = [C_INDIST if not p else "lightgray" for p in is_ip]
+    ood_colors = [C_OOD if not p else "lightgray" for p in is_ip]
+    ax.bar(x - w/2, in_d, w, color=in_colors,
+           hatch=["" if not p else "//" for p in is_ip],
+           edgecolor="black", linewidth=0.6,
+           label="In-distribution (test_lewm)", yerr=in_d_err, capsize=3)
+    ax.bar(x + w/2, ood, w, color=ood_colors,
+           hatch=["" if not p else "//" for p in is_ip],
+           edgecolor="black", linewidth=0.6,
+           label="OOD (test_hard_lewm)", yerr=ood_err, capsize=3)
     ax.axhline(0, color="black", lw=0.5)
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=8.5)
+    ax.set_xticklabels(labels, fontsize=8)
     ax.set_ylabel("HI mean Pearson-r")
-    ax.set_title("Encoder representation quality across configurations and architectures")
+    ax.set_title("Encoder representation quality — multi-seed mean ± std (where available)\n"
+                 "Hatched bars = config queued, awaiting results")
     ax.legend(loc="upper right")
-    ax.set_ylim(min(min(ood) - 0.05, -0.1), max(in_d) + 0.08)
 
-    # Annotate each bar with its value
-    for i, v in enumerate(in_d):
-        ax.text(i - w/2, v + 0.01, f"{v:.2f}", ha="center", fontsize=8)
-    for i, v in enumerate(ood):
-        offset = 0.01 if v >= 0 else -0.04
+    valid_ood = [v for v in ood if not np.isnan(v)]
+    valid_ind = [v for v in in_d if not np.isnan(v)]
+    ymin = min(min(valid_ood + [0]) - 0.1, -0.15)
+    ymax = max(valid_ind) + 0.12
+    ax.set_ylim(ymin, ymax)
+
+    for i, (v, p) in enumerate(zip(in_d, is_ip)):
+        if p:
+            ax.text(i - w/2, 0.02, "(in progress)", ha="center",
+                    fontsize=8, color="dimgray", rotation=90, va="bottom")
+        else:
+            ax.text(i - w/2, v + 0.015, f"{v:.2f}", ha="center", fontsize=8)
+    for i, (v, p) in enumerate(zip(ood, is_ip)):
+        if p:
+            continue
+        offset = 0.015 if v >= 0 else -0.04
         ax.text(i + w/2, v + offset, f"{v:.2f}", ha="center", fontsize=8)
 
     out = FIG_DIR / "fig1_xarch_xconfig_inOOD"
@@ -242,20 +319,36 @@ def fig3():
 # ── Figure 4: in-distribution vs OOD scatter — the tradeoff visualised ───────
 def fig4():
     rows = collect_summary()
-    rows = [r for r in rows if r["regular"] is not None and r["test_hard"] is not None]
+    real = [r for r in rows if not r["is_in_progress"] and r["regular"] is not None and r["test_hard"] is not None]
+    in_progress = [r for r in rows if r["is_in_progress"]]
 
-    fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    for r in rows:
+    fig, ax = plt.subplots(figsize=(7, 6))
+    seen = set()
+    for r in real:
         color = C_JEPA if r["arch"] == "JEPA" else C_LSTM
         marker = "o" if r["arch"] == "JEPA" else "s"
-        ax.scatter(r["regular"], r["test_hard"], s=110, color=color, marker=marker,
-                   edgecolors="black", linewidths=0.6, zorder=3,
-                   label=r["arch"] if r["name"] in ("E1", "L1") else None)
-        ax.annotate(f" {r['name']} (H={r['H']}, S={r['S']})",
-                    (r["regular"], r["test_hard"]), fontsize=9.5, va="center")
+        label = r["arch"] if r["arch"] not in seen else None
+        seen.add(r["arch"])
+        ax.errorbar(r["regular"], r["test_hard"],
+                    xerr=r["regular_std"] if r["regular_std"] else 0,
+                    yerr=r["test_hard_std"] if r["test_hard_std"] else 0,
+                    fmt=marker, ms=10, color=color, mec="black", mew=0.6,
+                    elinewidth=0.7, capsize=2, zorder=3, label=label)
+        ax.annotate(f" {r['name']}\n (H={r['H']}, S={r['S']})",
+                    (r["regular"], r["test_hard"]), fontsize=9, va="center")
 
-    # Identity line (perfect generalization)
-    lo, hi = -0.1, 0.7
+    # In-progress placeholders (gray hollow markers along axes)
+    for r in in_progress:
+        color = C_JEPA if r["arch"] == "JEPA" else C_LSTM
+        marker = "o" if r["arch"] == "JEPA" else "s"
+        # Place at edge marker; use x=ymin to indicate "unknown"
+        ax.scatter([-0.05], [-0.08], s=100, marker=marker, facecolors="none",
+                   edgecolors=color, linewidths=1.2, zorder=2)
+        ax.annotate(f" {r['name']} (H={r['H']}, S={r['S']}) — in progress",
+                    (-0.05, -0.08), fontsize=8.5, va="top", color="dimgray",
+                    xytext=(-0.05 + 0.01, -0.08 - 0.025))
+
+    lo, hi = -0.1, 0.75
     ax.plot([lo, hi], [lo, hi], "--", color=C_NEUTRAL, lw=0.7, zorder=1,
             label="Perfect generalization (identity)")
     ax.axhline(0, color="black", lw=0.4, zorder=1)
@@ -264,8 +357,8 @@ def fig4():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_xlabel("In-distribution HI Pearson-r (test_lewm)")
     ax.set_ylabel("OOD HI Pearson-r (test_hard_lewm)")
-    ax.set_title("Specificity ↔ generality: in-distribution vs OOD probe quality\n"
-                 "JEPA shows the tradeoff (E2 above identity); AR-LSTM does not")
+    ax.set_title("Specificity ↔ generality (multi-seed mean, error bars = ±1 std)\n"
+                 "Larger S → higher OOD; in-distribution best at H=32 S=1 (E2)")
     ax.legend(loc="lower right")
     ax.set_aspect("equal", "box")
 
