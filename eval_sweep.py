@@ -1267,6 +1267,7 @@ def run_one(
     archetype_seq_lens: list | None = None,
     archetype_names: list | None = None,
     exclude_events: bool = False,
+    seed: int | None = None,
 ) -> dict:
     """Run downstream evaluation for one checkpoint.
 
@@ -1274,9 +1275,20 @@ def run_one(
     ----------
     tasks : set of ints, e.g. {1, 2} to run only Tasks 1 & 2.
             None (default) runs all tasks.
+    seed : if given, seed torch / numpy / random for reproducibility of
+            probe head init and DataLoader shuffles. Without this, probe
+            head init is unseeded and Pearson can swing ±0.2 between
+            back-to-back invocations of the same config.
     """
     if tasks is None:
         tasks = ALL_TASKS
+
+    if seed is not None:
+        import random as _random
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        _random.seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
     name    = cfg["name"]
     enc_t   = cfg.get("encoder_type", "sensor")
@@ -1630,6 +1642,9 @@ def main():
     parser.add_argument("--exclude_events",    action="store_true",
                         help="drop timesteps flagged in event_mask from Task 1/2 "
                              "probe data (scenario-3 only)")
+    parser.add_argument("--seed",              type=int, default=None,
+                        help="seed for probe-head init / DataLoader / numpy / random. "
+                             "Without it, single-seed Pearson can swing by ±0.2.")
     args = parser.parse_args()
     # --tasks 1 2 → set {1, 2};  omitted → None (all tasks)
     tasks = set(args.tasks) if args.tasks else None
@@ -1708,6 +1723,7 @@ def main():
                 archetype_seq_lens=archetype_seq_lens,
                 archetype_names=archetype_names,
                 exclude_events=exclude_events,
+                seed=args.seed,
             )
             with open(rp, "w") as f:
                 json.dump(result, f, indent=2)
