@@ -50,7 +50,20 @@ def model_rollout_HI(model, probe, scaler, sensors_history: np.ndarray,
 
     Returns predicted HI: (horizon, 10).
     """
+    # Detect the model's training history length from predictor pos_embedding.
+    # The predictor has fixed positional encodings of length history_size,
+    # so we MUST feed exactly that many context frames or it crashes
+    # (e.g. E5 with H=8 vs other ckpts with H=16/32).
+    if hasattr(model.predictor, "pos_embedding"):
+        train_H = model.predictor.pos_embedding.shape[1]
+    else:
+        train_H = sensors_history.shape[0]
+    # Slice to last train_H frames if we were given more
+    if sensors_history.shape[0] > train_H:
+        sensors_history = sensors_history[-train_H:]
+        hist_actions = hist_actions[-train_H:]
     H = sensors_history.shape[0]
+
     # 1. Encode history → (H, D)
     # Note on action shape: model.action_encoder is an Embedder that does
     # x.permute(0, 2, 1) internally — needs 3D input (B, T, 1). 2D crashes.
