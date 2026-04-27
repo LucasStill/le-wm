@@ -1,0 +1,75 @@
+[
+  {
+    "name": "E2_test_s1",
+    "path": "/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H32_S1_P4/lewm_s4_sensor_w1_H32_S1_P4_epoch_10_object.ckpt",
+    "encoder_type": "sensor",
+    "obs_window_size": 1,
+    "n_params": 829396,
+    "embed_dim": 64,
+    "task1_hi": {
+      "sl1": {
+        "HI_0": {
+          "r2": -0.060405611991882324,
+          "rmse": 0.0019701889250427485,
+          "pearson_r": NaN
+        },
+        "HI_1": {
+          "r2": -0.060387372970581055,
+          "rmse": 0.001802176469936967,
+          "pearson_r": NaN
+        },
+        "HI_2": {
+          "r2": -0.014545798301696777,
+          "rmse": 0.0025472459383308887,
+          "pearson_r": NaN
+        },
+        "HI_3": {
+          "r2": -0.0003020763397216797,
+          "rmse": 0.002040569670498371,
+          "pearson_r": NaN
+        },
+        "HI_4": {
+          "r2": -0.10185801982879639,
+          "rmse": 0.0045359376817941666,
+          "pearson_r": NaN
+        },
+        "HI_5": {
+          "r2": -0.010176658630371094,
+          "rmse": 0.00465951394289732,
+          "pearson_r": NaN
+        },
+        "HI_6": {
+          "r2": -0.0023955106735229492,
+          "rmse": 0.004609394818544388,
+          "pearson_r": NaN
+        },
+        "HI_7": {
+          "r2": -0.01887226104736328,
+          "rmse": 0.003687975462526083,
+          "pearson_r": NaN
+        },
+        "HI_8": {
+          "r2": -0.05980968475341797,
+          "rmse": 0.0031873334664851427,
+          "pearson_r": NaN
+        },
+        "HI_9": {
+          "r2": -0.03802776336669922,
+          "rmse": 0.002500877482816577,
+          "pearson_r": NaN
+        },
+        "__mean__": {
+          "r2": -0.03667807579040527,
+          "rmse": 0.003154121385887265,
+          "pearson_r": NaN
+        }
+      }
+    },
+    "task2_delta_hi": null,
+    "task2b_alarm": null,
+    "task2_tnm": null,
+    "task3_forecast": null,
+    "task4_health_clf": null,
+    "task5_archetype": null
+  }
+]

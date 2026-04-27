@@ -97,6 +97,82 @@
     ]
   },
   {
+    "ckpt": "E2ep10",
+    "split": "test",
+    "n_seeds_total": 3,
+    "n_seeds_valid": 3,
+    "n_nan": 0,
+    "seeds_valid": [
+      0,
+      2,
+      3
+    ],
+    "pearson_mean": 0.5983864621569713,
+    "pearson_std": 0.02636189232218226,
+    "pearson_values": [
+      0.607850405573845,
+      0.5685990579426289,
+      0.6187099229544402
+    ]
+  },
+  {
+    "ckpt": "E2ep10",
+    "split": "test_hard",
+    "n_seeds_total": 3,
+    "n_seeds_valid": 3,
+    "n_nan": 0,
+    "seeds_valid": [
+      0,
+      2,
+      3
+    ],
+    "pearson_mean": 0.285792367781202,
+    "pearson_std": 0.11400303657300903,
+    "pearson_values": [
+      0.21466222517192363,
+      0.22543002143502236,
+      0.41728485673666
+    ]
+  },
+  {
+    "ckpt": "E2ep5",
+    "split": "test",
+    "n_seeds_total": 3,
+    "n_seeds_valid": 3,
+    "n_nan": 0,
+    "seeds_valid": [
+      0,
+      2,
+      3
+    ],
+    "pearson_mean": 0.3567693949987491,
+    "pearson_std": 0.12871373869123595,
+    "pearson_values": [
+      0.20947058722376824,
+      0.41325714252889156,
+      0.44758045524358747
+    ]
+  },
+  {
+    "ckpt": "E2ep5",
+    "split": "test_hard",
+    "n_seeds_total": 3,
+    "n_seeds_valid": 3,
+    "n_nan": 0,
+    "seeds_valid": [
+      0,
+      2,
+      3
+    ],
+    "pearson_mean": 0.3072805815686782,
+    "pearson_std": 0.12034496381142461,
+    "pearson_values": [
+      0.36669179387390616,
+      0.3863667085766792,
+      0.1687832422554493
+    ]
+  },
+  {
     "ckpt": "E3",
     "split": "test",
     "n_seeds_total": 6,
@@ -239,6 +315,44 @@
       0.329144636541605,
       0.337929155677557,
       0.29663980174809695
+    ]
+  },
+  {
+    "ckpt": "E7probe",
+    "split": "test",
+    "n_seeds_total": 3,
+    "n_seeds_valid": 3,
+    "n_nan": 0,
+    "seeds_valid": [
+      0,
+      2,
+      3
+    ],
+    "pearson_mean": 0.5188098748524983,
+    "pearson_std": 0.05796598995851471,
+    "pearson_values": [
+      0.4754289537668228,
+      0.4963570713996887,
+      0.5846435993909835
+    ]
+  },
+  {
+    "ckpt": "E7probe",
+    "split": "test_hard",
+    "n_seeds_total": 3,
+    "n_seeds_valid": 3,
+    "n_nan": 0,
+    "seeds_valid": [
+      0,
+      2,
+      3
+    ],
+    "pearson_mean": 0.39365292054911455,
+    "pearson_std": 0.025357343293109222,
+    "pearson_values": [
+      0.3760066471993923,
+      0.4227109685540199,
+      0.3822411458939314
     ]
   }
 ]

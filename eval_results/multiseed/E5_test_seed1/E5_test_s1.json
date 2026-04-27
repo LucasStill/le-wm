@@ -1,0 +1,73 @@
+{
+  "name": "E5_test_s1",
+  "path": "/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H8_S1_P4/lewm_s4_sensor_w1_H8_S1_P4_epoch_10_object.ckpt",
+  "encoder_type": "sensor",
+  "obs_window_size": 1,
+  "n_params": 827860,
+  "embed_dim": 64,
+  "task1_hi": {
+    "sl1": {
+      "HI_0": {
+        "r2": -0.06017708778381348,
+        "rmse": 0.001969976583495736,
+        "pearson_r": NaN
+      },
+      "HI_1": {
+        "r2": -0.06206202507019043,
+        "rmse": 0.001803599065169692,
+        "pearson_r": NaN
+      },
+      "HI_2": {
+        "r2": -0.014428853988647461,
+        "rmse": 0.002547099022194743,
+        "pearson_r": NaN
+      },
+      "HI_3": {
+        "r2": -0.0002989768981933594,
+        "rmse": 0.0020405666437000036,
+        "pearson_r": NaN
+      },
+      "HI_4": {
+        "r2": -0.10192370414733887,
+        "rmse": 0.004536072723567486,
+        "pearson_r": NaN
+      },
+      "HI_5": {
+        "r2": -0.010111331939697266,
+        "rmse": 0.004659363068640232,
+        "pearson_r": NaN
+      },
+      "HI_6": {
+        "r2": -0.002368927001953125,
+        "rmse": 0.004609333351254463,
+        "pearson_r": NaN
+      },
+      "HI_7": {
+        "r2": -0.019048333168029785,
+        "rmse": 0.003688294440507889,
+        "pearson_r": NaN
+      },
+      "HI_8": {
+        "r2": -0.05983471870422363,
+        "rmse": 0.0031873711850494146,
+        "pearson_r": NaN
+      },
+      "HI_9": {
+        "r2": -0.03851008415222168,
+        "rmse": 0.0025014583952724934,
+        "pearson_r": NaN
+      },
+      "__mean__": {
+        "r2": -0.03687640428543091,
+        "rmse": 0.003154313447885215,
+        "pearson_r": NaN
+      }
+    }
+  },
+  "task2_delta_hi": null,
+  "task2b_alarm": null,
+  "task2_tnm": null,
+  "task3_forecast": null,
+  "task4_health_clf": null,
+  "task5_archetype": null
+}
