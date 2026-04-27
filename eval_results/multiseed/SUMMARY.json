@@ -2,183 +2,243 @@
   {
     "ckpt": "E1",
     "split": "test",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.4469091406092048,
-    "pearson_std": 0.03302159351004087,
+    "pearson_mean": 0.4457917755842209,
+    "pearson_std": 0.03908376114091395,
     "pearson_values": [
       0.4235593479126692,
       NaN,
-      0.47025893330574037
+      0.47025893330574037,
+      0.4031829297542572,
+      0.43143400363624096,
+      0.5005236633121968
     ]
   },
   {
     "ckpt": "E1",
     "split": "test_hard",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.05303622523788362,
-    "pearson_std": 0.13775130214937376,
+    "pearson_mean": 0.23442355661652983,
+    "pearson_std": 0.17992649988028256,
     "pearson_values": [
       -0.0443686546292156,
       NaN,
-      0.15044110510498285
+      0.15044110510498285,
+      0.37444453295320274,
+      0.33354160701856017,
+      0.358059192635119
     ]
   },
   {
     "ckpt": "E2",
     "split": "test",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.588224731758237,
-    "pearson_std": 0.027754894080743414,
+    "pearson_mean": 0.596570798829198,
+    "pearson_std": 0.024567256020925493,
     "pearson_values": [
       0.607850405573845,
       NaN,
-      0.5685990579426289
+      0.5685990579426289,
+      0.6187099229544402,
+      0.5714913561940194,
+      0.6162032514810563
     ]
   },
   {
     "ckpt": "E2",
     "split": "test_hard",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 3,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 6,
     "n_nan": 0,
     "seeds_valid": [
       0,
       1,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.2621879804258545,
-    "pearson_std": 0.07319012723216536,
+    "pearson_mean": 0.32654405164842804,
+    "pearson_std": 0.13549777921548858,
     "pearson_values": [
       0.21466222517192363,
       0.34647169467061756,
-      0.22543002143502236
+      0.22543002143502236,
+      0.41728485673666,
+      0.21159003153443337,
+      0.5438254803419114
     ]
   },
   {
     "ckpt": "E3",
     "split": "test",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.4311325142160058,
-    "pearson_std": 0.031933496224569216,
+    "pearson_mean": 0.4496941616758704,
+    "pearson_std": 0.05410565895638695,
     "pearson_values": [
       0.4085521224886179,
       NaN,
-      0.4537129059433937
+      0.4537129059433937,
+      0.5171379841864109,
+      0.38457123562693596,
+      0.4844965601339936
     ]
   },
   {
     "ckpt": "E3",
     "split": "test_hard",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.34006748609244825,
-    "pearson_std": 0.040765424964854746,
+    "pearson_mean": 0.28431297216564416,
+    "pearson_std": 0.10384673641826836,
     "pearson_values": [
       0.3112419776618481,
       NaN,
-      0.3688929945230484
+      0.3688929945230484,
+      0.3296490769833326,
+      0.10366010963916779,
+      0.308120702020824
     ]
   },
   {
     "ckpt": "E5",
     "split": "test",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.5137893194332719,
-    "pearson_std": 0.006789622589842321,
+    "pearson_mean": 0.3995208495482802,
+    "pearson_std": 0.21781934015933346,
     "pearson_values": [
       0.508988331258297,
       NaN,
-      0.5185903076082468
+      0.5185903076082468,
+      0.474938927590847,
+      0.01117690745741129,
+      0.4839097738265991
     ]
   },
   {
     "ckpt": "E5",
     "split": "test_hard",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": -0.028127168118953702,
-    "pearson_std": 0.09194893448394302,
+    "pearson_mean": 0.1777542415075004,
+    "pearson_std": 0.19639099215461614,
     "pearson_values": [
       -0.0931448832154274,
       NaN,
-      0.03689054697751999
+      0.03689054697751999,
+      0.26023567393422126,
+      0.3383657640777528,
+      0.34642410576343535
     ]
   },
   {
     "ckpt": "E6probe",
     "split": "test",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 2,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 5,
     "n_nan": 1,
     "seeds_valid": [
       0,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.46868046969175337,
-    "pearson_std": 0.15287457898135395,
+    "pearson_mean": 0.4061235105991364,
+    "pearson_std": 0.09545337544296376,
     "pearson_values": [
       0.36058181822299956,
       NaN,
-      0.5767791211605072
+      0.5767791211605072,
+      0.36749196946620943,
+      0.36571142375469207,
+      0.3600532203912735
     ]
   },
   {
     "ckpt": "E6probe",
     "split": "test_hard",
-    "n_seeds_total": 3,
-    "n_seeds_valid": 3,
+    "n_seeds_total": 6,
+    "n_seeds_valid": 6,
     "n_nan": 0,
     "seeds_valid": [
       0,
       1,
-      2
+      2,
+      3,
+      4,
+      5
     ],
-    "pearson_mean": 0.36900451431671777,
-    "pearson_std": 0.052129190010753376,
+    "pearson_mean": 0.3451211894862354,
+    "pearson_std": 0.04427993917914283,
     "pearson_values": [
       0.3398138225078583,
       0.33801060616970063,
-      0.42918911427259443
+      0.42918911427259443,
+      0.329144636541605,
+      0.337929155677557,
+      0.29663980174809695
     ]
   }
 ]
