@@ -83,13 +83,18 @@ python aggregate_multiseed.py | tail -20
 python make_paper_figures.py | tail -8
 
 # ── PART 4: counterfactual fidelity (online-simulator demo) ──────────────
-echo "[$(ts)] PART 4: counterfactual fidelity on E2 (10 episodes × 4 actions × horizon 100)"
-python counterfactual_fidelity.py \
-    --ckpt "$E2_CKPT" \
-    --sim_h5 /home/lthil/.stable_worldmodel/scenario4_train_sensors.h5 \
-    --eval_h5 /home/lthil/.stable_worldmodel/scenario4_test_lewm.h5 \
-    --out_dir eval_results/counterfactual_E2 \
-    --n_episodes 10 --horizon 100 --actions 0 1 5 6 2>&1 | tail -15
+echo "[$(ts)] PART 4: counterfactual fidelity — multi-ckpt × all 7 actions × 3 branch positions"
+E1_CKPT=/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H16_S1_P4/lewm_s4_sensor_w1_H16_S1_P4_epoch_10_object.ckpt
+E5_CKPT=/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H8_S1_P4/lewm_s4_sensor_w1_H8_S1_P4_epoch_10_object.ckpt
+PYTHONPATH=/home/lthil/thesis/rl_opendeck_simulator:$PYTHONPATH \
+    python counterfactual_fidelity.py \
+        --ckpts E1:$E1_CKPT E2:$E2_CKPT E5:$E5_CKPT E6probe:$E6_CKPT \
+        --sim_h5 /home/lthil/.stable_worldmodel/scenario4_train_sensors.h5 \
+        --eval_h5 /home/lthil/.stable_worldmodel/scenario4_test_lewm.h5 \
+        --out_dir eval_results/counterfactual \
+        --n_episodes 30 --horizon 100 \
+        --actions 0 1 2 3 4 5 6 \
+        --branch_fracs 0.25 0.5 0.75 2>&1 | tail -25
 
 # ── PART 5: push to GitHub ───────────────────────────────────────────────
 echo "[$(ts)] PART 5: commit + push"
