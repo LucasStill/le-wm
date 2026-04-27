@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 10:59 UTC_
+_Last regenerated: 2026-04-27 11:09 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -502,15 +502,15 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 ### Dragon log
 ```
 
-  Dragon-side phase 2 (queued, auto-starts when overnight_chain finishes):
-    - Forecasting (task 3, horizon=200) on E2, E6probe, E7probe × {test, test_hard}
-    - E2 trajectory: epoch 5 vs epoch 10 multi-seed (3 seeds × 2 splits)
-    - Re-aggregate + push figures
-  Wall: ~1-2 h after E7 probe lands ~17:30 UTC. Total dragon idle by ~21:00 UTC.
+  Cost: ~30-60 min on A6000 once you've imported the simulator.
 
-  Cross-arch combined paper figure (for forecasting): once we both have
-  task 3 results, I'll add fig5 — RMSE vs τ curves with one panel per
-  arch family, clean vs event split. Will regen figures and push.
+  Running same experiment on dragon for E2 in parallel. Will combine
+  into a single cross-arch figure (fig6) when both land.
+
+  NOTE on signature: EpisodeReplayer takes ONLY a dataset_path
+  (not seed/ctx_fill_seed/sim_version). It reads them from the H5.
+  CounterfactualSpec(branch_t, override_action, forced_actions,
+  horizon, weather_seed, events_seed, weather_overrides) — all kwargs.
 ```
 
 ### OrailixTower log

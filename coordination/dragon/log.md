@@ -432,3 +432,64 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   Cross-arch combined paper figure (for forecasting): once we both have
   task 3 results, I'll add fig5 — RMSE vs τ curves with one panel per
   arch family, clean vs event split. Will regen figures and push.
+
+2026-04-27T09:55Z  REPLAY INFRASTRUCTURE OPERATIONAL on dragon. Lucas
+  clarified the simulator IS shipped — I just had the import path wrong.
+
+  Working setup:
+   - Simulator repo: ~/thesis/rl_opendeck_simulator/ on `nodegpu`
+     (HEAD 90cd19e, past your replay commit 4cd4248)
+   - Import: PYTHONPATH=~/thesis/rl_opendeck_simulator:$PYTHONPATH
+     (skipped pip install -e — the OpenDeckSMR sub-package lacks
+     pyproject.toml. PYTHONPATH is enough.)
+   - Dataset: scenario4_*_sensors.h5 ALREADY have ep_meta/seed and
+     ctx_fill_seed (the lewm.h5 files don't, but replayer takes the
+     sensors.h5 directly). Only sim_version is missing → benign
+     UserWarning, defaults to 'scenario4@v1.0.0'.
+
+  End-to-end verified: replay_full(ep_idx=0) returns Episode4 with
+  full state trajectory. counterfactual(0, CounterfactualSpec(branch_t=2000,
+  override_action=1, horizon=200)) returns CounterfactualRollout. ✓
+
+  NEW T7 — Counterfactual fidelity demo on AR-LSTM (L1).
+  This is the headline online-simulator paper figure. Lucas greenlit
+  doing it on BOTH archs in parallel — hence dispatching to you.
+
+  Lucas's sharp note: the world model takes action as input, so does
+  the simulator — naive RMSE per-action will look "good" because both
+  are conditioned on the same action. The interesting metric is
+  DIFFERENTIAL: does Δ(action_A vs action_0) in the world model match
+  Δ(action_A vs action_0) in the simulator? That's the genuine "did
+  the model learn action causality" test.
+
+  Concrete protocol:
+   1. Load L1 model (ckpt from your s4_arlstm_L1 run, epoch_10_object).
+   2. Load EpisodeReplayer (your /home/lucas/thesis/rl_opendeck_simulator,
+      after similar pip-install or PYTHONPATH setup).
+   3. Pick N=20 episodes from train_sensors.h5, each with branch_t
+      around episode-midpoint (avoid <100 from boundaries).
+   4. For each (ep, branch_t):
+      a. Encode current state at branch_t via L1's encoder.
+      b. For each action a ∈ {0, 1, 2, 3}:
+         - World-model rollout: model.rollout(initial_state, action_seq=[a]*200, history_size=L1's H=16)
+         - Simulator: replayer.counterfactual(ep, CounterfactualSpec(
+              branch_t, override_action=a, horizon=200))
+      c. Decode rollout latents to HI via a trained task-1 probe
+         (use eval_sweep.train_probe pattern; train probe on encoder
+         outputs of the train split if you don't have one cached).
+   5. Save JSON: per-episode, per-action, per-step HI predictions
+      (model + simulator).
+   6. Aggregate metrics:
+      - Absolute RMSE(τ) per action
+      - Differential: |Δmodel(a, 0) - Δsimulator(a, 0)| at τ=50, 100, 200
+   7. Append section "Counterfactual fidelity (T7)" to results.md.
+
+  Cost: ~30-60 min on A6000 once you've imported the simulator.
+
+  Running same experiment on dragon for E2 in parallel. Will combine
+  into a single cross-arch figure (fig6) when both land.
+
+  NOTE on signature: EpisodeReplayer takes ONLY a dataset_path
+  (not seed/ctx_fill_seed/sim_version). It reads them from the H5.
+  CounterfactualSpec(branch_t, override_action, forced_actions,
+  horizon, weather_seed, events_seed, weather_overrides) — all kwargs.
