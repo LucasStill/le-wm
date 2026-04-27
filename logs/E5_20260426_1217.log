@@ -1049,3 +1049,272 @@ Total FLOPs: 0
 14:36:46.308 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total memory freed: 0.00 GB
 14:36:46.308 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Average time per checkpoint: 0.01s
 14:36:46.308 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | ============================================================
+14:53:23.624 | WARNING (879830, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+14:53:55.097 | INFO    (879830, stable_pretraining.callbacks.trainer_info) | \n+----------------------------------+-----------------------+
+|              Metric              |         Value         |
++----------------------------------+-----------------------+
+|           [0;34;40mfit/ar_loss[0m            |  [0;32;40m0.07861936092376709[0m  |
+|             [0;34;40mfit/loss[0m             |   [0;32;40m0.3738563656806946[0m  |
+|          [0;34;40mfit/pred_loss[0m           |  [0;32;40m0.12971575558185577[0m  |
+|         [0;34;40mfit/sigreg_loss[0m          |         [0;32;40m1.625[0m         |
+|   [0;34;40mhi_probe/sl8/HI_0/pearson_r[0m    |   [0;32;40m0.5001811981201172[0m  |
+|       [0;34;40mhi_probe/sl8/HI_0/r2[0m       |  [0;32;40m0.23048698902130127[0m  |
+|      [0;34;40mhi_probe/sl8/HI_0/rmse[0m      | [0;32;40m0.0024620136246085167[0m |
+|   [0;34;40mhi_probe/sl8/HI_1/pearson_r[0m    |  [0;32;40m0.39308834075927734[0m  |
+|       [0;34;40mhi_probe/sl8/HI_1/r2[0m       |  [0;32;40m0.14663857221603394[0m  |
+|      [0;34;40mhi_probe/sl8/HI_1/rmse[0m      |  [0;32;40m0.00329711870290339[0m  |
+|   [0;34;40mhi_probe/sl8/HI_2/pearson_r[0m    |  [0;32;40m0.41023164987564087[0m  |
+|       [0;34;40mhi_probe/sl8/HI_2/r2[0m       |  [0;32;40m0.07074463367462158[0m  |
+|      [0;34;40mhi_probe/sl8/HI_2/rmse[0m      |  [0;32;40m0.003626532619819045[0m |
+|   [0;34;40mhi_probe/sl8/HI_3/pearson_r[0m    |   [0;32;40m0.7399730086326599[0m  |
+|       [0;34;40mhi_probe/sl8/HI_3/r2[0m       |   [0;32;40m0.5253069996833801[0m  |
+|      [0;34;40mhi_probe/sl8/HI_3/rmse[0m      | [0;32;40m0.0025087783578783274[0m |
+|   [0;34;40mhi_probe/sl8/HI_4/pearson_r[0m    |   [0;32;40m0.4948655366897583[0m  |
+|       [0;34;40mhi_probe/sl8/HI_4/r2[0m       |  [0;32;40m0.07072174549102783[0m  |
+|      [0;34;40mhi_probe/sl8/HI_4/rmse[0m      |  [0;32;40m0.003998395521193743[0m |
+|   [0;34;40mhi_probe/sl8/HI_5/pearson_r[0m    |   [0;32;40m0.5082871913909912[0m  |
+|       [0;34;40mhi_probe/sl8/HI_5/r2[0m       |  [0;32;40m0.03609365224838257[0m  |
+|      [0;34;40mhi_probe/sl8/HI_5/rmse[0m      |  [0;32;40m0.003629944520071149[0m |
+|   [0;34;40mhi_probe/sl8/HI_6/pearson_r[0m    |   [0;32;40m0.7702864408493042[0m  |
+|       [0;34;40mhi_probe/sl8/HI_6/r2[0m       |  [0;32;40m0.43119150400161743[0m  |
+|      [0;34;40mhi_probe/sl8/HI_6/rmse[0m      |  [0;32;40m0.002984016202390194[0m |
+|   [0;34;40mhi_probe/sl8/HI_7/pearson_r[0m    |   [0;32;40m0.6374063491821289[0m  |
+|       [0;34;40mhi_probe/sl8/HI_7/r2[0m       |  [0;32;40m0.34012776613235474[0m  |
+|      [0;34;40mhi_probe/sl8/HI_7/rmse[0m      | [0;32;40m0.0024253614246845245[0m |
+|   [0;34;40mhi_probe/sl8/HI_8/pearson_r[0m    |   [0;32;40m0.7187938690185547[0m  |
+|       [0;34;40mhi_probe/sl8/HI_8/r2[0m       |   [0;32;40m0.3839859962463379[0m  |
+|      [0;34;40mhi_probe/sl8/HI_8/rmse[0m      | [0;32;40m0.0026479612570255995[0m |
+|   [0;34;40mhi_probe/sl8/HI_9/pearson_r[0m    |   [0;32;40m0.5643652081489563[0m  |
+|       [0;34;40mhi_probe/sl8/HI_9/r2[0m       |   [0;32;40m0.2004414200782776[0m  |
+|      [0;34;40mhi_probe/sl8/HI_9/rmse[0m      |  [0;32;40m0.00234794057905674[0m  |
+|   [0;34;40mhi_probe/sl8/mean_pearson_r[0m    |   [0;32;40m0.5737478733062744[0m  |
+|       [0;34;40mhi_probe/sl8/mean_r2[0m       |  [0;32;40m0.24357393383979797[0m  |
+|      [0;34;40mhi_probe/sl8/mean_rmse[0m      | [0;32;40m0.0029928062576800585[0m |
+| [0;34;40mhi_probe/sl8/rul/frac_uncensored[0m |          [0;32;40m1.0[0m          |
+|       [0;34;40mhi_probe/sl8/rul/mae[0m       |   [0;32;40m26.91871452331543[0m   |
+|    [0;34;40mhi_probe/sl8/rul/pearson_r[0m    |  [0;32;40m0.032454509288072586[0m |
+|       [0;34;40mhi_probe/sl8/rul/r2[0m        |  [0;32;40m-0.1920325756072998[0m  |
+|      [0;34;40mhi_probe/sl8/rul/rmse[0m       |   [0;32;40m34.08039093017578[0m   |
+|         [0;34;40mvalidate/ar_loss[0m         |  [0;32;40m0.08355258405208588[0m  |
+|      [0;34;40mvalidate/ar_loss_epoch[0m      |  [0;32;40m0.08355258405208588[0m  |
+|          [0;34;40mvalidate/loss[0m           |   [0;32;40m0.6153080463409424[0m  |
+|       [0;34;40mvalidate/loss_epoch[0m        |   [0;32;40m0.6153080463409424[0m  |
+|        [0;34;40mvalidate/pred_loss[0m        |  [0;32;40m0.13418222963809967[0m  |
+|     [0;34;40mvalidate/pred_loss_epoch[0m     |  [0;32;40m0.13418222963809967[0m  |
+|       [0;34;40mvalidate/sigreg_loss[0m       |   [0;32;40m3.207613706588745[0m   |
+|    [0;34;40mvalidate/sigreg_loss_epoch[0m    |   [0;32;40m3.207613706588745[0m   |
++----------------------------------+-----------------------+
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Checking for non PyTorch modules to save... 🔧
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Checking for Wandb params to save... 🔧
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Saving Wandb params {'id': 'sqjuwtmr'}
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Checking for Wandb params to save... Done!
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | ============================================================
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Starting checkpoint CPU offload (#9)
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Global step: 110826
+14:53:55.106 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Epoch: 8
+14:53:55.107 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Checkpoint contains 11 keys: ['callbacks', 'epoch', 'global_step', 'hparams_name', 'hyper_parameters', 'loops', 'lr_schedulers', 'optimizer_states', 'pytorch-lightning_version', 'state_dict', 'wandb']
+14:53:55.107 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | GPU memory before offload:
+14:53:55.107 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Allocated: 0.03 GB
+14:53:55.107 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Reserved: 9.39 GB
+14:53:55.107 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Processing checkpoint key: 'state_dict'
+14:53:55.108 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | ✓ Completed 'state_dict' in 0.00s
+14:53:55.109 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Processing checkpoint key: 'optimizer_states'
+14:53:55.112 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | ✓ Completed 'optimizer_states' in 0.00s
+14:53:55.112 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Processing checkpoint key: 'lr_schedulers'
+14:53:55.112 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | ✓ Completed 'lr_schedulers' in 0.00s
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | Skipped 125 custom object(s)
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | First 10 skipped objects:
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].lr'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].betas[0]'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].betas[1]'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].eps'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].weight_decay'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].amsgrad'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].maximize'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - NoneType at 'optimizer_states[0].param_groups[0].foreach'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].capturable'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].differentiable'
+14:53:55.112 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | ... (105 more skipped) ...
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | Last 10 skipped objects:
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0].warmup_steps'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0].max_steps'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0].warmup_start_lr'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0].eta_min'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0].base_lrs[0]'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0].last_epoch'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0]._step_count'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'lr_schedulers[0]._is_initial'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'lr_schedulers[0]._get_lr_called_within_step'
+14:53:55.113 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0]._last_lr[0]'
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | To see all 125 skipped objects, set log_skipped=True
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | GPU memory after offload:
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Allocated: 0.03 GB
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Reserved: 9.39 GB
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | GPU memory freed: 0.00 GB
+14:53:55.113 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Checkpoint #9 completed in 0.01s
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Successfully processed keys: ['state_dict', 'optimizer_states', 'lr_schedulers']
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Cumulative stats:
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total checkpoints saved: 9
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total time in offload: 0.06s
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total memory freed: 0.00 GB
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Average time per checkpoint: 0.01s
+14:53:55.113 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | ============================================================
+15:10:32.350 | WARNING (879830, stable_pretraining.module) | You are calling self.parameters which also gives callbacks parameters, to remove then, pass `with_callbacks=False`
+[2026-04-26 15:11:03,924][root][INFO] - [HIProbe] Epoch 9 (seq_len=8, obs_window=1): encoding ...
+[2026-04-26 15:11:05,482][root][INFO] - [HIProbe] Embedding std — min=0.8873  mean=1.0220  max=1.1788
+[2026-04-26 15:11:05,483][root][INFO] - [HIProbe] Training TransformerProbe (max 150 epochs, patience=20) ...
+[2026-04-26 15:11:05,859][root][INFO] - [HIProbe] probe dataset: train=199,891 windows, test=198,447 windows  (seq_len=8)
+[2026-04-26 15:11:56,626][root][INFO] - [HIProbe] Early stop at probe epoch 23 (best mean RMSE=0.00317)
+[2026-04-26 15:11:56,754][root][INFO] - 
+[HIProbe] Epoch 9 | seq_len=8 — results
+[2026-04-26 15:11:56,755][root][INFO] - ──────────────────────────────────────────────────────────────────
+[2026-04-26 15:11:56,755][root][INFO] -   Component                           R²        RMSE   Pearson-r
+[2026-04-26 15:11:56,755][root][INFO] - ──────────────────────────────────────────────────────────────────
+[2026-04-26 15:11:56,755][root][INFO] -   HI_0                            0.2288     0.00246      0.4877
+[2026-04-26 15:11:56,755][root][INFO] -   HI_1                            0.1330     0.00332      0.3674
+[2026-04-26 15:11:56,755][root][INFO] -   HI_2                            0.0494     0.00367      0.3691
+[2026-04-26 15:11:56,755][root][INFO] -   HI_3                            0.4416     0.00272      0.6828
+[2026-04-26 15:11:56,755][root][INFO] -   HI_4                            0.0379     0.00407      0.6177
+[2026-04-26 15:11:56,755][root][INFO] -   HI_5                           -0.0196     0.00373      0.6325
+[2026-04-26 15:11:56,755][root][INFO] -   HI_6                            0.2350     0.00346      0.6059
+[2026-04-26 15:11:56,755][root][INFO] -   HI_7                            0.1480     0.00276      0.4290
+[2026-04-26 15:11:56,755][root][INFO] -   HI_8                            0.2602     0.00290      0.6422
+[2026-04-26 15:11:56,755][root][INFO] -   HI_9                            0.0519     0.00256      0.2916
+[2026-04-26 15:11:56,755][root][INFO] - ──────────────────────────────────────────────────────────────────
+[2026-04-26 15:11:56,755][root][INFO] -   MEAN                            0.1566     0.00317      0.5126
+[2026-04-26 15:11:56,755][root][INFO] - ──────────────────────────────────────────────────────────────────
+[2026-04-26 15:11:56,755][root][INFO] - [HIProbe] Training Action-RUL probe (max_horizon=300) ...
+[2026-04-26 15:11:57,130][root][INFO] - [HIProbe] Action-RUL probe dataset: train=199,891, test=198,447 windows
+[2026-04-26 15:12:44,725][root][INFO] - [HIProbe] RUL early stop at probe epoch 21
+[2026-04-26 15:12:44,827][root][INFO] - [HIProbe] Action-RUL evaluation: 198447/198447 (100.0%) uncensored test samples (tau < 300)
+[2026-04-26 15:12:44,841][root][INFO] - [HIProbe] Action-RUL — RMSE=34.14 steps  MAE=26.96 steps  R2=-0.1964  Pearson=0.0505
+[2026-04-26 15:12:44,842][root][INFO] - [HIProbe] Appended to hi_probe_metrics.csv
+[2026-04-26 15:12:44,842][root][INFO] - [HIProbe] Logged 38 metrics to wandb.
+15:12:44.853 | INFO    (879830, stable_pretraining.callbacks.trainer_info) | \n+----------------------------------+-----------------------+
+|              Metric              |         Value         |
++----------------------------------+-----------------------+
+|           [0;34;40mfit/ar_loss[0m            |  [0;32;40m0.09175878763198853[0m  |
+|             [0;34;40mfit/loss[0m             |   [0;32;40m0.3810120224952698[0m  |
+|          [0;34;40mfit/pred_loss[0m           |  [0;32;40m0.14859014749526978[0m  |
+|         [0;34;40mfit/sigreg_loss[0m          |        [0;32;40m1.546875[0m       |
+|   [0;34;40mhi_probe/sl8/HI_0/pearson_r[0m    |   [0;32;40m0.4877240061759949[0m  |
+|       [0;34;40mhi_probe/sl8/HI_0/r2[0m       |  [0;32;40m0.22875940799713135[0m  |
+|      [0;34;40mhi_probe/sl8/HI_0/rmse[0m      | [0;32;40m0.0024647756945341825[0m |
+|   [0;34;40mhi_probe/sl8/HI_1/pearson_r[0m    |  [0;32;40m0.36737844347953796[0m  |
+|       [0;34;40mhi_probe/sl8/HI_1/r2[0m       |  [0;32;40m0.13297969102859497[0m  |
+|      [0;34;40mhi_probe/sl8/HI_1/rmse[0m      | [0;32;40m0.0033234008587896824[0m |
+|   [0;34;40mhi_probe/sl8/HI_2/pearson_r[0m    |  [0;32;40m0.36910003423690796[0m  |
+|       [0;34;40mhi_probe/sl8/HI_2/r2[0m       |  [0;32;40m0.04937249422073364[0m  |
+|      [0;34;40mhi_probe/sl8/HI_2/rmse[0m      |  [0;32;40m0.003667999291792512[0m |
+|   [0;34;40mhi_probe/sl8/HI_3/pearson_r[0m    |   [0;32;40m0.682799756526947[0m   |
+|       [0;34;40mhi_probe/sl8/HI_3/r2[0m       |  [0;32;40m0.44157302379608154[0m  |
+|      [0;34;40mhi_probe/sl8/HI_3/rmse[0m      | [0;32;40m0.0027210658881813288[0m |
+|   [0;34;40mhi_probe/sl8/HI_4/pearson_r[0m    |   [0;32;40m0.6177359223365784[0m  |
+|       [0;34;40mhi_probe/sl8/HI_4/r2[0m       |  [0;32;40m0.03794330358505249[0m  |
+|      [0;34;40mhi_probe/sl8/HI_4/rmse[0m      | [0;32;40m0.0040683019906282425[0m |
+|   [0;34;40mhi_probe/sl8/HI_5/pearson_r[0m    |   [0;32;40m0.6324977278709412[0m  |
+|       [0;34;40mhi_probe/sl8/HI_5/r2[0m       |  [0;32;40m-0.01955413818359375[0m |
+|      [0;34;40mhi_probe/sl8/HI_5/rmse[0m      |  [0;32;40m0.003733255434781313[0m |
+|   [0;34;40mhi_probe/sl8/HI_6/pearson_r[0m    |   [0;32;40m0.6058729887008667[0m  |
+|       [0;34;40mhi_probe/sl8/HI_6/r2[0m       |   [0;32;40m0.2350407838821411[0m  |
+|      [0;34;40mhi_probe/sl8/HI_6/rmse[0m      | [0;32;40m0.0034604875836521387[0m |
+|   [0;34;40mhi_probe/sl8/HI_7/pearson_r[0m    |   [0;32;40m0.4289809465408325[0m  |
+|       [0;34;40mhi_probe/sl8/HI_7/r2[0m       |  [0;32;40m0.14804846048355103[0m  |
+|      [0;34;40mhi_probe/sl8/HI_7/rmse[0m      |  [0;32;40m0.002755840076133609[0m |
+|   [0;34;40mhi_probe/sl8/HI_8/pearson_r[0m    |   [0;32;40m0.6421575546264648[0m  |
+|       [0;34;40mhi_probe/sl8/HI_8/r2[0m       |   [0;32;40m0.2602497935295105[0m  |
+|      [0;34;40mhi_probe/sl8/HI_8/rmse[0m      | [0;32;40m0.0029017427004873753[0m |
+|   [0;34;40mhi_probe/sl8/HI_9/pearson_r[0m    |  [0;32;40m0.29157447814941406[0m  |
+|       [0;34;40mhi_probe/sl8/HI_9/r2[0m       |  [0;32;40m0.05186694860458374[0m  |
+|      [0;34;40mhi_probe/sl8/HI_9/rmse[0m      | [0;32;40m0.0025567992124706507[0m |
+|   [0;34;40mhi_probe/sl8/mean_pearson_r[0m    |   [0;32;40m0.5125821828842163[0m  |
+|       [0;34;40mhi_probe/sl8/mean_r2[0m       |  [0;32;40m0.15662798285484314[0m  |
+|      [0;34;40mhi_probe/sl8/mean_rmse[0m      | [0;32;40m0.0031653668265789747[0m |
+| [0;34;40mhi_probe/sl8/rul/frac_uncensored[0m |          [0;32;40m1.0[0m          |
+|       [0;34;40mhi_probe/sl8/rul/mae[0m       |   [0;32;40m26.963563919067383[0m  |
+|    [0;34;40mhi_probe/sl8/rul/pearson_r[0m    |  [0;32;40m0.05048822611570358[0m  |
+|       [0;34;40mhi_probe/sl8/rul/r2[0m        |  [0;32;40m-0.19638895988464355[0m |
+|      [0;34;40mhi_probe/sl8/rul/rmse[0m       |   [0;32;40m34.142608642578125[0m  |
+|         [0;34;40mvalidate/ar_loss[0m         |  [0;32;40m0.08330406248569489[0m  |
+|      [0;34;40mvalidate/ar_loss_epoch[0m      |  [0;32;40m0.08330406248569489[0m  |
+|          [0;34;40mvalidate/loss[0m           |   [0;32;40m0.6183357834815979[0m  |
+|       [0;34;40mvalidate/loss_epoch[0m        |   [0;32;40m0.6183357834815979[0m  |
+|        [0;34;40mvalidate/pred_loss[0m        |   [0;32;40m0.1338108479976654[0m  |
+|     [0;34;40mvalidate/pred_loss_epoch[0m     |   [0;32;40m0.1338108479976654[0m  |
+|       [0;34;40mvalidate/sigreg_loss[0m       |   [0;32;40m3.230461359024048[0m   |
+|    [0;34;40mvalidate/sigreg_loss_epoch[0m    |   [0;32;40m3.230461359024048[0m   |
++----------------------------------+-----------------------+
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Checking for non PyTorch modules to save... 🔧
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Checking for Wandb params to save... 🔧
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Saving Wandb params {'id': 'sqjuwtmr'}
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.checkpoint_sklearn) | Checking for Wandb params to save... Done!
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | ============================================================
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Starting checkpoint CPU offload (#10)
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Global step: 123140
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Epoch: 9
+15:12:44.877 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Checkpoint contains 11 keys: ['callbacks', 'epoch', 'global_step', 'hparams_name', 'hyper_parameters', 'loops', 'lr_schedulers', 'optimizer_states', 'pytorch-lightning_version', 'state_dict', 'wandb']
+15:12:44.878 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | GPU memory before offload:
+15:12:44.878 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Allocated: 0.03 GB
+15:12:44.878 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Reserved: 9.39 GB
+15:12:44.878 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Processing checkpoint key: 'state_dict'
+15:12:44.879 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | ✓ Completed 'state_dict' in 0.00s
+15:12:44.879 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Processing checkpoint key: 'optimizer_states'
+15:12:44.881 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | ✓ Completed 'optimizer_states' in 0.00s
+15:12:44.881 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Processing checkpoint key: 'lr_schedulers'
+15:12:44.881 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | ✓ Completed 'lr_schedulers' in 0.00s
+15:12:44.881 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | Skipped 125 custom object(s)
+15:12:44.881 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | First 10 skipped objects:
+15:12:44.881 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].lr'
+15:12:44.881 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].betas[0]'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].betas[1]'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].eps'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'optimizer_states[0].param_groups[0].weight_decay'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].amsgrad'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].maximize'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - NoneType at 'optimizer_states[0].param_groups[0].foreach'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].capturable'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'optimizer_states[0].param_groups[0].differentiable'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | ... (105 more skipped) ...
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) | Last 10 skipped objects:
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0].warmup_steps'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0].max_steps'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0].warmup_start_lr'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0].eta_min'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0].base_lrs[0]'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0].last_epoch'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - int at 'lr_schedulers[0]._step_count'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'lr_schedulers[0]._is_initial'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - bool at 'lr_schedulers[0]._get_lr_called_within_step'
+15:12:44.882 | WARNING (879830, stable_pretraining.callbacks.cpu_offload) |   - float at 'lr_schedulers[0]._last_lr[0]'
+15:12:44.882 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | To see all 125 skipped objects, set log_skipped=True
+15:12:44.882 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | GPU memory after offload:
+15:12:44.882 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Allocated: 0.03 GB
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Reserved: 9.39 GB
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | GPU memory freed: 0.00 GB
+15:12:44.883 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Checkpoint #10 completed in 0.01s
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Successfully processed keys: ['state_dict', 'optimizer_states', 'lr_schedulers']
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Cumulative stats:
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total checkpoints saved: 10
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total time in offload: 0.07s
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total memory freed: 0.00 GB
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Average time per checkpoint: 0.01s
+15:12:44.883 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | ============================================================
+`Trainer.fit` stopped: `max_epochs=10` reached.
+15:12:44.897 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | ============================================================
+15:12:44.897 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Training completed
+15:12:44.897 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | Final statistics:
+15:12:44.898 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total checkpoints saved: 10
+15:12:44.898 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total time in offload: 0.07s
+15:12:44.898 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Total GPU memory freed: 0.00 GB
+15:12:44.898 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Average time per checkpoint: 0.01s
+15:12:44.898 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) |   - Average memory freed per checkpoint: 0.00 GB
+15:12:44.898 | SUCCESS (879830, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: All checkpoints saved successfully
+15:12:44.898 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | ============================================================
+Epoch 9/9  ━━━━━━━━━━━━━━━━━ 12314/12314 0:16:37 • 0:00:00 12.30it/s v_num: wtmr
+15:12:45.200 | INFO    (879830, stable_pretraining.callbacks.cpu_offload) | CPUOffloadCallback: Teardown called for stage 'fit'
+[1;34mwandb[0m: 
+[1;34mwandb[0m: You can sync this run to the cloud by running:
+[1;34mwandb[0m: [1mwandb sync wandb/offline-run-20260426_121725-sqjuwtmr[0m
+========================================
+Training complete.
+========================================

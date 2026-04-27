@@ -1,0 +1,83 @@
+[2026-04-27T08:30:14Z] multi-seed eval starting; seeds=[3 4 5], ckpts=5
+[2026-04-27T08:30:14Z] RUN E1_test_seed3 (h5=scenario4_test_lewm.h5)
+[2026-04-27T08:32:15Z] FAIL E1_test_seed3 (see logs/multiseed/E1_test_seed3.log)
+[2026-04-27T08:32:15Z] RUN E1_test_hard_seed3 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T08:34:14Z] FAIL E1_test_hard_seed3 (see logs/multiseed/E1_test_hard_seed3.log)
+[2026-04-27T08:34:14Z] RUN E1_test_seed4 (h5=scenario4_test_lewm.h5)
+[2026-04-27T08:36:06Z] FAIL E1_test_seed4 (see logs/multiseed/E1_test_seed4.log)
+[2026-04-27T08:36:06Z] RUN E1_test_hard_seed4 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T08:38:10Z] FAIL E1_test_hard_seed4 (see logs/multiseed/E1_test_hard_seed4.log)
+[2026-04-27T08:38:10Z] RUN E1_test_seed5 (h5=scenario4_test_lewm.h5)
+[2026-04-27T08:39:47Z] FAIL E1_test_seed5 (see logs/multiseed/E1_test_seed5.log)
+[2026-04-27T08:39:47Z] RUN E1_test_hard_seed5 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T08:41:39Z] FAIL E1_test_hard_seed5 (see logs/multiseed/E1_test_hard_seed5.log)
+[2026-04-27T08:41:39Z] RUN E2_test_seed3 (h5=scenario4_test_lewm.h5)
+[2026-04-27T08:44:44Z] FAIL E2_test_seed3 (see logs/multiseed/E2_test_seed3.log)
+[2026-04-27T08:44:44Z] RUN E2_test_hard_seed3 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T08:47:51Z] FAIL E2_test_hard_seed3 (see logs/multiseed/E2_test_hard_seed3.log)
+[2026-04-27T08:47:51Z] RUN E2_test_seed4 (h5=scenario4_test_lewm.h5)
+[2026-04-27T08:51:53Z] FAIL E2_test_seed4 (see logs/multiseed/E2_test_seed4.log)
+[2026-04-27T08:51:53Z] RUN E2_test_hard_seed4 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T08:53:32Z] FAIL E2_test_hard_seed4 (see logs/multiseed/E2_test_hard_seed4.log)
+[2026-04-27T08:53:32Z] RUN E2_test_seed5 (h5=scenario4_test_lewm.h5)
+[2026-04-27T08:55:36Z] FAIL E2_test_seed5 (see logs/multiseed/E2_test_seed5.log)
+[2026-04-27T08:55:36Z] RUN E2_test_hard_seed5 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T08:58:45Z] FAIL E2_test_hard_seed5 (see logs/multiseed/E2_test_hard_seed5.log)
+[2026-04-27T08:58:45Z] RUN E3_test_seed3 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:00:41Z] FAIL E3_test_seed3 (see logs/multiseed/E3_test_seed3.log)
+[2026-04-27T09:00:41Z] RUN E3_test_hard_seed3 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:03:29Z] FAIL E3_test_hard_seed3 (see logs/multiseed/E3_test_hard_seed3.log)
+[2026-04-27T09:03:29Z] RUN E3_test_seed4 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:07:19Z] FAIL E3_test_seed4 (see logs/multiseed/E3_test_seed4.log)
+[2026-04-27T09:07:19Z] RUN E3_test_hard_seed4 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:08:45Z] FAIL E3_test_hard_seed4 (see logs/multiseed/E3_test_hard_seed4.log)
+[2026-04-27T09:08:45Z] RUN E3_test_seed5 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:10:22Z] FAIL E3_test_seed5 (see logs/multiseed/E3_test_seed5.log)
+[2026-04-27T09:10:22Z] RUN E3_test_hard_seed5 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:12:13Z] FAIL E3_test_hard_seed5 (see logs/multiseed/E3_test_hard_seed5.log)
+[2026-04-27T09:12:13Z] RUN E5_test_seed3 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:14:09Z] FAIL E5_test_seed3 (see logs/multiseed/E5_test_seed3.log)
+[2026-04-27T09:14:09Z] RUN E5_test_hard_seed3 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:15:35Z] FAIL E5_test_hard_seed3 (see logs/multiseed/E5_test_hard_seed3.log)
+[2026-04-27T09:15:35Z] RUN E5_test_seed4 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:17:01Z] FAIL E5_test_seed4 (see logs/multiseed/E5_test_seed4.log)
+[2026-04-27T09:17:01Z] RUN E5_test_hard_seed4 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:19:05Z] FAIL E5_test_hard_seed4 (see logs/multiseed/E5_test_hard_seed4.log)
+[2026-04-27T09:19:05Z] RUN E5_test_seed5 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:20:50Z] FAIL E5_test_seed5 (see logs/multiseed/E5_test_seed5.log)
+[2026-04-27T09:20:50Z] RUN E5_test_hard_seed5 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:22:46Z] FAIL E5_test_hard_seed5 (see logs/multiseed/E5_test_hard_seed5.log)
+[2026-04-27T09:22:46Z] RUN E6probe_test_seed3 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:25:21Z] FAIL E6probe_test_seed3 (see logs/multiseed/E6probe_test_seed3.log)
+[2026-04-27T09:25:21Z] RUN E6probe_test_hard_seed3 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:27:45Z] FAIL E6probe_test_hard_seed3 (see logs/multiseed/E6probe_test_hard_seed3.log)
+[2026-04-27T09:27:45Z] RUN E6probe_test_seed4 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:30:26Z] FAIL E6probe_test_seed4 (see logs/multiseed/E6probe_test_seed4.log)
+[2026-04-27T09:30:26Z] RUN E6probe_test_hard_seed4 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:32:34Z] FAIL E6probe_test_hard_seed4 (see logs/multiseed/E6probe_test_hard_seed4.log)
+[2026-04-27T09:32:34Z] RUN E6probe_test_seed5 (h5=scenario4_test_lewm.h5)
+[2026-04-27T09:35:19Z] FAIL E6probe_test_seed5 (see logs/multiseed/E6probe_test_seed5.log)
+[2026-04-27T09:35:19Z] RUN E6probe_test_hard_seed5 (h5=scenario4_test_hard_lewm.h5)
+[2026-04-27T09:37:13Z] FAIL E6probe_test_hard_seed5 (see logs/multiseed/E6probe_test_hard_seed5.log)
+[2026-04-27T09:37:13Z] multi-seed eval complete (started 2026-04-27T08:30:14Z)
+Aggregating...
+| E5     | test       | 5    | +0.484 |
+| E5     | test_hard  | 0    | -0.093 |
+| E5     | test_hard  | 1    | +nan ← NaN |
+| E5     | test_hard  | 2    | +0.037 |
+| E5     | test_hard  | 3    | +0.260 |
+| E5     | test_hard  | 4    | +0.338 |
+| E5     | test_hard  | 5    | +0.346 |
+| E6probe | test       | 0    | +0.361 |
+| E6probe | test       | 1    | +nan ← NaN |
+| E6probe | test       | 2    | +0.577 |
+| E6probe | test       | 3    | +0.367 |
+| E6probe | test       | 4    | +0.366 |
+| E6probe | test       | 5    | +0.360 |
+| E6probe | test_hard  | 0    | +0.340 |
+| E6probe | test_hard  | 1    | +0.338 |
+| E6probe | test_hard  | 2    | +0.429 |
+| E6probe | test_hard  | 3    | +0.329 |
+| E6probe | test_hard  | 4    | +0.338 |
+| E6probe | test_hard  | 5    | +0.297 |
+

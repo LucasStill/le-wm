@@ -1,0 +1,30 @@
+INFO  Output directory: eval_results/multiseed/E3_test_seed2
+INFO  Loading dataset from /home/lthil/.stable_worldmodel/scenario4_test_lewm.h5…
+INFO  Dataset  train=746,309  test=84,447  HI dims=10  episodes=60  archetypes=['A_compressor', 'B_fan_booster', 'C_turbine', 'D_balanced']
+INFO  GPUs available: 1  Checkpoints: 1
+INFO  
+======================================================================
+  E3_test_s2  [cuda:0]  tasks=[1]
+======================================================================
+INFO    Loaded — 828,372 params  obs_window=1
+INFO    Encoding observations…
+INFO    Z_tr=(746309, 64)  Z_te=(84447, 64)
+INFO    Task 1 — HI State Estimation  (seq_len=1)
+INFO    [HI_sl1] windows  train=746,309  test=84,447
+INFO    [HI_sl1] early stop ep 29  best_rmse=0.002748
+INFO    Task 1 sl=1  mean R²=0.148  RMSE=0.00275  Pearson=0.454
+INFO  Summary JSON → eval_results/multiseed/E3_test_seed2/summary.json
+INFO  Flat CSV → eval_results/multiseed/E3_test_seed2/metrics_flat.csv
+INFO  Task-3 curves CSV → eval_results/multiseed/E3_test_seed2/task3_curves.csv
+
+====================================================================================================================
+  Model                              T1 R²   T2 R²  Alarm@K20   T3 τ=1   T3 τ=10   gap@τ=10  T4 AUROC   T5 acc
+--------------------------------------------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1755, in <module>
+    main()
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1750, in main
+    print_summary(all_results)
+  File "/home/lthil/thesis/le-wm/eval_sweep.py", line 1553, in print_summary
+    alrm = res.get("task2b_alarm", {}).get("K20", {}) or {}
+AttributeError: 'NoneType' object has no attribute 'get'
