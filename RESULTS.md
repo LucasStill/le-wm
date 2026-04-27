@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 17:31 UTC_
+_Last regenerated: 2026-04-27 17:32 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -42,25 +42,33 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 Scenario-4 TurboSens, JEPA encoder (828K params), bf16-mixed, AdamW lr=7e-5
 cosine, hi_probe at epoch 5 + final epoch.
 
-## ⚡ Headline finding (2026-04-26)
+## ⚡ Headline findings (updated 2026-04-27 with multi-seed)
 
-**In-distribution Pearson and OOD generalization are anti-correlated** across
-the (H, S) sweep:
+**1. In-distribution and OOD trade off across (H, S, W).**
 
-| run | H | S | regular `test` Pearson | OOD `test_hard` Pearson |
-|-----|---|---|------------------------|--------------------------|
-| E1  | 16 | 1 | **0.563** (best in-dist) | 0.152 (worst OOD)       |
-| E2  | 32 | 1 | 0.196                    | **0.447**                |
-| E3  | 16 | 5 | -0.010                   | **0.370**                |
+Multi-seed mean ± std (5-6 valid seeds per cell):
 
-E1 (hardest pretext task: shortest history, finest stride) overfits to training
-distribution. E2 and E3 (easier pretext tasks) produce more abstract features
-that survive distribution shift. **For deployment, E2 or E3 are likely the
-better encoder.**
+| run | H  | S  | regular Pearson    | test_hard Pearson |
+|-----|----|----|--------------------|-------------------|
+| E1  | 16 | 1  | 0.446 ± 0.039     | 0.234 ± 0.180     |
+| **E2**  | 32 | 1  | **0.597 ± 0.025** | 0.327 ± 0.135     |
+| E3  | 16 | 5  | 0.450 ± 0.054     | 0.284 ± 0.104     |
+| E5  | 8  | 1  | 0.400 ± 0.218     | 0.178 ± 0.196     |
+| **E6probe** (1ep) | 16 | 10 | 0.406 ± 0.095 | **0.345 ± 0.044** |
 
-E5 (H=8, S=1) launched 12:17 UTC to test the prediction: smaller H ⇒ even
-harder pretext task ⇒ should be even more overfit (regular > 0.56, OOD < 0.15).
-ETA ~16:30 UTC.
+**E2 best in-dist** (0.597); **E6probe best OOD** (0.345) — and with the
+TIGHTEST std (0.044) of any cell. Larger S consistently helps OOD;
+larger H consistently helps in-dist.
+
+**2. Aggregate OOD hides held-out-archetype effect.** OT's per-archetype
+breakdown of L1 × test_hard reveals the dataset has a SYMMETRIC arch-OOD
+split: test holds out B_fan_booster, test_hard holds out A_compressor.
+The "L1 OOD 0.358" headline is almost entirely B_fan_booster signal.
+**Reporting must be per-archetype.**
+
+**3. Single-seed numbers are unreliable** (±0.2 std common). All
+pre-2026-04-27 single-seed claims must be re-quoted with multi-seed
+mean ± std. Probe-init seed=1 NaNs degenerately and is filtered.
 
 ## ⚡ Methodology finding (2026-04-26)
 
