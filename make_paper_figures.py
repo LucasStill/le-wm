@@ -245,43 +245,78 @@ def fig1():
     print(f"  → {out.name}.{{pdf,png}}")
 
 
-# ── Figure 2: per-HI breakdown for E1, regular vs test_hard ──────────────────
+# ── Figure 2: per-HI breakdown for E2 (best in-dist), Pearson + RMSE ─────────
 def fig2():
-    reg = per_hi_dict(JEPA_RUNS["E1"]["regular"])
-    th = per_hi_dict(JEPA_RUNS["E1"]["test_hard"])
+    """Two-row stacked: Pearson on top, RMSE below. Same x-axis (HI_0..HI_9).
+
+    Per Lucas's reviewer note: Pearson and RMSE rank components differently;
+    showing both side by side is the dual-metric story the eval protocol
+    recommends. Switched to E2 (current best in-dist; HI_8 sign-flip
+    diagnostic answer is per-encoder).
+    """
+    target = "E2"
+    reg = per_hi_dict(JEPA_RUNS[target]["regular"])
+    th = per_hi_dict(JEPA_RUNS[target]["test_hard"])
     his = sorted(reg.keys())  # HI_0 .. HI_9
 
     reg_p = [reg[h]["pearson_r"] for h in his]
     th_p = [th[h]["pearson_r"] for h in his]
+    reg_rmse = [reg[h]["rmse"] for h in his]
+    th_rmse = [th[h]["rmse"] for h in his]
 
     x = np.arange(len(his))
     w = 0.38
-    fig, ax = plt.subplots(figsize=(9, 3.8))
-    ax.bar(x - w/2, reg_p, w, label="In-distribution (test_lewm)", color=C_INDIST)
-    ax.bar(x + w/2, th_p, w, label="OOD (test_hard_lewm)", color=C_OOD)
-    ax.axhline(0, color="black", lw=0.5)
-    ax.set_xticks(x)
-    ax.set_xticklabels(his, fontsize=9)
-    ax.set_ylabel("Pearson-r")
-    ax.set_title("E1 (JEPA, H=16): per-HI Pearson — robust vs distribution-shift-sensitive components")
-    ax.legend(loc="lower left")
+    fig, (ax_p, ax_r) = plt.subplots(
+        2, 1, figsize=(9.5, 5.4), sharex=True,
+        gridspec_kw={"height_ratios": [3, 1.4], "hspace": 0.12},
+    )
 
-    # Annotate notable cases
-    idx_HI3 = his.index("HI_3")
-    idx_HI8 = his.index("HI_8")
-    ax.annotate("robust", xy=(idx_HI3 + w/2, th_p[idx_HI3]),
-                xytext=(idx_HI3 + w/2 + 0.2, th_p[idx_HI3] + 0.15),
-                arrowprops=dict(arrowstyle="-", lw=0.5, color=C_NEUTRAL),
-                fontsize=9, color=C_NEUTRAL)
-    ax.annotate("sign flip on OOD!", xy=(idx_HI8 + w/2, th_p[idx_HI8]),
-                xytext=(idx_HI8 + w/2 - 1.5, th_p[idx_HI8] - 0.2),
-                arrowprops=dict(arrowstyle="->", lw=0.5, color="darkred"),
-                fontsize=9, color="darkred")
+    # ── Top: Pearson ────────────────────────────────────────────────────────
+    ax_p.bar(x - w/2, reg_p, w, label="In-distribution (test_lewm)", color=C_INDIST)
+    ax_p.bar(x + w/2, th_p, w, label="OOD (test_hard_lewm)", color=C_OOD)
+    ax_p.axhline(0, color="black", lw=0.5)
+    ax_p.set_ylabel("Pearson-r")
+    ax_p.set_title(f"{target} (JEPA, H=32 S=1): per-HI quality — Pearson and RMSE disagree on rankings")
+    ax_p.legend(loc="lower left", fontsize=9)
 
-    out = FIG_DIR / "fig2_perHI_E1"
+    # Annotate sign flips (where OOD has opposite sign of in-dist)
+    for i, (rp, tp) in enumerate(zip(reg_p, th_p)):
+        if rp * tp < -0.02:  # genuine sign flip with magnitude
+            ax_p.annotate("sign flip", xy=(i + w/2, tp),
+                          xytext=(i + w/2, tp - (0.20 if tp >= 0 else -0.10)),
+                          arrowprops=dict(arrowstyle="->", lw=0.5, color="darkred"),
+                          fontsize=8, color="darkred", ha="center")
+
+    # ── Bottom: RMSE ────────────────────────────────────────────────────────
+    ax_r.bar(x - w/2, reg_rmse, w, color=C_INDIST)
+    ax_r.bar(x + w/2, th_rmse, w, color=C_OOD)
+    ax_r.set_ylabel("RMSE")
+    ax_r.set_xticks(x)
+    ax_r.set_xticklabels(his, fontsize=9)
+    ax_r.set_xlabel("Health Index component")
+
+    # Highlight where Pearson and RMSE rankings differ
+    # (e.g., HI_5 has worst Pearson but not worst RMSE)
+    best_pearson = max(range(len(his)), key=lambda i: reg_p[i])
+    best_rmse = min(range(len(his)), key=lambda i: reg_rmse[i])  # smaller is better
+    if best_pearson != best_rmse:
+        ax_p.axvspan(best_pearson - 0.5, best_pearson + 0.5,
+                     alpha=0.06, color="green", zorder=0)
+        ax_r.axvspan(best_rmse - 0.5, best_rmse + 0.5,
+                     alpha=0.06, color="green", zorder=0)
+        # Add a small note
+        fig.text(0.5, -0.01,
+                 f"Best Pearson: {his[best_pearson]} (highlighted top); "
+                 f"Best RMSE: {his[best_rmse]} (highlighted bottom) — metrics disagree.",
+                 ha="center", fontsize=8, color=C_NEUTRAL)
+
+    out = FIG_DIR / f"fig2_perHI_{target}"
     fig.savefig(f"{out}.pdf"); fig.savefig(f"{out}.png")
+    # Also save under the old name for any references that hardcode it
+    fig.savefig(f"{FIG_DIR}/fig2_perHI_E1.pdf")
+    fig.savefig(f"{FIG_DIR}/fig2_perHI_E1.png")
     plt.close(fig)
-    print(f"  → {out.name}.{{pdf,png}}")
+    print(f"  → fig2_perHI_{target}.{{pdf,png}}  (also as fig2_perHI_E1.* for back-compat)")
 
 
 # ── Figure 3: in-training vs eval_sweep Pearson (probe-budget effect) ────────
