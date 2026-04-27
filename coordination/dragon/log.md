@@ -390,3 +390,45 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
   Status: dragon GPU idle since multi-seed finished ~04:00 UTC. Standing
   by for L_big lands.
+
+2026-04-27T09:35Z  Phase 2 dispatch from Lucas: dataset paper needs forecasting
+  + online-simulator demonstration. Two new tasks for OT — picking what's
+  most valuable for the AR-LSTM rows:
+
+  T6 — Forecasting (eval_sweep task 3) on L1, L2, L_big at horizon=200.
+    Lucas explicitly asked to cap forecast horizon (don't roll out to
+    20K timesteps; keep within episode-relevant scale).
+        python eval_sweep.py --tasks 1 3 --no_parallel \
+            --task1_seq_lens 1 \
+            --forecast_horizon 200 \
+            --hdf5 .../scenario4_test_lewm.h5 \
+            --out_dir eval_results/forecast_L1 \
+            --seed 0 \
+            L1_fc:<L1_ep10_path>
+        # then again with test_hard.h5 → eval_results/forecast_L1_test_hard
+        # repeat for L2 and L_big when L_big lands
+    Cost: ~15 min per (ckpt × split) on your A6000. Total ~1.5 h.
+    This becomes the AR-LSTM forecasting curve in the paper, paired with
+    the JEPA forecasting curves I'll generate on dragon (E2, E6, E7).
+
+  Status / priority order on your side once L_big lands:
+   1. eval_sweep --tasks 1 on L_big regular + test_hard (~10 min)
+   2. (ii) Multi-seed sanity baselines (raw_sensors + random_encoder) —
+      use seeds {0, 2, 3}; avoid seed=1 (NaN bug). ~3 h.
+   3. T6 forecasting on L1, L2, L_big — ~1.5 h
+   4. T1 multi-task on L1+L2+L_big (already in your plan) — ~2 h
+   5. (Optional) L6 — only if time after the above
+   6. (Optional) per-archetype on L1+L2 — only if time after the above
+
+  No L3, no E1' — paper-framing focuses on dataset properties not
+  algorithmic sweeps.
+
+  Dragon-side phase 2 (queued, auto-starts when overnight_chain finishes):
+    - Forecasting (task 3, horizon=200) on E2, E6probe, E7probe × {test, test_hard}
+    - E2 trajectory: epoch 5 vs epoch 10 multi-seed (3 seeds × 2 splits)
+    - Re-aggregate + push figures
+  Wall: ~1-2 h after E7 probe lands ~17:30 UTC. Total dragon idle by ~21:00 UTC.
+
+  Cross-arch combined paper figure (for forecasting): once we both have
+  task 3 results, I'll add fig5 — RMSE vs τ curves with one panel per
+  arch family, clean vs event split. Will regen figures and push.

@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 09:29 UTC_
+_Last regenerated: 2026-04-27 09:39 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -500,16 +500,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-  Full summary: eval_results/multiseed/SUMMARY.md (also pushed to GitHub).
 
-  KNOWN BUG: seed=1 produces NaN Pearson for most configs (degenerate
-  probe init). Aggregator filters NaN runs but worth a follow-up fix.
+  Dragon-side phase 2 (queued, auto-starts when overnight_chain finishes):
+    - Forecasting (task 3, horizon=200) on E2, E6probe, E7probe × {test, test_hard}
+    - E2 trajectory: epoch 5 vs epoch 10 multi-seed (3 seeds × 2 splits)
+    - Re-aggregate + push figures
+  Wall: ~1-2 h after E7 probe lands ~17:30 UTC. Total dragon idle by ~21:00 UTC.
 
-  Implication for your side: when you run (ii) multi-seed sanity baselines,
-  use seeds {0, 2, 3} or similar — avoid seed=1 to skip the NaN issue.
-
-  Status: dragon GPU idle since multi-seed finished ~04:00 UTC. Standing
-  by for L_big lands.
+  Cross-arch combined paper figure (for forecasting): once we both have
+  task 3 results, I'll add fig5 — RMSE vs τ curves with one panel per
+  arch family, clean vs event split. Will regen figures and push.
 ```
 
 ### OrailixTower log
