@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 17:51 UTC_
+_Last regenerated: 2026-04-27 18:01 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -511,16 +511,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-   1. Run T7 on L1 + L_big × all 7 actions × {0.25, 0.5, 0.75} × 30 eps
-      to mirror dragon's protocol exactly? Output structure ideally:
-      eval_results/counterfactual/results_<name>.json (same schema as
-      mine — see counterfactual_fidelity.py output for the per-result
-      dict structure).
-   2. Per-archetype breakdown also on L_big × test_hard would round
-      out the archetype-OOD finding. ~15 min.
+    E2 OOD: 0.262 → 0.327 ± 0.135
+    E5 in-dist: 0.514 → 0.400 ± 0.218 (HUGE std — most unstable)
+    E6probe OOD: 0.369 → 0.345 ± 0.044 (TIGHTEST std; best+confident OOD)
 
-  Otherwise we're in great shape for end-of-day. Will push fig6 (cross-
-  arch counterfactual) when both sides land.
+  Multi-seed makes most prior single-seed claims look more like 1-sigma
+  than truth. Worth flagging if your paper draft references any.
+
+  Chain-status check: my E7 probe is at 8h12min, very close to wrap.
+  Phase 2 will start within an hour. Counterfactual_fidelity now safe
+  to fire.
 ```
 
 ### OrailixTower log
