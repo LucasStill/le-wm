@@ -174,3 +174,110 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   Status check on L_big: launched 21:41 local, GPU 99%, 13.99 GB VRAM,
   72 trainable params, first backward succeeded. Healthy. ETA 10 epochs
   in ~14 h.
+
+2026-04-27T11:00Z  L_big landed cleanly at 12:57 local (~15h, slower than 14h
+  estimate because the new n_subsample=200K probe at epoch 5/9 is ~4× slower
+  than the old 30K probe). In-training metrics (sl=32):
+    fit/loss=0.258  fit/pred=0.064  fit/ar=0.038  sigreg=1.29
+    HI mean Pearson @5 (200K windows) = 0.578
+    HI mean Pearson @9 (200K windows) = 0.520
+    RUL R² @9 = -0.143
+  Best probe at epoch 5 again (LSTM same non-monotonic-in-epoch pattern as JEPA).
+
+2026-04-27T11:30Z  Tmux server crashed mid-morning, all sessions lost. L_big had
+  finished cleanly + checkpoints saved → no data loss. Restarted wandb_sync +
+  run_overnight_chain. Killed a stale tmux spawn from Apr 25 that was blocking
+  pgrep -f from detecting L_big's exit (chain wait-loop got fooled into
+  infinite poll).
+
+2026-04-27T13:30Z  Pulled origin: csv-fix + multi-seed pipeline + figures +
+  counterfactual_fidelity.py + run_phase2.sh. Reverted my local eval_sweep.py
+  edits — your run_one(seed=) approach is canonical; refactored my
+  multiseed_l1l2.py + sanity_baselines.py to seed manually before es.task1_hi
+  calls so they keep working with origin's API.
+
+2026-04-27T13:35Z  Pushed orailixtower commit 3d92e36 to feature/option-b-
+  sensor-native: AR-LSTM scenario4 infrastructure (model.py use_cudnn +
+  max_sensors, train_ar_lstm.py compile_encoder, scenario4 yaml, launcher,
+  4 helper scripts, run_overnight_chain.sh). Should be enough for you to
+  reproduce / extend the AR-LSTM side if needed.
+
+2026-04-27T17:25Z  CHAIN PROGRESS REPORT — currently in step 4 of 5.
+
+  Steps 1-3 completed during the day (~5h total). Numbers:
+
+  CALIBRATED EVAL_SWEEP TASK-1 — L_big (W=4, H=32, S=1, P=4)
+  ──────────────────────────────────────────────────────────
+                  test                     test_hard
+    sl=1     R²=0.229  P=0.559        R²=-0.350  P=0.329
+    sl=10    R²=0.223  P=0.555        R²=-0.260  P=0.243
+    sl=50    R²=0.294  P=0.559        R²=-0.128  P=0.051
+
+  Cross-config sl=1 calibrated (single seed; multi-seed runs in step 5):
+                       test     test_hard
+    L1   (H=16)        0.545    0.358    ← single-seed re-run, was 0.564 unseeded
+    L2   (H=32)        0.531    ?        ← seeded re-run; was 0.495 unseeded
+    L_big (W=4,H=32)   0.559    0.329
+    E1 (your ref)      0.563    0.152
+    E2 (your ref)      0.196    0.447
+
+  Headline findings on the AR-LSTM side:
+
+   1. **All three AR-LSTM configs hit ~0.55 Pearson at sl=1 on test.**
+      W=4 / TemporalAggregator gives no headline lift over L1 (0.559 vs
+      0.545; within probe-seed noise). The "longer encoder-level temporal
+      context" hypothesis underperformed in distribution.
+
+   2. **W=4 protects against the OOD collapse that hit H=32 alone.**
+      L2 OOD sl=1 was -0.014 (sign-flip). L_big OOD sl=1 = 0.329, fully
+      recovers to L1's level. So W>1 helps under shift, just not in dist.
+
+   3. **L1 / L2 / L_big sit in a 0.33 ± 0.03 OOD band** at sl=1 (ignoring
+      L2's outlier sign-flip). AR-LSTM family looks intrinsically capped
+      OOD around there. Your E2 at 0.447 OOD is the strongest single OOD
+      number we have across both archs.
+
+  T1 MULTI-TASK (eval_sweep --tasks 1 2) — L1 + L2
+  ────────────────────────────────────────────────
+  Task 2 (delta-HI velocity): Pearson=NaN for all configs (R²≈0). Pred MSE
+    so low (~1.6e-5) that test predictions are constant → pearsonr nan.
+    Either (a) ΔHI target is too small for this probe size, or (b) the
+    encoder doesn't carry velocity info. Suggest dropping task 2 unless
+    JEPA side shows non-trivial Pearson — please share when you have it.
+  TNM (time-to-next-maintenance): R² ≈ -0.02 across sl. Same noise floor
+    as RUL. 10 epochs / current encoder is insufficient for any
+    maintenance-prediction task, regardless of arch.
+
+  T3 PER-ARCHETYPE — L1 × test_hard
+  ─────────────────────────────────
+    B_fan_booster (n=41,787)  Pearson=-0.117  ← held-out arch, near random
+    C_turbine     (n=27,933)  Pearson=nan     ← all-constant predictions
+    D_balanced    (n=15,705)  Pearson=+0.003  ← essentially zero
+    A_compressor: ZERO WINDOWS in test_hard (held out → only in test)
+
+  ⚠ MAJOR DATASET-DESIGN FINDING: **regular test holds out B_fan_booster,
+  test_hard holds out A_compressor — symmetric arch-OOD split**. This
+  isn't documented anywhere I've seen. The aggregate L1 test_hard Pearson
+  0.358 is ~entirely B_fan_booster vs near-zero on the other two
+  in-distribution-leftover archetypes. Worth a callout in the paper,
+  and arguably means we should report per-archetype numbers as the
+  primary metric, with aggregate as supplemental.
+
+  STEP 4 (running now): T4 multi-seed sanity baselines, seeds {0,2,3,4,5}.
+  Currently on seed=0 test_hard. ETA step 4 done ~19:30Z (~2h remaining).
+  STEP 5: T4 multi-seed L1+L2 calibrated, ~30 min after step 4.
+
+  NEXT-IN-QUEUE after the chain finishes:
+    a) T6 forecasting (eval_sweep --tasks 1 3 horizon=200) on L1+L2+L_big
+       × {test, test_hard} — ~1.5h.
+    b) T7 counterfactual fidelity on L1 — verified the simulator import
+       works cleanly here (PYTHONPATH=~/thesis/rl_opendeck_simulator,
+       sensors.h5 has ep_meta/seed + ctx_fill_seed; sim_version warning
+       benign, same as your finding). ~30-60 min.
+
+  Could you confirm whether T6 or T7 first when chain lands? T7 produces
+  fig6 jointly with your E2 counterfactual run, so it might be the
+  higher-priority "synchronised cross-arch artifact". T6 is more
+  standalone.
+
+  Anything you want me to fix in the data above before publishing?

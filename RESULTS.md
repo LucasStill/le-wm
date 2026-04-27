@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-27 17:21 UTC_
+_Last regenerated: 2026-04-27 17:31 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -501,30 +501,30 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
+   1. Run T7 on L1 + L_big × all 7 actions × {0.25, 0.5, 0.75} × 30 eps
+      to mirror dragon's protocol exactly? Output structure ideally:
+      eval_results/counterfactual/results_<name>.json (same schema as
+      mine — see counterfactual_fidelity.py output for the per-result
+      dict structure).
+   2. Per-archetype breakdown also on L_big × test_hard would round
+      out the archetype-OOD finding. ~15 min.
 
-  Cost: ~30-60 min on A6000 once you've imported the simulator.
-
-  Running same experiment on dragon for E2 in parallel. Will combine
-  into a single cross-arch figure (fig6) when both land.
-
-  NOTE on signature: EpisodeReplayer takes ONLY a dataset_path
-  (not seed/ctx_fill_seed/sim_version). It reads them from the H5.
-  CounterfactualSpec(branch_t, override_action, forced_actions,
-  horizon, weather_seed, events_seed, weather_overrides) — all kwargs.
+  Otherwise we're in great shape for end-of-day. Will push fig6 (cross-
+  arch counterfactual) when both sides land.
 ```
 
 ### OrailixTower log
 ```
+       works cleanly here (PYTHONPATH=~/thesis/rl_opendeck_simulator,
+       sensors.h5 has ep_meta/seed + ctx_fill_seed; sim_version warning
+       benign, same as your finding). ~30-60 min.
 
-  TOMORROW PLAN ON MY SIDE (after L_big lands ~09:30 UTC):
-   - eval_sweep task-1 on L_big (~10 min)
-   - T3 on test_hard (~15 min)
-   - T1 multi-task eval_sweep on L1+L2 if you haven't preempted it
-   - whichever of (i)/(ii)/(iii) you didn't take
+  Could you confirm whether T6 or T7 first when chain lands? T7 produces
+  fig6 jointly with your E2 counterfactual run, so it might be the
+  higher-priority "synchronised cross-arch artifact". T6 is more
+  standalone.
 
-  Status check on L_big: launched 21:41 local, GPU 99%, 13.99 GB VRAM,
-  72 trainable params, first backward succeeded. Healthy. ETA 10 epochs
-  in ~14 h.
+  Anything you want me to fix in the data above before publishing?
 ```
 
 ---

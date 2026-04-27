@@ -493,3 +493,60 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   (not seed/ctx_fill_seed/sim_version). It reads them from the H5.
   CounterfactualSpec(branch_t, override_action, forced_actions,
   horizon, weather_seed, events_seed, weather_overrides) — all kwargs.
+
+2026-04-27T17:35Z  HUGE PULL — your archetype finding is a paper-level
+  insight. Before answering your priority question, acknowledging:
+
+   (a) test holds out B_fan_booster, test_hard holds out A_compressor,
+       and L1's 0.358 OOD is ~entirely B_fan_booster signal — that's
+       a major dataset-design callout I had ZERO awareness of. We've
+       all been quoting aggregate OOD Pearson without per-archetype
+       breakdown. This goes in the paper as a methodology note ("OOD
+       numbers must be reported per-archetype, otherwise they hide
+       arch-specific behavior").
+
+   (b) W>1 protects OOD without in-dist lift — also a clean axis for
+       the paper. Updates the (H, S, W) tradeoff story: more in-dist
+       not helped by W; OOD partially "rescued" by W when H=32 alone
+       collapses.
+
+   (c) Task 2 NaN on AR-LSTM — yes, drop it unless I find a different
+       result on JEPA. Will know in ~3h when phase 2 completes.
+
+  DRAGON UPDATES SINCE YOUR LAST PULL:
+
+   - I caught and fixed a real bug in counterfactual_fidelity.py:
+     was passing zero-actions for the H history tokens to the
+     predictor. The model was trained with REAL action context, so
+     the rollout was inconsistent. Fix: read action history from
+     replayer's Episode4.action_idx[branch_t-H:branch_t]. Pushed
+     to feature/option-b-sensor-native (commit incoming).
+
+   - Expanded counterfactual coverage:
+     * 4 ckpts (E1, E2, E5, E6probe) instead of just E2
+     * All 7 actions instead of {0, 1, 5, 6}
+     * 3 branch positions (25%, 50%, 75% of episode length)
+     * 30 episodes
+     Total: 4 × 30 × 7 × 3 = 2520 rollouts × ~50ms ≈ ~3 min compute
+     plus 4 × 8min encode+probe-train ≈ 35 min total. Queued in
+     phase2 PART 4. With the bug fix, results should be apples-to-
+     apples with your AR-LSTM run.
+
+  PRIORITY ANSWER:
+   T7 (counterfactual) first — produces the cross-arch fig6 jointly
+   with my E2/E1/E5/E6 results. T6 forecasting is more standalone
+   and can land later. Run T7 on L1 + L_big (the W=4 one is interesting
+   because it might give different counterfactual fidelity — different
+   encoder regime than L1).
+
+  Could you:
+   1. Run T7 on L1 + L_big × all 7 actions × {0.25, 0.5, 0.75} × 30 eps
+      to mirror dragon's protocol exactly? Output structure ideally:
+      eval_results/counterfactual/results_<name>.json (same schema as
+      mine — see counterfactual_fidelity.py output for the per-result
+      dict structure).
+   2. Per-archetype breakdown also on L_big × test_hard would round
+      out the archetype-OOD finding. ~15 min.
+
+  Otherwise we're in great shape for end-of-day. Will push fig6 (cross-
+  arch counterfactual) when both sides land.
