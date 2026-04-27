@@ -15,6 +15,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
+import math
 from statistics import mean, stdev
 
 ROOT = Path(__file__).parent / "eval_results" / "multiseed"
@@ -54,12 +55,18 @@ def main():
     # Build summary
     summary = []
     for (ckpt, split), seeds_p in sorted(grouped.items()):
-        ps = [p for _, p in seeds_p]
+        ps_all = [p for _, p in seeds_p]
+        # Filter NaN runs (probe degenerate-init produces them)
+        valid = [(s, p) for s, p in seeds_p if not math.isnan(p)]
+        ps = [p for _, p in valid]
+        n_valid, n_nan = len(ps), len(ps_all) - len(ps)
         summary.append({
-            "ckpt": ckpt, "split": split, "n_seeds": len(ps),
-            "seeds": [s for s, _ in seeds_p],
-            "pearson_mean": mean(ps), "pearson_std": stdev(ps) if len(ps) > 1 else 0.0,
-            "pearson_values": ps,
+            "ckpt": ckpt, "split": split,
+            "n_seeds_total": len(ps_all), "n_seeds_valid": n_valid, "n_nan": n_nan,
+            "seeds_valid": [s for s, _ in valid],
+            "pearson_mean": mean(ps) if n_valid else float("nan"),
+            "pearson_std": stdev(ps) if n_valid > 1 else 0.0,
+            "pearson_values": ps_all,
         })
 
     # Write JSON
@@ -69,28 +76,33 @@ def main():
     # Write markdown
     out_md = ROOT / "SUMMARY.md"
     lines = ["# Multi-seed eval_sweep task-1 — HI mean Pearson-r", ""]
-    lines.append(f"_Aggregated {sum(s['n_seeds'] for s in summary)} runs across {len(summary)} (ckpt, split) cells._")
+    lines.append(f"_Aggregated {sum(s['n_seeds_total'] for s in summary)} runs across {len(summary)} (ckpt, split) cells._")
     lines.append("")
 
     # Per-ckpt rows with both splits side by side
     ckpts = sorted({s["ckpt"] for s in summary})
-    lines.append("| ckpt   | regular test (mean ± std)    | test_hard (mean ± std)       | seeds |")
-    lines.append("|--------|------------------------------|------------------------------|-------|")
+    lines.append("| ckpt   | regular test (mean ± std)        | test_hard (mean ± std)           | n_valid |")
+    lines.append("|--------|----------------------------------|----------------------------------|---------|")
     for ckpt in ckpts:
         reg = next((s for s in summary if s["ckpt"] == ckpt and s["split"] == "test"), None)
         th = next((s for s in summary if s["ckpt"] == ckpt and s["split"] == "test_hard"), None)
-        cell = lambda s: f"{s['pearson_mean']:+.3f} ± {s['pearson_std']:.3f} (n={s['n_seeds']})" if s else "—"
-        n_seeds_used = (reg["n_seeds"] if reg else 0) + (th["n_seeds"] if th else 0)
-        lines.append(f"| {ckpt:6s} | {cell(reg):28s} | {cell(th):28s} | {n_seeds_used} |")
+        def cell(s):
+            if not s: return "—"
+            tag = f" ({s['n_nan']} NaN)" if s['n_nan'] else ""
+            return f"{s['pearson_mean']:+.3f} ± {s['pearson_std']:.3f}{tag}"
+        n_valid = (reg["n_seeds_valid"] if reg else 0) + (th["n_seeds_valid"] if th else 0)
+        lines.append(f"| {ckpt:6s} | {cell(reg):32s} | {cell(th):32s} | {n_valid} |")
 
     lines.append("")
     lines.append("## Per-seed breakdown")
     lines.append("")
     lines.append("| ckpt   | split      | seed | Pearson |")
     lines.append("|--------|------------|------|---------|")
-    for s in summary:
-        for seed, p in zip(s["seeds"], s["pearson_values"]):
-            lines.append(f"| {s['ckpt']:6s} | {s['split']:10s} | {seed}    | {p:+.3f} |")
+    # Need original (seed, p) tuples for per-seed dump — re-walk grouped
+    for (ckpt, split), seeds_p in sorted(grouped.items()):
+        for seed, p in seeds_p:
+            tag = " ← NaN" if math.isnan(p) else ""
+            lines.append(f"| {ckpt:6s} | {split:10s} | {seed}    | {p:+.3f}{tag} |")
 
     out_md.write_text("\n".join(lines) + "\n")
     print(out_md.read_text())
