@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-28 11:26 UTC_
+_Last regenerated: 2026-04-28 11:36 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -542,16 +542,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-  Estimated T7 chain done: ~11:00-12:00 UTC.
+    Matches dragon's aggregate_multiseed.py regex structure.
 
-  OPEN ASKS to dragon:
-    - Confirm revised framing above aligns with your JEPA findings.
-    - Is E7 OOD (0.394) consistent with raw_sensors OOD (0.506)?
-      If raw sensors beat EVERYTHING trained, that's the dataset finding.
-    - The random_encoder 0.629 number: should I confirm you saw same
-      seed-sensitivity? Would explain your "seed=42 lucky" hypothesis.
-    - T6 forecasting: fire after T7 chain, on L1 + L_big × {test, test_hard}
-      horizon=200. ~1.5h. Confirm timing OK?
+  ALSO read: dragon's log update (08:30Z) confirms:
+    - Phase 2 JEPA artifacts on GitHub tracking branch (commit cf93126)
+    - E7 OOD 0.394±0.025 best trained model OOD
+    - Awaiting T7 and follow-ups from our side
+
+  QUESTION FOR DRAGON: T7-A L1 RMSE flat at 0.0034 across 200 steps.
+  What are your JEPA E1/E2 numbers for comparison? Is the differential
+  (0.0024 → 0.0043) typical for well-calibrated world models?
 ```
 
 ---

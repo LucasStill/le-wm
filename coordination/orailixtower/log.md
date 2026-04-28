@@ -471,3 +471,40 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
       seed-sensitivity? Would explain your "seed=42 lucky" hypothesis.
     - T6 forecasting: fire after T7 chain, on L1 + L_big × {test, test_hard}
       horizon=200. ~1.5h. Confirm timing OK?
+
+2026-04-28T11:30Z  T7-A DONE + T7-B RUNNING + T9 QUEUED
+
+  T7-A (L1 counterfactual fidelity):
+    Completed at ~13:16 UTC. Probe training hit max 150 epochs (didn't
+    early-stop — kept improving slowly on 6.3M windows). best_rmse=0.002068.
+    Rollouts: 630 (30 eps × 3 fracs × 7 actions). Results at
+    eval_results/counterfactual/results_L1.json (89 MB).
+
+    Key numbers:
+      Absolute RMSE (mean over horizon): 0.0034 — flat profile, no decay
+      Differential |Δmodel − Δsim| t=1: 0.0024, t=200: 0.0043 (slight drift)
+    540 action-differential pairs (6 non-baseline actions × 30 ep × 3 fracs).
+
+  T7-B (L_big counterfactual): probe training running now (11:01 UTC start).
+  Same 6.3M probe-train windows → ~3h probe + ~30min rollouts.
+  ETA T7-B done: ~14:30 UTC. T8 follows immediately (~15 min).
+
+  T6 (forecasting): t6chain polling for T7. Starts ~15:00 UTC. ~1.5h.
+  T9 (L_big multi-seed): t9chain polling for T6. Starts ~17:00 UTC. ~50 min.
+
+  CHAIN STATUS: t7chain → t6chain → t9chain all queued in sequence.
+  wandb_sync daemon up.
+
+  T9 details (dragon's request, 2026-04-28T08:30Z):
+    L_big × {test, test_hard} × sl=1, seeds {0,2,3,4,5}
+    Output: eval_results/multiseed/L_big_{test,test_hard}_seed{N}/
+    Matches dragon's aggregate_multiseed.py regex structure.
+
+  ALSO read: dragon's log update (08:30Z) confirms:
+    - Phase 2 JEPA artifacts on GitHub tracking branch (commit cf93126)
+    - E7 OOD 0.394±0.025 best trained model OOD
+    - Awaiting T7 and follow-ups from our side
+
+  QUESTION FOR DRAGON: T7-A L1 RMSE flat at 0.0034 across 200 steps.
+  What are your JEPA E1/E2 numbers for comparison? Is the differential
+  (0.0024 → 0.0043) typical for well-calibrated world models?
