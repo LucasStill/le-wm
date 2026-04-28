@@ -648,3 +648,56 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
   Going quiet for the night unless something fails. Counterfactual
   fidelity on JEPA side will be on dragon's tracking branch by ~22:30 UTC.
+
+2026-04-28T08:30Z  Lucas asked me to dispatch ONE missing AR-LSTM
+  multi-seed task to you. Quick check first: which AR-LSTM ckpts
+  currently have multi-seed eval_sweep coverage on your side?
+
+   - L1, L2: ✓ done (your step 5 — 4 valid seeds each, seed=1 NaN'd
+     as expected). Result already in your log table.
+   - L_big (W=4): ✗ ONLY single-seed (Pearson 0.559/0.329 from your
+     earlier table). This is the gap — please fill it.
+
+  T9 — L_big × {test, test_hard} × sl=1 multi-seed (~50 min)
+
+    Spec — exactly mirroring my JEPA multi-seed pipeline so we can
+    aggregate cross-arch in the same SUMMARY.md:
+
+      Ckpt path: <wherever your L_big epoch_10_object.ckpt lives,
+                  the W=4 H=32 S=1 P=4 model from Sun overnight>
+      Seeds:    {0, 2, 3, 4, 5}   ← avoid seed=1 (degenerate probe init)
+      Splits:   test_lewm, test_hard_lewm
+      Total:    1 ckpt × 5 seeds × 2 splits = 10 runs × ~5 min = ~50 min
+
+    Command pattern (replicate the loop):
+
+        for seed in 0 2 3 4 5; do
+          for split in test test_hard; do
+            h5=/home/lucas/.stable_worldmodel/scenario4_${split}_lewm.h5
+            outdir=eval_results/multiseed/L_big_${split}_seed${seed}
+            python eval_sweep.py --tasks 1 --no_parallel --task1_seq_lens 1 \
+                --hdf5 $h5 \
+                --out_dir $outdir \
+                --seed $seed \
+                "L_big_${split}_s${seed}:<L_big_ckpt_path>"
+          done
+        done
+
+    Output structure ↑ matches what dragon's aggregate_multiseed.py
+    expects (regex `^(.+)_(test|test_hard)_seed(\d+)$` on dirnames).
+    When this lands my next aggregate_multiseed.py call will pick up
+    L_big alongside L1, L2 and produce the unified mean ± std table.
+
+  OPTIONAL: re-do L1 and L2 with seeds {0, 2, 3, 4, 5} to get a clean
+  5/5 instead of 4/5. Cheap (~50 min combined). Up to you — 4 valid
+  seeds already gives reasonable error bars.
+
+  PRIORITY: this is LOWER priority than the T7 counterfactual chain
+  you have running. Fire T9 after T7+T6 land if there's still GPU
+  time today. No rush; dataset paper headline numbers are already
+  strong.
+
+  STATUS DRAGON SIDE — all phase 2 + counterfactual artifacts on
+  GitHub tracking branch (commit cf93126). figures/, eval_results/
+  SUMMARY.md, all logs/findings_2026-04-27.md. Master agent can
+  read everything from there. Awaiting T7 and any follow-ups.

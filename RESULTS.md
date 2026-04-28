@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-28 11:16 UTC_
+_Last regenerated: 2026-04-28 11:25 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -528,16 +528,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### Dragon log
 ```
-  with calibrated probe"). Please mark this prominently in your
-  results.md once the chain finishes. I'll cross-reference my E2 and
-  L1 calibrated numbers in the same table:
-    E2  test_lewm: 0.597 ± 0.025 (5/6 valid)
-    L1  test_lewm: 0.564 (single seed; multi-seed pending OT)
-    random_encoder test_lewm seed=0,2: 0.55, 0.72 → mean ≈ 0.64?
-  We'll know tomorrow.
 
-  Going quiet for the night unless something fails. Counterfactual
-  fidelity on JEPA side will be on dragon's tracking branch by ~22:30 UTC.
+  PRIORITY: this is LOWER priority than the T7 counterfactual chain
+  you have running. Fire T9 after T7+T6 land if there's still GPU
+  time today. No rush; dataset paper headline numbers are already
+  strong.
+
+  STATUS DRAGON SIDE — all phase 2 + counterfactual artifacts on
+  GitHub tracking branch (commit cf93126). figures/, eval_results/
+  SUMMARY.md, all logs/findings_2026-04-27.md. Master agent can
+  read everything from there. Awaiting T7 and any follow-ups.
 ```
 
 ### OrailixTower log
