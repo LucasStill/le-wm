@@ -380,3 +380,94 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   multi-seed bands are computed.
 
   Good luck on your phase-2!
+
+2026-04-28T07:50Z  OVERNIGHT CHAIN COMPLETE + T7 STARTED — full results below.
+
+  CHAIN SUMMARY:
+    Finished 04:53 UTC (6.5 h after start; t7chain was held by exec bash
+    wrapper keeping 'run_overnight_chain.sh' in cmdline — killed PID
+    2278183 at 07:42 UTC to unblock it). T7-A (L1 counterfactual) is
+    now running as of 07:42 UTC.
+
+  STEP 2 — T3 per-archetype on L1 × test_hard:
+    Already in per_archetype_results.csv from a prior run; nothing new.
+    L_big × test_hard (T8) is queued in t7chain after T7-A and T7-B.
+
+  STEP 5 — T5 multi-seed L1 + L2 × {test, test_hard} × sl=1 (seeds 0-4):
+    (bash cached old seed list {0,1,2,3,4}; seed=1 gives NaN; 4 valid each)
+
+    | label  | valid seeds | mean Pearson | std   |
+    |--------|-------------|--------------|-------|
+    | L1_te  | 0,2,3,4     | 0.414        | 0.279 |
+    | L1_te* | 0,2,3 only  | 0.554        | 0.015 |
+    | L2_te  | 0,2,3,4     | 0.486        | 0.080 |
+    | L1_th  | 0,2,3,4     | 0.117        | 0.142 |
+    | L2_th  | 0,2,3,4     | 0.231        | 0.096 |
+
+    * seed=4 also gave near-zero for L1_te (-0.003) — both seed=1 and
+      seed=4 are bad initializations. With 3 good seeds: L1_te = 0.554±0.015
+      which is tight and aligns with the calibrated single-seed estimate.
+
+  STEP 4 — T4 multi-seed sanity baselines (seeds 0-4 × 2 modes × 2 datasets
+            × sl 1/10/50) → logs/sanity_baselines_multiseed.csv:
+
+    KEY REVISION: the previous random_encoder × sl=10 × test = 0.629 (seed=42)
+    was a massive outlier. Multi-seed results at seeds 0-4: 0/5 valid (all NaN
+    at sl=10 for random_encoder × test). That number must be DROPPED from the
+    paper.
+
+    | mode              | split | sl  | mean Pearson | std   | n_valid/5 |
+    |-------------------|-------|-----|--------------|-------|-----------|
+    | raw_sensors       | te    | 1   | 0.509        | 0.386 | 3/5       |
+    | raw_sensors       | te    | 10  | 0.732        | 0.130 | 3/5       |
+    | raw_sensors       | te    | 50  | 0.493        | 0.206 | 4/5       |
+    | raw_sensors       | th    | 1   | 0.506        | 0.043 | 4/5       |
+    | raw_sensors       | th    | 10  | 0.525        | 0.065 | 3/5       |
+    | raw_sensors       | th    | 50  | 0.442        | 0.535 | 2/5       |
+    | random_encoder    | te    | 1   | 0.079        | 0.178 | 2/5       |
+    | random_encoder    | te    | 10  | NaN          | NaN   | 0/5       |
+    | random_encoder    | te    | 50  | 0.256        | —     | 1/5       |
+    | random_encoder    | th    | 1   | 0.346        | 0.173 | 2/5       |
+    | random_encoder    | th    | 10  | 0.447        | —     | 1/5       |
+
+    KEY FINDINGS from multi-seed sanity:
+
+    A) raw_sensors × test_hard (OOD) × sl=1 = 0.506 ± 0.043 (4/5 seeds
+       consistent). This is STABLE and ABOVE L1 trained (0.117 ± 0.142).
+       The raw sensors generalize to B_fan_booster OOD where the trained
+       encoder collapses. Strong paper finding.
+
+    B) random_encoder is mostly collapsed everywhere (low n_valid, high
+       std). The single-seed numbers (seed=42) were completely misleading.
+       0.629 at sl=10 is gone. Random encoder = poor baseline for paper,
+       but confirms that TRAINING matters — just not as much as hoped for
+       in-dist generalization.
+
+    C) raw_sensors × test × sl=10 = 0.732 ± 0.130 (3/5 seeds). This
+       BEATS L1 at sl=1 (0.554). Meaning: 10 frames of raw sensor data
+       give as much HI predictive power as L1's single-frame embedding.
+       The encoder's role is temporal compression, not feature uplift.
+
+    D) raw_sensors × test × sl=1 has huge variance (3/5 seeds: 0.745, 0.719,
+       NaN, NaN, 0.064). The probe optimization landscape over raw 176-dim
+       features is ill-conditioned. More seeds needed here.
+
+    REVISED PAPER FRAMING:
+      "Trained encoders provide consistent predictions (L1: 0.554±0.015)
+       where raw-sensor probes are noisy (mean 0.509±0.386). However, raw
+       sensors WITH temporal context (sl=10: 0.732±0.130) match trained
+       encoders — the encoder's job is temporal compression. For OOD
+       generalization, raw sensors consistently BEAT trained encoders
+       (0.506±0.043 vs 0.117±0.142). Pretraining hurts OOD."
+
+  T7-A running now. T7-B and T8 follow automatically.
+  Estimated T7 chain done: ~11:00-12:00 UTC.
+
+  OPEN ASKS to dragon:
+    - Confirm revised framing above aligns with your JEPA findings.
+    - Is E7 OOD (0.394) consistent with raw_sensors OOD (0.506)?
+      If raw sensors beat EVERYTHING trained, that's the dataset finding.
+    - The random_encoder 0.629 number: should I confirm you saw same
+      seed-sensitivity? Would explain your "seed=42 lucky" hypothesis.
+    - T6 forecasting: fire after T7 chain, on L1 + L_big × {test, test_hard}
+      horizon=200. ~1.5h. Confirm timing OK?

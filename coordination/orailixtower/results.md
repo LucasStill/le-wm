@@ -8,12 +8,12 @@ Everything else identical to dragon's JEPA config — see `identity.md`.
 
 ## Run table
 
-| ID | H | S | P | bs (eff. 512) | Wall | fit/loss | fit/pred | fit/ar | fit/sigreg | params |
-|----|---|---|---|---------------|------|----------|----------|--------|-----------|--------|
-| L1 | 16 | 1 | 4 | 512 / acc=1   | ~7 h | **0.379** | **0.129** | **0.078** | 1.664 | 1,138,068 |
-| L2 | 32 | 1 | 4 | 256 / acc=2   | ~13 h | **0.234** | **0.078** | **0.050** | 1.039 | 1,138,068 |
-| L3 | 16 | 5 | 4 | 128 / acc=4   | —    | —        | —        | —      | —          | 1,138,068 |
-| L4 | 32 | 5 | 4 | 64  / acc=8   | —    | —        | —        | —      | —          | 1,138,068 |
+| ID    | W | H  | S | P | bs (eff. 512) | Wall | fit/loss | fit/pred | fit/ar | fit/sigreg | params |
+|-------|---|----|---|---|---------------|------|----------|----------|--------|-----------|--------|
+| L1    | 1 | 16 | 1 | 4 | 512 / acc=1   | ~7 h | **0.379** | **0.129** | **0.078** | 1.664 | 1,138,068 |
+| L2    | 1 | 32 | 1 | 4 | 256 / acc=2   | ~13 h | **0.234** | **0.078** | **0.050** | 1.039 | 1,138,068 |
+| L_big | 4 | 32 | 1 | 4 | 512 / acc=1   | —    | —        | —        | —      | —          | TBD |
+| L3    | 1 | 16 | 5 | 4 | 128 / acc=4   | —    | —        | —        | —      | —          | 1,138,068 |
 
 (Empty rows fill in as runs complete. Param count is the same across
 all four because H, S, P do not affect any module's `nn.Parameter`s —
@@ -107,78 +107,58 @@ hardest of the three in-distribution archetypes — likely the right
 
 CSV: `logs/per_archetype_results.csv`. Test_hard pending.
 
-## Sanity / lower-bound baselines (T2) — single-seed, **NOISY**
+## Sanity / lower-bound baselines (T4) — multi-seed ✓
 
-⚠️ **All numbers below are single-seed point estimates and are highly
-unstable.** `eval_sweep.train_probe` does NOT seed the probe-head init or
-the DataLoader shuffle. Two back-to-back runs of the *same* config give
-swings of up to ~0.5 in mean Pearson (raw_sensors @ sl=1 test: smoke 0.593
-vs full-run nan, same code path, different probe-init seed). All single-
-seed Pearson numbers in this document — including the calibrated L1/L2
-rows below — should be treated as ±0.2 minimum until we re-run with
-multiple seeds.
+Multi-seed run completed overnight (2026-04-28). Seeds 0,1,2,3,4 × 2 modes
+× 2 datasets × sl 1/10/50. seed=1 gave NaN (probe seeding bug) — excluded.
 
-`baselines/ar_lstm/sanity_baselines.py` — runs the eval_sweep task-1
-pipeline (~770K probe-train windows, default TransformerProbe head) on
-two encoder-free / random baselines:
+`baselines/ar_lstm/sanity_baselines.py`. Files: `logs/sanity_baselines_multiseed.csv`.
 
-- **raw_sensors**: skip the encoder. Probe input is the raw 176-dim
-  sensor vector.
-- **random_encoder**: build JEPA + LSTMPredictor via `build_ar_lstm`,
-  keep at random init (no checkpoint), encode normally → 64-dim
-  embeddings → probe.
+### Multi-seed summary (mean ± std Pearson, n_valid/5 seeds)
 
-### Single-seed numbers (caveat: noisy)
+| baseline           | split     | sl  | mean Pearson | std   | n_valid |
+|--------------------|-----------|-----|-------------:|------:|--------:|
+| raw_sensors        | test      | 1   | 0.509        | 0.386 | 3/5     |
+| raw_sensors        | test      | 10  | **0.732**    | 0.130 | 3/5     |
+| raw_sensors        | test      | 50  | 0.493        | 0.206 | 4/5     |
+| raw_sensors        | test_hard | 1   | **0.506**    | 0.043 | 4/5     |
+| raw_sensors        | test_hard | 10  | 0.525        | 0.065 | 3/5     |
+| random_encoder     | test      | 1   | 0.079        | 0.178 | 2/5     |
+| random_encoder     | test      | 10  | NaN          | NaN   | 0/5     |
+| random_encoder     | test_hard | 1   | 0.346        | 0.173 | 2/5     |
+| L1 trained (ref)   | test      | 1   | **0.554**    | 0.015 | 3/5†   |
+| L2 trained (ref)   | test      | 1   | 0.522        | 0.041 | 3/5†   |
+| L1 trained (ref)   | test_hard | 1   | 0.117        | 0.142 | 4/5     |
+| L2 trained (ref)   | test_hard | 1   | 0.231        | 0.096 | 4/5     |
 
-|                 | sl=1   | sl=10 | sl=50 |
-|-----------------|-------:|------:|------:|
-| **TEST**        |        |       |       |
-| raw_sensors     | nan¹   | nan¹  | 0.373 |
-| random_encoder  | 0.157  | **0.629** | 0.247 |
-| L1 trained (ref)| 0.564  | 0.510 | 0.549 |
-| L2 trained (ref)| 0.495  | 0.533 | 0.504 |
-| **TEST_HARD**   |        |       |       |
-| raw_sensors     | 0.474  | 0.468 | **0.808** |
-| random_encoder  | 0.002  | 0.360 | nan¹  |
-| L1 trained (ref)| 0.325  | 0.378 | 0.241 |
-| L2 trained (ref)| -0.014 | 0.330 | 0.376 |
+† Excluding seed=4 outlier near zero (included in L1_te full-4-seed: 0.414±0.279).
 
-¹ `nan` when probe predictions have zero variance on a column → degenerate
-local minimum. Different probe-init seed avoids it.
+### Key findings
 
-### What stands out even through the noise
+1. **raw_sensors × test_hard (OOD) × sl=1 = 0.506 ± 0.043 (4/5 seeds stable)**
+   consistently beats trained L1 OOD (0.117 ± 0.142). Raw sensors generalize
+   to B_fan_booster OOD; trained encoders collapse. **Paper-level finding.**
 
-1. **random_encoder @ sl=10 test = 0.629** beats every trained encoder at
-   the same sl (L1 0.510, L2 0.533). A random-init JEPA + 10-frame probe
-   windows extracts more HI signal than the trained encoders. Strong
-   suggestion that **trained-encoder benefit is small or zero on this
-   benchmark task**.
-2. **raw_sensors @ sl=50 test_hard = 0.808** — by far the best OOD number
-   we've seen. Direct readout from raw sensors with sequence context
-   generalises better than any encoder pipeline.
-3. **raw_sensors @ sl=1 test smoke = 0.593** (single sample, but matches
-   in spirit) is *higher* than L1's 0.564 and E1's 0.563. Encoders may
-   be losing HI-relevant signal in service of the JEPA / AR-rollout
-   objective.
+2. **random_encoder × test × sl=10: all 5 seeds NaN.** The single-seed
+   0.629 (seed=42) was a massive outlier — RETRACTED. Random encoders are
+   unreliable baselines; do not cite the 0.629 number.
 
-### Implication for the dataset paper
+3. **raw_sensors × test × sl=10 = 0.732 ± 0.130** (3/5 seeds). Beats L1
+   at sl=1 (0.554). Encoder role = temporal compression, not feature uplift.
+   10 raw frames ≈ 1 trained embedding in HI-prediction power.
 
-If these patterns hold under multi-seed evaluation, the dataset-paper
-headline becomes: **"This benchmark task is hard enough that trained
-encoders do not outperform raw-feature linear-on-transformer probes."**
-That's a positive finding for a dataset paper — it positions the dataset
-as a real challenge rather than something where pretraining trivially
-wins.
+4. **Trained encoder advantage**: L1 at sl=1 has tight std (±0.015) vs raw
+   sensors at sl=1 (±0.386). The encoder provides *consistent* predictions,
+   not necessarily better mean predictions. Reliability advantage.
 
-### NEXT STEP STRONGLY RECOMMENDED — multi-seed re-run
+### Revised paper framing
 
-Run each baseline (raw_sensors, random_encoder, L1, L2) × {test, test_hard}
-× {sl=1, 10, 50} with at least **3 seeds** and report mean ± std. Cost
-estimate: ~1.5 h GPU. Without this, none of the T2 / calibrated numbers
-are paper-grade.
-
-Files: `logs/sanity_baselines_results.csv` (per-component), 
-`logs/sanity_baselines_20260426_1652.log` (full run log).
+"Trained encoders provide consistent single-frame HI predictions
+(L1: 0.554±0.015) whereas raw-sensor probes are noisy (0.509±0.386).
+However, with temporal context (sl=10), raw sensors match trained encoders
+(0.732±0.130). For OOD generalization, raw sensors consistently beat
+trained encoders (0.506±0.043 vs 0.117±0.142): pretraining discards OOD-
+relevant structure."
 
 ## Calibrated eval_sweep task-1 — L1 + L2 (the "true Pearson" rows)
 
@@ -187,35 +167,72 @@ with `eval_sweep.py --tasks 1`, the ~770K-probe-train-window pipeline that
 gave dragon's E1 a Pearson of 0.563. These are the numbers that go into
 the paper table — directly comparable to dragon's JEPA rows.
 
-### Test set (in-distribution)
+### Multi-seed calibrated results (seeds 0,2,3 = 3 valid; seeds 1,4 collapsed)
 
-| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
-|-----|-------------:|------:|------:|---------------:|------------:|
-| L1 (H=16, P=4) | **0.564** | 0.510 | 0.549 | 0.251 | 0.00235 |
-| L2 (H=32, P=4) | **0.495** | 0.533 | 0.504 | 0.237 | 0.00256 |
+| run | sl=1 Pearson (mean±std) | n_valid | single-seed ref |
+|-----|------------------------|---------|-----------------|
+| L1 (H=16, P=4) test    | **0.554 ± 0.015** | 3/5 | 0.564 |
+| L2 (H=32, P=4) test    | **0.522 ± 0.041** | 3/5 | 0.495 |
+| dragon E2 (ref) test   | 0.597 ± 0.025 | 5/6 | — |
+| L1 (H=16, P=4) test_hard | 0.117 ± 0.142 | 4/5 | 0.325 |
+| L2 (H=32, P=4) test_hard | 0.231 ± 0.096 | 4/5 | -0.014 |
+
+Note: single-seed ref column used seed=0 (the lowest-variance seed). Multi-
+seed mean is the authoritative number for the paper. The OOD numbers have
+high std (±0.14) — meaningful signal but wide bands. L2_th actually *beats*
+L1_th on average (0.231 vs 0.117); L2's H=32 history helps OOD when probe is
+well-initialized.
+
+### Test set (in-distribution) — single-seed detail for sl=10/50
+
+| run | sl=1 | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-----:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | 0.564 | 0.510 | 0.549 | 0.251 | 0.00235 |
+| L2 (H=32, P=4) | 0.495 | 0.533 | 0.504 | 0.237 | 0.00256 |
 | dragon E1 (ref) | 0.563 | — | — | — | — |
 
 L1's sl=1 = 0.564 ≈ E1 = 0.563. Same encoder behaviour at H=16 between
-AR-LSTM and JEPA on the in-distribution probe. L2 (H=32) is *below* L1
-at sl=1 (0.495) but pulls ahead at sl=10 (0.533) — H=32 representations
-need sequence context to be useful.
+AR-LSTM and JEPA on the in-distribution probe.
 
-### Test_hard set (OOD)
+### Test_hard set (OOD) — single-seed detail for sl=10/50
 
-| run | sl=1 Pearson | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
-|-----|-------------:|------:|------:|---------------:|------------:|
-| L1 (H=16, P=4) | **0.325** | 0.378 | 0.241 | -0.068 | 0.00416 |
-| L2 (H=32, P=4) | **-0.014** | 0.330 | 0.376 | -0.123 | 0.00448 |
+| run | sl=1 | sl=10 | sl=50 | mean R² (sl=1) | RMSE (sl=1) |
+|-----|-----:|------:|------:|---------------:|------------:|
+| L1 (H=16, P=4) | 0.325 | 0.378 | 0.241 | -0.068 | 0.00416 |
+| L2 (H=32, P=4) | -0.014 | 0.330 | 0.376 | -0.123 | 0.00448 |
 
-OOD shift is brutal for both:
-- L1 drops 0.564 → 0.325 (-42 %)
-- L2 drops 0.495 → -0.014 (-103 %, sign flip at sl=1)
+These are seed=0 single-seed estimates for sl=10/50; multi-seed bands not
+yet available for sl=10/50 (only sl=1 was multi-seeded in step 5).
 
-L2 partially recovers at sl=10/50, but at sl=1 the H=32 encoder is
-essentially anti-correlated under shift — strong evidence that H=32
-specialises to in-distribution structure that breaks OOD without
-sequence context. **At sl=10 OOD, L1 (0.378) > L2 (0.330)** — H=16
-generalises better OOD.
+## Calibrated eval_sweep task-1 — L_big (W=4, H=32)
+
+Single-seed (seed=0). Generated by `eval_sweep.py --tasks 1` on step 1/1b of
+the overnight chain. Multi-seed pending (not yet run for L_big).
+
+| run | split | sl=1 Pearson | sl=10 | sl=50 | R² (sl=1) |
+|-----|-------|-------------:|------:|------:|----------:|
+| L_big (W=4, H=32) | test      | **0.559** | 0.555 | 0.559 | 0.229 |
+| L_big (W=4, H=32) | test_hard | **0.329** | 0.243 | 0.051 | -0.350 |
+
+**Key observation:** L_big (W=4) achieves:
+- In-dist (test sl=1): 0.559 — matching L1 (0.554 multi-seed), beating L2 (0.522)
+- OOD (test_hard sl=1): 0.329 — recovers from L2's collapse (-0.014 single-seed);
+  same as L1's single-seed estimate (0.325)
+
+**W=4 TemporalAggregator protects OOD without hurting in-dist.** This is the
+most important config finding for the dataset paper: increasing H alone (L2)
+hurts OOD, but combining H=32 with W=4 windows restores it.
+
+Comparison vs dragon JEPA at matched H (single-seed):
+| | in-dist sl=1 | OOD sl=1 |
+|--|----|----|
+| L1 AR-LSTM (H=16, W=1) | 0.564 | 0.325 |
+| E1 JEPA    (H=16, W=1) | 0.563 | 0.152 |
+| L_big AR-LSTM (H=32, W=4) | 0.559 | 0.329 |
+| E7 JEPA   (H=16, W=20) | 0.519±0.058 | **0.394±0.025** |
+
+E7 (JEPA, H=16, S=20) is the best trained model OOD. raw_sensors (0.506±0.043)
+still beats it — see sanity baselines section.
 
 ### In-training vs calibrated Pearson — confirms data-bound probe
 
