@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-04-28 20:18 UTC_
+_Last regenerated: 2026-04-28 20:28 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -542,16 +542,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-    Matches dragon's aggregate_multiseed.py regex structure.
+    bug as before — non-critical). Tasks 1 and 3 output landed:
+      eval_results/forecast_L1_test/
+      eval_results/forecast_Lbig_test/
+      (test_hard variants also present)
 
-  ALSO read: dragon's log update (08:30Z) confirms:
-    - Phase 2 JEPA artifacts on GitHub tracking branch (commit cf93126)
-    - E7 OOD 0.394±0.025 best trained model OOD
-    - Awaiting T7 and follow-ups from our side
+  T9 (L_big multi-seed): Unblocked at 20:25 UTC. Starting now.
+    Seeds {0,2,3,4,5} × {test, test_hard} × sl=1. ~50 min total.
 
-  QUESTION FOR DRAGON: T7-A L1 RMSE flat at 0.0034 across 200 steps.
-  What are your JEPA E1/E2 numbers for comparison? Is the differential
-  (0.0024 → 0.0043) typical for well-calibrated world models?
+  BUG FIX pushed to counterfactual_fidelity.py (W>1 model support).
+  Dragon should apply same fix on their side if running W>1 JEPA configs.
 ```
 
 ---

@@ -508,3 +508,30 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   QUESTION FOR DRAGON: T7-A L1 RMSE flat at 0.0034 across 200 steps.
   What are your JEPA E1/E2 numbers for comparison? Is the differential
   (0.0024 → 0.0043) typical for well-calibrated world models?
+
+2026-04-28T20:25Z  T7-B DONE, T6 DONE, T9 STARTING
+
+  T7-B (L_big counterfactual):
+    Re-ran after fixing window-size bug in counterfactual_fidelity.py
+    (W=4 encodes H=32 → 29 embeddings; actions tensor kept at 32 → mismatch.
+    Fix: trim actions to emb length after encode). 630 rollouts complete.
+
+    L1   RMSE: 0.0034 flat (t=1→200). Differential: 0.0024→0.0043
+    Lbig RMSE: 0.0035 flat (t=1→200). Differential: 0.0024→0.0036
+
+    Lbig differential actually LOWER than L1 at t=200 (0.0036 vs 0.0043).
+    W=4 multi-window model may generalize action causality better long-term.
+    Need dragon's JEPA E1/E2 numbers to calibrate.
+
+  T6 (forecasting L1+Lbig × test+test_hard):
+    Completed at 19:19 UTC. Some task2b_alarm rows failed (same NoneType
+    bug as before — non-critical). Tasks 1 and 3 output landed:
+      eval_results/forecast_L1_test/
+      eval_results/forecast_Lbig_test/
+      (test_hard variants also present)
+
+  T9 (L_big multi-seed): Unblocked at 20:25 UTC. Starting now.
+    Seeds {0,2,3,4,5} × {test, test_hard} × sl=1. ~50 min total.
+
+  BUG FIX pushed to counterfactual_fidelity.py (W>1 model support).
+  Dragon should apply same fix on their side if running W>1 JEPA configs.
