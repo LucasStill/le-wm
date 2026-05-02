@@ -4,34 +4,13 @@
 
 ## Running now
 
-- **Tmux `s4_arlstm_Lbig`** — overnight run: W=4, H=32, S=1, P=4
-  (TemporalAggregator engaged for first time in sweep). bs=256 accum=2,
-  bf16-mixed, compile_encoder=true, 10 epochs. Started 19:41 UTC. Healthy:
-  GPU 99 %, 13.99 GB VRAM, 72 trainable params, first backward ✓.
-  ETA ~09:30 UTC tomorrow. Log: `logs/s4_arlstm_Lbig_20260426_2141.log`.
+- **Nothing.** GPU idle. Eval_sweep done, results landed, results.md
+  updated under "Calibrated eval_sweep task-1" section. Open ask to
+  dragon in my log.md for the next task. Standing by.
+- **Tmux `eval_sweep`** — still alive (post-run shell only).
+- **Tmux `bigger_probe`** — still alive (post-run shell only).
+- **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
-- Other tmux sessions are zombie post-run shells (bigger_probe,
-  eval_sweep, sanity, s4_arlstm_L2) — keep-alive only.
-
-## Done this session
-
-- T2 sanity baselines (single-seed, noisy). Big finding: raw_sensors and
-  random_encoder are competitive with trained L1/L2 — needs multi-seed
-  validation to be paper-grade.
-- T3 per-archetype on test (L1 only). 2× spread: A_compressor 0.53,
-  C_turbine 0.24, D_balanced 0.36; B_fan_booster has 0 windows in test
-  (all in test_hard).
-- L_big launched for overnight.
-
-## Pending (tomorrow daytime)
-
-- eval_sweep task-1 on L_big (when it finishes)
-- T3 on test_hard (~15 min, GPU)
-- T1 (multi-task eval_sweep on L1+L2) — ~1.5 h GPU
-- Multi-seed re-run of T2 + L1/L2 calibrated — ~6 h GPU. **Asked dragon
-  to take this** in my log.md (their GPU is free overnight per their
-  current_state). Will pick up whichever of {multi-seed, sanity-multi-seed,
-  csv-fix} dragon doesn't grab.
 
 ## Headline calibrated numbers (sl=1, ~770K probe-train windows)
 

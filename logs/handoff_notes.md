@@ -11,24 +11,24 @@ Keep **Open questions** current so the user can answer them on reconnect.
 
 ## Current state
 
-- **RSSM/DreamerV3 baseline (active)** — tmux `s4_rssm`, PID 2335665, started 2026-05-02 21:30 UTC.
-  Launcher: `train_rssm_scenario4_orailix.sh` (default config, no env-var overrides).
-  Config: bs=16 nw=8 T=64 stoch=32x32 deter=512, hi_probe=on (eval_interval=5, +final epoch),
-  max_epochs=10, bf16-mixed, WANDB_MODE=offline. Tee log: `logs/s4_rssm_20260502_2130.log`.
-  Wandb run: `wandb/offline-run-20260502_213013-q8y7e7qx`.
-- **Live status (21:52 UTC):** healthy and stepping. global_step=10899, epoch=0,
-  loss=0.60 (recon=0.003, kl=0.6, dyn=1.0, rep=1.0), runtime=15.6 min so far,
-  throughput ≈ 11.65 it/s. GPU 40 % util, 1.4 GB VRAM (huge headroom on 32 GB).
-- **Epoch ETA (computed, not measured):** dataset has 6,979,372 stride-1 windows;
-  train split (0.9) → 6,281,434 → **392,589 steps/epoch at bs=16** →
-  **~9.4 h/epoch → ~3.9 days for 10 epochs**. See Open question #1 below.
+- **RSSM/DreamerV3 baseline @ bs=512 (active)** — tmux `s4_rssm`, started 2026-05-02
+  22:01 UTC. Launcher: `train_rssm_scenario4_orailix.sh` with env-var overrides
+  `BATCH_SIZE=512 NUM_WORKERS=8 ACCUM_GRAD=1 MAX_EPOCHS=10 WANDB_MODE=offline`.
+  Tee log: `logs/s4_rssm_bs512_2201.log`. Wandb run: `wandb/offline-run-20260502_220125-9inzwnrj`.
+  Config: T=64, stoch=32x32, deter=512, hi_probe=on (eval_interval=5 + final epoch),
+  bf16-mixed, optimizer.lr=1e-4. Effective bs=512 matches AR-LSTM scenario4 exactly.
+- **Live status (22:11 UTC, ~10 min in):** healthy. global_step=4149 in 481 s →
+  **8.63 it/s @ bs=512 = 4,418 samples/s** (23.7× faster than bs=16). Loss 0.602
+  (recon 0.002, kl 0.60, dyn/rep 1.00). GPU 64-70 %, VRAM 7.93 GB.
+- **Measured ETA:** 23.7 min/epoch training + ~1 min/epoch val/hi_probe →
+  **~4–5 h for 10 epochs**. Well inside the 9–10 h budget.
 - **Older AE/JEPA campaign (Apr 24 → Apr 27):** finished. tmux `s4` and `campaign`
   are gone; corresponding entries in the Decisions log + Timeline below describe
   what was done. Not active any more.
 
 ## Open questions for the user
 
-- _(none yet)_
+- _(none yet — bs=512 launch is the agreed plan; user said "let it run")_
 
 ## Decisions log
 
@@ -114,3 +114,36 @@ Keep **Open questions** current so the user can answer them on reconnect.
   `STABLEWM_HOME=/home/lthil/.stable_worldmodel` and default `WANDB_MODE=offline`.
   Same hyperparams: bs=16, T=64, stoch=32x32, deter=512, hi_probe=on, max_epochs=10.
 - Monitoring for first iteration / sanity-check output to confirm it's actually stepping.
+
+### 2026-05-02 21:45 UTC — bs=16 run was healthy but 4-day ETA detected
+- The relaunch (PID 2335665) was confirmed live: at 21:45 it was at global_step=10899
+  in 935.86s of runtime → **11.65 it/s, loss=0.60 (recon=0.003, kl=0.6, dyn=1.0, rep=1.0)**.
+- Computed steps/epoch: HDF5Dataset had 6,979,372 stride-1 windows → train split (0.9)
+  = 6,281,434 → **392,589 steps/epoch at bs=16 → ~9.4 h/epoch → ~3.9 days for 10 epochs.**
+- User flagged this as unacceptable (initial mental budget was ~2 hours; settled on
+  9–10 h budget on reconnect).
+
+### 2026-05-02 21:55 UTC — killed bs=16, probed bs=128, then launched bs=512
+- Killed `s4_rssm` tmux + `train_rssm` + `wandb-core` PIDs. GPU returned to 0 %/2 MiB.
+  No checkpoint had been saved (only 0.3 % into epoch 0), nothing lost.
+- bs=128 probe (`tmux probe128`, WANDB_MODE=disabled): VRAM 4.85 GB, GPU 49 %.
+  Only +8 pp utilization for 8x batch → **GRU sequential is the bottleneck**, not memory.
+  Killed the probe (couldn't read it/s with wandb disabled).
+- Launched real run **bs=512, accum=1, nw=8, MAX_EPOCHS=10, WANDB_MODE=offline**
+  in tmux `s4_rssm` at 22:01:25 UTC. Tee log: `logs/s4_rssm_bs512_2201.log`,
+  wandb dir: `wandb/offline-run-20260502_220125-9inzwnrj`. Effective bs=512 matches
+  AR-LSTM scenario4 exactly (fair comparison preserved, no dataset subsampling).
+- At 22:07 UTC: GPU 70 % / 7.93 GB VRAM, wandb .wandb file growing (96 KB).
+  No tqdm/wandb-summary visible yet (Lightning quirk + sparse logging cadence at
+  large bs). Run is healthy. Theoretical ETA: 9–12 h for 10 epochs.
+
+### 2026-05-02 22:11 UTC — first wandb-summary flushed; speed confirmed
+- `_runtime=481`, `global_step=4149`, `epoch=0`. Throughput **8.63 it/s @ bs=512
+  = 4,418 samples/s** — 23.7× faster than bs=16 (186 samples/s). The GRU
+  bottleneck saturates well at bs=512 even though GPU is "only" 64-70 % util.
+- Loss curve mirrors bs=16 run: recon=0.002, kl=0.60, dyn/rep=1.00, total=0.602.
+  KL/dyn/rep are pinned to the kl_free=1.0 boundary as expected for early training.
+- Refined ETA: 12,268 steps / 8.63 it/s = 23.7 min/epoch + val/hi_probe overhead
+  → **~4–5 h for 10 epochs**. Comfortably under the 9–10 h budget.
+- Persistent monitor armed (`grep` over the tee log) for OOMs / errors / epoch
+  boundaries / "Training complete". Wakeup scheduled at 22:37 UTC for a re-check.
