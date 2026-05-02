@@ -1,0 +1,188 @@
+\begin{thebibliography}{20}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Arias~Chao et~al.(2021)Arias~Chao, Kulkarni, Goebel, and
+  Fink]{Arias_Chao_Kulkarni_Goebel_Fink_2021}
+Manuel Arias~Chao, Chetan Kulkarni, Kai Goebel, and Olga Fink.
+\newblock Aircraft engine run-to-failure dataset under real flight conditions
+  for prognostics and diagnostics.
+\newblock \emph{Data}, 6\penalty0 (1):\penalty0 5, January 2021.
+\newblock ISSN 2306-5729.
+\newblock \doi{10.3390/data6010005}.
+\newblock URL \url{https://www.mdpi.com/2306-5729/6/1/5}.
+
+\bibitem[Assran et~al.(2025)Assran, Bardes, Fan, Garrido, Howes, Mojtaba,
+  Komeili, Muckley, Rizvi, Roberts, Sinha, Zholus, Arnaud, Gejji, Martin,
+  Hogan, Dugas, Bojanowski, Khalidov, Labatut, Massa, Szafraniec, Krishnakumar,
+  Li, Ma, Chandar, Meier, LeCun, Rabbat, and
+  Ballas]{Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025}
+Mido Assran, Adrien Bardes, David Fan, Quentin Garrido, Russell Howes, Mojtaba,
+  Komeili, Matthew Muckley, Ammar Rizvi, Claire Roberts, Koustuv Sinha, Artem
+  Zholus, Sergio Arnaud, Abha Gejji, Ada Martin, Francois~Robert Hogan, Daniel
+  Dugas, Piotr Bojanowski, Vasil Khalidov, Patrick Labatut, Francisco Massa,
+  Marc Szafraniec, Kapil Krishnakumar, Yong Li, Xiaodong Ma, Sarath Chandar,
+  Franziska Meier, Yann LeCun, Michael Rabbat, and Nicolas Ballas.
+\newblock V-jepa 2: Self-supervised video models enable understanding,
+  prediction and planning.
+\newblock \penalty0 (arXiv:2506.09985), 2025.
+\newblock \doi{10.48550/arXiv.2506.09985}.
+\newblock URL \url{http://arxiv.org/abs/2506.09985}.
+\newblock arXiv:2506.09985 [cs].
+
+\bibitem[Balestriero and LeCun(2025)]{Balestriero_LeCun_2025}
+Randall Balestriero and Yann LeCun.
+\newblock Lejepa: Provable and scalable self-supervised learning without the
+  heuristics.
+\newblock \penalty0 (arXiv:2511.08544), November 2025.
+\newblock \doi{10.48550/arXiv.2511.08544}.
+\newblock URL \url{http://arxiv.org/abs/2511.08544}.
+\newblock arXiv:2511.08544 [cs].
+
+\bibitem[Bear et~al.()Bear, Wang, Mrowca, Binder, Tung, Pramod, Holdaway, Tao,
+  Smith, Sun, et~al.]{bear1physion}
+Daniel Bear, Elias Wang, Damian Mrowca, Felix~Jedidja Binder, Hsiao-Yu Tung,
+  RT~Pramod, Cameron Holdaway, Sirui Tao, Kevin~A Smith, Fan-Yun Sun, et~al.
+\newblock Physion: Evaluating physical prediction from vision in humans and
+  machines.
+\newblock In \emph{Thirty-fifth Conference on Neural Information Processing
+  Systems Datasets and Benchmarks Track (Round 1)}.
+
+\bibitem[Bordes et~al.(2025)Bordes, Garrido, Kao, Williams, Rabbat, and
+  Dupoux]{Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025}
+Florian Bordes, Quentin Garrido, Justine~T. Kao, Adina Williams, Michael
+  Rabbat, and Emmanuel Dupoux.
+\newblock Intphys 2: Benchmarking intuitive physics understanding in complex
+  synthetic environments.
+\newblock \penalty0 (arXiv:2506.09849), 2025.
+\newblock \doi{10.48550/arXiv.2506.09849}.
+\newblock URL \url{http://arxiv.org/abs/2506.09849}.
+\newblock arXiv:2506.09849 [cs].
+
+\bibitem[Calabrese et~al.(2021)Calabrese, Regattieri, Bortolini, Gamberi, and
+  Pilati]{calabrese2021predictive}
+Francesca Calabrese, Alberto Regattieri, Marco Bortolini, Mauro Gamberi, and
+  Francesco Pilati.
+\newblock Predictive maintenance: A novel framework for a data-driven,
+  semi-supervised, and partially online prognostic health management
+  application in industries.
+\newblock \emph{Applied Sciences}, 11\penalty0 (8):\penalty0 3380, 2021.
+
+\bibitem[Deng et~al.(2024)Deng, Nguyen, Gogu, Medjaher, and
+  Morio]{deng2024enhancing}
+Weikun Deng, Khanh~TP Nguyen, Christian Gogu, Kamal Medjaher, and
+  J{\'e}r{\^o}me Morio.
+\newblock Enhancing prognostics for sparse labeled data using advanced
+  contrastive self-supervised learning with downstream integration.
+\newblock \emph{Engineering Applications of Artificial Intelligence},
+  138:\penalty0 109268, 2024.
+
+\bibitem[Krishnan et~al.(2022)Krishnan, Rajpurkar, and Topol]{krishnan2022self}
+Rayan Krishnan, Pranav Rajpurkar, and Eric~J Topol.
+\newblock Self-supervised learning in medicine and healthcare.
+\newblock \emph{Nature Biomedical Engineering}, 6\penalty0 (12):\penalty0
+  1346--1352, 2022.
+
+\bibitem[Maes et~al.(2026)Maes, Lidec, Scieur, LeCun, and
+  Balestriero]{Maes_Lidec_Scieur_LeCun_Balestriero_2026}
+Lucas Maes, Quentin~Le Lidec, Damien Scieur, Yann LeCun, and Randall
+  Balestriero.
+\newblock Leworldmodel: Stable end-to-end joint-embedding predictive
+  architecture from pixels.
+\newblock \penalty0 (arXiv:2603.19312), March 2026.
+\newblock \doi{10.48550/arXiv.2603.19312}.
+\newblock URL \url{http://arxiv.org/abs/2603.19312}.
+\newblock arXiv:2603.19312 [cs].
+
+\bibitem[Maulana et~al.(2023)Maulana, Starr, and
+  Ompusunggu]{Maulana_Starr_Ompusunggu_2023}
+Faisal Maulana, Andrew Starr, and Agusmian~Partogi Ompusunggu.
+\newblock Explainable data-driven method combined with bayesian filtering for
+  remaining useful lifetime prediction of aircraft engines using nasa cmapss
+  datasets.
+\newblock \emph{Machines}, 11\penalty0 (2):\penalty0 163, January 2023.
+\newblock ISSN 2075-1702.
+\newblock \doi{10.3390/machines11020163}.
+\newblock URL \url{https://www.mdpi.com/2075-1702/11/2/163}.
+
+\bibitem[Okada and Taniguchi(2021)]{okada2021dreaming}
+Masashi Okada and Tadahiro Taniguchi.
+\newblock Dreaming: Model-based reinforcement learning by latent imagination
+  without reconstruction.
+\newblock In \emph{2021 ieee international conference on robotics and
+  automation (icra)}, pages 4209--4215. IEEE, 2021.
+
+\bibitem[Okada and Taniguchi(2022)]{okada2022dreamingv2}
+Masashi Okada and Tadahiro Taniguchi.
+\newblock Dreamingv2: Reinforcement learning with discrete world models without
+  reconstruction.
+\newblock In \emph{2022 IEEE/RSJ International Conference on Intelligent Robots
+  and Systems (IROS)}, pages 985--991. IEEE, 2022.
+
+\bibitem[Psaropoulos et~al.(2025)Psaropoulos, Gkoutzamanis, Kalfas,
+  Giannakakis, Razakarivony, Thepaut, and Vu]{psaropoulos_2025_17804895}
+Michail Psaropoulos, Vasilis Gkoutzamanis, Anestis~I. Kalfas, Panagiotis
+  Giannakakis, Sebastien Razakarivony, Solene Thepaut, and Don~Quan Vu.
+\newblock Opendecksmr, December 2025.
+\newblock URL \url{https://doi.org/10.5281/zenodo.17804895}.
+
+\bibitem[Ramasso and Saxena(2015)]{Ramasso_Saxena}
+Emmanuel Ramasso and Abhinav Saxena.
+\newblock \emph{Review and Analysis of Algorithmic Approaches Developed for
+  Prognostics on CMAPSS Dataset}.
+\newblock 2015.
+\newblock URL
+  \url{https://ntrs.nasa.gov/api/citations/20150007677/downloads/20150007677.pdf}.
+
+\bibitem[Riochet et~al.(2018)Riochet, Castro, Bernard, Lerer, Fergus, Izard,
+  and Dupoux]{riochet2018intphys}
+Ronan Riochet, Mario~Ynocente Castro, Mathieu Bernard, Adam Lerer, Rob Fergus,
+  V{\'e}ronique Izard, and Emmanuel Dupoux.
+\newblock Intphys: A framework and benchmark for visual intuitive physics
+  reasoning.
+\newblock \emph{arXiv preprint arXiv:1803.07616}, 2018.
+
+\bibitem[Saxena et~al.(2008)Saxena, Goebel, Simon, and
+  Eklund]{Saxena_Goebel_Simon_Eklund_2008}
+Abhinav Saxena, Kai Goebel, Don Simon, and Neil Eklund.
+\newblock Damage propagation modeling for aircraft engine run-to-failure
+  simulation.
+\newblock In \emph{2008 International Conference on Prognostics and Health
+  Management}, page 1–9, Denver, CO, USA, October 2008. IEEE.
+\newblock ISBN 978-1-4244-1935-7.
+\newblock \doi{10.1109/PHM.2008.4711414}.
+\newblock URL \url{http://ieeexplore.ieee.org/document/4711414/}.
+
+\bibitem[Todorov et~al.(2012)Todorov, Erez, and Tassa]{todorov2012mujoco}
+Emanuel Todorov, Tom Erez, and Yuval Tassa.
+\newblock Mujoco: A physics engine for model-based control.
+\newblock In \emph{2012 IEEE/RSJ International Conference on Intelligent Robots
+  and Systems}, pages 5026--5033. IEEE, 2012.
+\newblock \doi{10.1109/IROS.2012.6386109}.
+
+\bibitem[Towers et~al.(2024)Towers, Kwiatkowski, Terry, Balis, De~Cola, Deleu,
+  Goul{\~a}o, Kallinteris, Krimmel, KG, et~al.]{towers2024gymnasium}
+Mark Towers, Ariel Kwiatkowski, Jordan Terry, John~U Balis, Gianluca De~Cola,
+  Tristan Deleu, Manuel Goul{\~a}o, Andreas Kallinteris, Markus Krimmel, Arjun
+  KG, et~al.
+\newblock Gymnasium: A standard interface for reinforcement learning
+  environments.
+\newblock \emph{arXiv preprint arXiv:2407.17032}, 2024.
+
+\bibitem[Wang et~al.(2020)Wang, Qiao, Zhang, Yang, and Snoussi]{wang2020data}
+Tian Wang, Meina Qiao, Mengyi Zhang, Yi~Yang, and Hichem Snoussi.
+\newblock Data-driven prognostic method based on self-supervised learning
+  approaches for fault detection.
+\newblock \emph{Journal of Intelligent Manufacturing}, 31\penalty0
+  (7):\penalty0 1611--1619, 2020.
+
+\bibitem[Yi et~al.()Yi, Gan, Li, Kohli, Wu, Torralba, and Tenenbaum]{yiclevrer}
+Kexin Yi, Chuang Gan, Yunzhu Li, Pushmeet Kohli, Jiajun Wu, Antonio Torralba,
+  and Joshua~B Tenenbaum.
+\newblock Clevrer: Collision events for video representation and reasoning.
+\newblock In \emph{International Conference on Learning Representations}.
+
+\end{thebibliography}

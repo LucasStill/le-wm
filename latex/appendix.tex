@@ -1,3 +1,11 @@
+{
+  \hypersetup{linkcolor=black}
+  \setcounter{tocdepth}{2}
+  \renewcommand{\contentsname}{Appendix Contents}
+  \tableofcontents
+}
+\bigskip
+
 
 \section{POMDP and Observation Model}
 \label{sec:pomdp}
@@ -11,16 +19,16 @@ with latent state
 \[
     \omega_t \;=\; \bigl(\mathbf{s}_t,\, \mathbf{c}_t,\, w_t,\, \phi_t,\, \eta_\mathrm{reg},\, e_t\bigr) \;\in\; \Omega,
 \]
-where $\mathbf{s}_t \in \mathbb{R}^K$ is the persistent mechanical wear ($K{=}10$), $\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ is the transient contamination channel (zero in TurboSens3), $w_t$ is the weather state (ambient temperature deviation, precipitation gate), $\phi_t \in \mathcal{C}$ is the current flight phase context with $|\mathcal{C}|{=}C$, $\eta_\mathrm{reg}$ is the episode constant region and archetype label, and $e_t \in \{0,1\}^{n_\mathrm{evt}}$ is the current stochastic event flag vector (Table~\ref{tab:event_nomenclature}). The engine mechanical state $\mathbf{s}_t$ is the probing target; the other channels are carried because they shape its dynamics or the observation map.
+where $\mathbf{s}_t \in \mathbb{R}^K$ is the persistent mechanical wear ($K{=}10$), $\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ is the transient fouling channel (zero in TurboSens1), $w_t$ is the weather state (ambient temperature deviation, precipitation gate), $\phi_t \in \mathcal{C}$ is the current flight phase context with $|\mathcal{C}|{=}C$, $\eta_\mathrm{reg}$ is the episode constant region and archetype label, and $e_t \in \{0,1\}^{n_\mathrm{evt}}$ is the current stochastic event flag vector. The engine mechanical state $\mathbf{s}_t$ is the probing target; the other channels are carried because they shape its dynamics or the observation map.
 
 \paragraph{Transitions.}
-The channels of $\omega_t$ evolve under a deterministic drift $f$ perturbed by process noise $\xi_t$ and by the maintenance action $a_t$, which enters multiplicatively through a per channel factor $\Lambda_k(a_t)$ and additively through a restoration source $\boldsymbol{\rho}_k(a_t, \omega_t)$:
+The channels of $\omega_t$ evolve under a deterministic conditional drift $f$ (conditional on the region and archetype label $\eta_\mathrm{reg}$ and the current weather and phase) which is then perturbed by process noise $\xi_t$ and modulated by the maintenance action $a_t$. The action enters multiplicatively through a per channel factor $\Lambda_k(a_t)$ and additively through a restoration source $\boldsymbol{\rho}_k(a_t, \omega_t)$. The transition is therefore deterministic in $f$ but stochastic overall through $\xi_t$ and the discrete event mask $e_t$:
 \begin{equation}
     \omega^{(k)}_{t+1} \;=\; \Lambda_k(a_t)\,f_k(\omega_t) \;+\; \boldsymbol{\rho}_k(a_t, \omega_t) \;+\; \xi^{(k)}_t,
     \qquad k = 1, \ldots, n_\mathrm{ch}.
     \label{eq:omega_channel}
 \end{equation}
-When several independent modulations act on the same channel (for instance the contamination decay factor of a cleaning action combined with a context dependent deposition gate), the per channel factor is itself a product series
+When several independent modulations act on the same channel (for instance the fouling decay factor of a cleaning action combined with a context dependent deposition gate), the per channel factor is itself a product series
 \begin{equation}
     \Lambda_k(a_t) \;=\; \prod_{j=1}^{J_k} \lambda_{k,j}(a_t),
     \label{eq:Lambda_prod}
@@ -30,10 +38,10 @@ so the joint effect of the action across channels is captured by the product $\p
     \mathbf{s}_{t+1} &\;=\; \mathbf{s}_t \;+\; \boldsymbol{\Delta}_{\!s}(\mathbf{s}_t, \eta_\mathrm{reg}) \;+\; R(a_t)\,\boldsymbol{\rho}_\mathrm{mech}(a_t, \eta_\mathrm{reg}) \;+\; \boldsymbol{\eta}_t, \\
     \mathbf{c}_{t+1} &\;=\; \gamma(a_t)\,\mathbf{c}_t \;+\; \mathbf{u}_t(\phi_t, \eta_\mathrm{reg}) \;+\; \boldsymbol{\zeta}_t,
 \end{align}
-where $\boldsymbol{\Delta}_{\!s}$ is the archetype specific degradation drift (Appendix~\ref{sec:dataset_degradation}), $R(a_t) \in \{0,1\}^{K \times K}$ is the diagonal restoration mask of action $a_t$ applied to the components it targets with per component magnitude $\boldsymbol{\rho}_\mathrm{mech}$, $\gamma(a_t) \in [0,1]$ is the contamination decay factor of the action (equal to $1$ for non cleaning actions and to a small value for cleans), $\mathbf{u}_t$ is the region and phase dependent contamination source, and $\boldsymbol{\eta}_t, \boldsymbol{\zeta}_t$ are zero mean Gaussian noise terms that collect into the single noise symbol $\xi_t$ of equation~\ref{eq:omega_channel}.
+where $\boldsymbol{\Delta}_{\!s}$ is the archetype specific degradation drift (Appendix~\ref{sec:dataset_degradation}), $R(a_t) \in \{0,1\}^{K \times K}$ is the diagonal restoration mask of action $a_t$ applied to the components it targets with per component magnitude $\boldsymbol{\rho}_\mathrm{mech}$, $\gamma(a_t) \in [0,1]$ is the fouling decay factor of the action (equal to $1$ for non cleaning actions and to a small value for cleans), $\mathbf{u}_t$ is the region and phase dependent fouling source, and $\boldsymbol{\eta}_t, \boldsymbol{\zeta}_t$ are zero mean Gaussian noise terms that collect into the single noise symbol $\xi_t$ of equation~\ref{eq:omega_channel}.
 
-\paragraph{Phantom observation map.}
-Sensors do not observe $\omega_t$ directly. The observation map $g$ first collapses the two wear channels through a phantom state
+\paragraph{Phantom observation map (TurboSens2 only).}
+Sensors do not observe $\omega_t$ directly. In TurboSens2, the observation map $g$ first collapses the two wear channels through a phantom state
 \begin{equation}
     \tilde{\mathbf{s}}_t \;=\; \mathrm{clip}\!\bigl(\mathbf{s}_t \;+\; M\,\max(\mathbf{0},\,-\mathbf{s}_t) \;+\; C\,\mathbf{c}_t,\; s_{\min},\, s_{\max}\bigr),
     \label{eq:phantom_app}
@@ -42,10 +50,10 @@ and then evaluates the OpenDeckSMR thermodynamic simulator at the current flight
 \begin{equation}
     \mathbf{o}_t \;=\; g(\omega_t) \;+\; \boldsymbol{\varepsilon}_t \;=\; g_\mathrm{ODS}\!\bigl(\tilde{\mathbf{s}}_t,\, \phi_t\bigr) \;+\; \boldsymbol{\varepsilon}_t, \qquad \mathbf{o}_t \in \mathbb{R}^{S \times C},
 \end{equation}
-with $M \in \mathbb{R}^{K \times K}$ a fixed sign reversal mask allowing specific failure modes to manifest as apparent improvement, $C \in \mathbb{R}^{K \times K_c}$ a contamination to wear coupling matrix, and $g_\mathrm{ODS}$ the thermodynamic observation map evaluated across $C$ flight phase contexts simultaneously.
+with $M \in \mathbb{R}^{K \times K}$ a fixed sign reversal mask allowing specific failure modes to manifest as apparent improvement, $C \in \mathbb{R}^{K \times K_c}$ a fouling to wear coupling matrix, and $g_\mathrm{ODS}$ the thermodynamic observation map evaluated across $C$ flight phase contexts simultaneously. In TurboSens1 there is no fouling channel and $\tilde{\mathbf{s}}_t = \mathbf{s}_t$, so the observation reduces to $\mathbf{o}_t = g_\mathrm{ODS}(\mathbf{s}_t, \phi_t) + \boldsymbol{\varepsilon}_t$.
 
 \paragraph{Action dependent observability.}
-The equations above imply that the observability of $\mathbf{s}_t$ is itself a function of the action history. Immediately after a cleaning action, $\mathbf{c}_{t+1} \approx 0$ so $\tilde{\mathbf{s}}_{t+1} \approx \mathbf{s}_{t+1}$ and the sensor stream reveals the true mechanical state; between cleans, contamination rebuilds and $\tilde{\mathbf{s}}_t$ diverges from $\mathbf{s}_t$, obscuring it. A representation that regresses directly on the phantom is mis specified; a world model that conditions on the action history can in principle identify both channels by comparing observations before and after clean events.
+The equations above imply that the observability of $\mathbf{s}_t$ is itself a function of the action history. Immediately after a cleaning action, $\mathbf{c}_{t+1} \approx 0$ so $\tilde{\mathbf{s}}_{t+1} \approx \mathbf{s}_{t+1}$ and the sensor stream reveals the true mechanical state; between cleans, fouling rebuilds and $\tilde{\mathbf{s}}_t$ diverges from $\mathbf{s}_t$, obscuring it. A representation that regresses directly on the phantom is mis specified; a world model that conditions on the action history can in principle identify both channels by comparing observations before and after clean events.
 
 
 \section{Full Notation}
@@ -63,13 +71,13 @@ $\omega_t \in \Omega$                         & Full POMDP latent state at time 
 $\mathbf{s}_t \in \mathbb{R}^K$               & Engine mechanical wear (probing target) \\
 $s_t^k \in [-b_k, 0+\epsilon]$                & Wear of component $k$ \\
 $b_k$                                         & Per component degradation bound \\
-$\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$   & Contamination channel (TurboSens4 only) \\
+$\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$   & Fouling channel (TurboSens2 only) \\
 $\tilde{\mathbf{s}}_t$                        & Phantom state, $\tilde{\mathbf{s}}_t = g_\phi(\mathbf{s}_t, \mathbf{c}_t)$ \\
 $w_t$                                         & Weather state (ambient $\Delta T$, precipitation gate) \\
 $\phi_t \in \mathcal{C}$                      & Flight phase context \\
 $\eta_\mathrm{reg}$                           & Episode constant region and archetype label \\
 $e_t \in \{0,1\}^{n_\mathrm{evt}}$            & Stochastic event flag vector \\
-$K, K_c$                                      & Mechanical and contamination dimensions ($K{=}10$) \\
+$K, K_c$                                      & Mechanical and fouling dimensions ($K{=}10$) \\
 $S$                                           & Number of sensor types (7) \\
 $C$                                           & Number of flight phase contexts (4 / 12 / 16) \\
 $n_\mathrm{ch}$                               & Number of latent channels in $\omega_t$ \\
@@ -80,7 +88,7 @@ $\Lambda_k(a_t)$                              & Per channel multiplicative actio
 $\lambda_{k,j}(a_t)$                          & Independent modulation $j$ on channel $k$, $\Lambda_k = \prod_j \lambda_{k,j}$ \\
 $R(a_t) \in \{0,1\}^{K \times K}$             & Diagonal restoration mask of action $a_t$ \\
 $\boldsymbol{\rho}_\mathrm{mech}$             & Per component restoration magnitude \\
-$\gamma(a_t) \in [0,1]$                       & Contamination decay factor \\
+$\gamma(a_t) \in [0,1]$                       & Fouling decay factor \\
 $\kappa$                                      & Restoration quality coefficient \\
 $\xi_t$                                       & Process noise collecting $(\boldsymbol{\eta}_t, \boldsymbol{\zeta}_t, \ldots)$ \\
 $T$                                           & Episode length (variable) \\
@@ -89,7 +97,7 @@ $T$                                           & Episode length (variable) \\
 $\mathbf{o}_t \in \mathbb{R}^{S \times C}$    & Sensor observation tensor at time $t$ \\
 $g, g_\mathrm{ODS}$                           & Observation map; OpenDeckSMR thermodynamic map \\
 $M \in \mathbb{R}^{K \times K}$               & Sign reversal mask in the phantom state \\
-$C \in \mathbb{R}^{K \times K_c}$             & Contamination to wear coupling matrix \\
+$C \in \mathbb{R}^{K \times K_c}$             & Fouling to wear coupling matrix \\
 $\boldsymbol{\varepsilon}_t$                  & Observation noise \\
 $\mathbf{z}_t \in \mathbb{R}^d$               & Encoder embedding, $\mathrm{Enc}_\theta(\mathbf{o}_{\le t}, a_{\le t})$ \\
 $\mathbf{z}^\mathrm{agg}_t \in \mathbb{R}^d$  & Temporally aggregated embedding \\
@@ -111,29 +119,25 @@ $\lambda$                                     & SIGReg regularisation weight \\
 
 In this section we cover in details the proposed datasets.
 
-\subsection{Turbosens1 (ECML PKDD)}
-
-
-TODO, cite ECML PKDD paper (in proceedings, courtesy of OpenDeckSMR team).
-
-
-\subsection{The Scenario 3 Turbofan Degradation Dataset}
+\subsection{The Scenario 1 Turbofan Degradation Dataset}
 \label{sec:dataset_scenario3}
 
 We introduce a synthetic turbofan engine degradation dataset designed to
 benchmark world-model and representation-learning methods under conditions
 of partial observability, heterogeneous failure modes, and realistic
 maintenance interventions. Unlike existing turbofan benchmarks such as
-CMAPSS~\cite{saxena2008damage}, which expose only a single degradation
-trajectory with scalar health indicators, Scenario 3 provides a
+CMAPSS~\cite{Saxena_Goebel_Simon_Eklund_2008}, which expose only a single degradation
+trajectory with scalar health indicators, Scenario 1 provides a
 \emph{full ground-truth hidden state} alongside structured sensor
 observations, enabling the direct evaluation of latent-state recovery
 rather than remaining-useful-life regression alone.
 
-The dataset comprises 1{,}000 episodes totalling $8.2 \times 10^6$
-timesteps, with each timestep representing one flight cycle.
-At every step the simulator records a ten-dimensional hidden degradation
-state $\mathbf{s}_t \in \mathbb{R}^{10}$, a sensor observation tensor
+The released TurboSens1 dataset comprises 400 episodes of $10{,}000$
+timesteps each, totalling $4 \times 10^6$ timesteps; the generator's
+maximum episode length cap is reached by all released episodes.
+Each timestep represents one flight cycle. At every step the simulator
+records a ten dimensional hidden degradation state
+$\mathbf{s}_t \in \mathbb{R}^{10}$, a sensor observation tensor
 $\mathbf{o}_t \in \mathbb{R}^{7 \times 12}$, a discrete maintenance
 action $a_t \in \{0, \ldots, 5\}$, a stochastic event mask, and weather
 covariates. The hidden state is available at training time as a
@@ -305,18 +309,27 @@ state-independent by design.
 
 \paragraph{Health-correlated proactive scheduling.}
 On top of the LLP ceiling, the policy estimates for each component the
-predicted time until either the LLP cycle limit or a health threshold
-(80\% of the degradation bound) is reached, based on the current
-instantaneous degradation rate. When this predicted time falls within
-a planning window of $[1500, 2500]$ steps, a maintenance visit is
-scheduled. Because the predicted time depends on the degradation rate,
-which is governed by archetype, speed regime and recent event history,
-the timing of health-triggered visits is directly correlated with the
-state.
+predicted time until either the LLP cycle limit or an internal health
+threshold (a fraction of the degradation bound, kept conservative so
+that airworthiness margins are never approached) is reached, based on
+the current instantaneous degradation rate. The trigger is then
+modulated by the operational calendar: commercial operators try to
+minimise scheduled visits during peak traffic windows so that engines
+are not removed from service while the airline most needs them, and
+prefer to bring forward a borderline visit into the surrounding
+shoulder season when it is operationally safe to do so. Concretely, a
+flight that lands inside a high-demand window is more likely to defer
+a borderline-but-safe visit and a flight that lands outside it is more
+likely to bring one forward, conditional on the engine condition
+permitting it; the airworthiness margin remains intact in either case.
+Because the predicted time depends on the degradation rate, which is
+itself governed by archetype, speed regime and recent event history,
+the timing of health-triggered visits is correlated with the latent
+state, with the calendar acting as a soft secondary modulator.
 
 \paragraph{Min-built opportunistic bundling.}
 Whenever a maintenance visit is triggered for any reason (LLP, health,
-or finding-driven, see below), the policy scans all remaining
+or deferred repair-driven, see below), the policy scans all remaining
 components and applies min-built logic: if component $k$ is predicted
 to need replacement within a min-built window $W_\mathrm{mb} \in
 [2000, 3000]$ steps under its current degradation trajectory, it is
@@ -342,27 +355,26 @@ $\kappa \sim \mathcal{U}(0.70, 1.00)$ multiplies the restoration
 uniformly across all visits of an episode, capturing engine-to-engine
 variability in shop quality.
 
-\paragraph{Findings.}
+\paragraph{Deferred repairs.}
 During each maintenance visit, every component that was inspected but
 not serviced has a small independent probability (3 to 7\%) of being
-a \emph{finding}: an inspection miss in which the component was
+a \emph{deferred repair}: an inspection miss in which the component was
 mis-assessed and is actually degraded beyond the threshold for
-replacement. A finding is not detected immediately. After a stochastic
+replacement. A deferred repair is not detected immediately. After a stochastic
 delay of $[200, 800]$ steps, the engine is recalled for an unplanned
 emergency visit that services the missed component. The total number
-of findings accumulated across an episode is stored in the metadata
-and associated with additional cost, reflecting the large financial
-penalty of unplanned shop visits in commercial operations. Findings
-are a deliberate source of sub-optimality in the expert policy, giving
-downstream learning methods a concrete target for improvement.
+of deferred repairs accumulated across an episode is stored in the
+metadata. Deferred repairs are a deliberate source of sub-optimality
+in the expert policy, giving downstream learning methods a concrete
+target for improvement.
 
 \paragraph{Interval asymmetry.}
 The combination of LLP ceilings, health-correlated scheduling,
-min-built bundling and findings produces an inter-maintenance interval
+min-built bundling and deferred repairs produces an inter-maintenance interval
 distribution that is strongly asymmetric in the dataset. The LLP
 ceiling imposes a sharp upper cutoff, the health trigger concentrates
 most visits in a band that depends on the archetype-specific
-degradation rate, and findings populate a short-interval tail via
+degradation rate, and deferred repairs populate a short-interval tail via
 forced emergency visits. This is intentionally different from the
 earlier symmetric uniform scheduling used in our prior datasets, in
 which action timing was statistically independent of the hidden state
@@ -370,21 +382,19 @@ and therefore provided no signal for horizon prediction.
 
 \begin{table}[h]
 \centering
-\caption{Maintenance actions, targeted components, and cost. Costs are
-relative to a pristine-engine profit of approximately 70 reward units
-per step.}
+\caption{Maintenance actions and the components each one services.}
 \label{tab:actions}
 \small
-\begin{tabular}{llcp{4.0cm}}
+\begin{tabular}{llp{6.0cm}}
 \toprule
-ID & Name & Cost (reward units) & Components serviced \\
+ID & Name & Components serviced \\
 \midrule
-0 & \texttt{do\_nothing}       & 0   & None \\
-1 & \texttt{fan\_overhaul}     & 150 & Fan Eff, Fan Wc \\
-2 & \texttt{hpc\_overhaul}     & 200 & Booster Eff/Wc, HPC Eff/Wc \\
-3 & \texttt{turbine\_overhaul} & 200 & HPT Eff/Wc, LPT Eff/Wc \\
-4 & \texttt{full\_overhaul}    & 350 & All ten components \\
-5 & \texttt{targeted\_patch}   &  80 & Most-degraded component (oracle) \\
+0 & \texttt{do\_nothing}       & None \\
+1 & \texttt{fan\_overhaul}     & Fan Eff, Fan Wc \\
+2 & \texttt{hpc\_overhaul}     & Booster Eff/Wc, HPC Eff/Wc \\
+3 & \texttt{turbine\_overhaul} & HPT Eff/Wc, LPT Eff/Wc \\
+4 & \texttt{full\_overhaul}    & All ten components \\
+5 & \texttt{targeted\_patch}   & Most-degraded component (oracle) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -395,8 +405,8 @@ logic, each recorded action is accompanied by a metadata vector
 containing: a ten-dimensional boolean mask of components actually
 serviced during the visit (LLP and min-built inclusions expand this
 mask beyond the nominal action target); a categorical flag
-distinguishing LLP-forced, health-triggered, and finding-forced
-visits; and the per-visit finding count. This preserves the discrete
+distinguishing LLP-forced, health-triggered, and deferred repair-forced
+visits; and the per-visit deferred repair count. This preserves the discrete
 six-action label used by the RL environment while exposing the full
 per-component servicing information needed by diagnostics and
 representation-learning probes.
@@ -405,79 +415,98 @@ representation-learning probes.
 \subsubsection{Stochastic Event Library}
 \label{sec:dataset_events}
 
-Ten categories of stochastic events enrich the dataset with rare but
-consequential disturbances (Table~\ref{tab:events}). Events are drawn
-from independent Poisson processes with episode rates calibrated to
-reflect reported fleet incident statistics. Event labels are kept
-simulator agnostic: Table~\ref{tab:event_nomenclature} documents the
-physical mechanism each label is designed to model, and the same labels
-appear verbatim as the \texttt{event\_names} attribute of the released
-HDF5 files and in the ground truth \texttt{event\_types} multi hot
-tensor. Permanent events (\texttt{ingestion\_perm}, \texttt{shock},
-\texttt{oil\_degradation}, \texttt{blade\_tip\_rub}) apply an immediate
-step change to one or more components of $\mathbf{s}_t$, creating
-discontinuities visible in the trajectory plots. Transient events
-(\texttt{ingestion\_trans}, \texttt{surge}) temporarily elevate the
-degradation rate $\alpha_k$ for a finite duration. Sensor only events
-(\texttt{burst}, \texttt{contamination}, \texttt{sensor\_spike},
-\texttt{icing}) perturb the observation tensor $\mathbf{o}_t$ without
-modifying $\mathbf{s}_t$, deliberately introducing observation noise
-that is not explained by the hidden state and thus testing a world
-model's ability to distinguish structural degradation from transient
-sensor artefacts.
-The overall stochastic event rate across the training set is 0.77\% of
-timesteps. Permanent ingestion and icing are phase gated to low
-altitude contexts; icing additionally requires a cold ambient
-temperature below a threshold derived from the ISA standard lapse rate.
+\noindent\textbf{The probabilities and magnitudes of these events are
+not calibrated to real-world aircraft failure rates and do not represent
+specific failure modes observed in operational fleets.} Although the
+events draw inspiration from real engine phenomena, their probabilities
+and magnitudes are mathematical abstractions and in no case reflect
+what is observed in real life flight settings. They are included to
+make the latent state recovery problem harder and the encoder
+representations more challenging to learn, by injecting sparse,
+structured discontinuities into the trajectories of $\mathbf{s}_t$,
+$\mathbf{c}_t$ or $\mathbf{o}_t$. Calibrating the events to operational
+data, or implementing physically grounded event models more broadly,
+is left for future work. We accordingly use abstract effect typed
+labels in the paper (\texttt{perm\_step\_*}, \texttt{trans\_anomaly\_*},
+etc.); the released simulator currently uses different (more
+suggestive) code labels which will be aligned with the abstract scheme
+in a subsequent release.
+
+Ten categories of stochastic events enrich the dataset
+(Table~\ref{tab:events}). Events are drawn from independent Poisson
+processes. Permanent events (\texttt{perm\_step\_1}, \texttt{perm\_step\_2},
+\texttt{perm\_drift\_1}, \texttt{perm\_drift\_2}) apply an immediate
+step change or sustained drift increment to one or more components of
+$\mathbf{s}_t$. Transient events (\texttt{trans\_anomaly\_1},
+\texttt{trans\_anomaly\_2}, \texttt{trans\_drift\_1},
+\texttt{trans\_drift\_2}, \texttt{trans\_fouling\_1}) inject a
+short-lived perturbation that decays back toward baseline.
+Sensor-level events (\texttt{sensor\_pulse\_1}) perturb the observation
+tensor $\mathbf{o}_t$ without modifying the latent state, deliberately
+introducing observation noise that is not explained by $(\mathbf{s}_t,
+\mathbf{c}_t)$ and thus testing a world model's ability to distinguish
+structural degradation from transient sensor artefacts.
+The overall stochastic event rate across the training set is $0.77\%$
+of timesteps. Some events are phase-gated to low-altitude contexts and
+others additionally require a cold ambient temperature below a
+threshold derived from the ISA standard lapse rate.
+
+% ---------------------------------------------------------------------------
+% Abstract-label / legacy-label mapping table — kept commented out as a
+% reference for ourselves. Not rendered in the paper. Will be removed once
+% the released simulator is renamed to match the abstract scheme.
+% ---------------------------------------------------------------------------
+% \begin{table}[h]
+% \centering
+% \caption{Event library mapping. Column 1 lists the abstract effect-typed
+% labels used throughout this paper; column 2 documents the mathematical
+% effect the label is parameterised to apply on
+% $(\mathbf{s}, \mathbf{c}, \mathbf{o})$; column 3 lists the corresponding
+% legacy code labels currently used in the released simulator
+% (\texttt{scenarios/scenario4/constants.py}).}
+% \label{tab:event_nomenclature}
+% \small
+% \begin{tabular}{lll}
+% \toprule
+% Abstract label & Mathematical effect & Legacy code label \\
+% \midrule
+% \texttt{perm\_step\_1}     & Permanent step decrement on a single component of $\mathbf{s}_t$ & \texttt{ingestion\_perm} \\
+% \texttt{perm\_step\_2}     & Permanent step decrement on a different component group        & \texttt{shock} \\
+% \texttt{perm\_drift\_1}    & Sustained increase in multi-component drift rate                & \texttt{oil\_degradation} \\
+% \texttt{perm\_drift\_2}    & Sustained drift on a single efficiency channel                   & \texttt{blade\_tip\_rub} \\
+% \texttt{trans\_anomaly\_1}   & Short transient pulse on shaft-speed channels                    & \texttt{burst} \\
+% \texttt{trans\_anomaly\_2}   & Short transient pulse with elevated drift                        & \texttt{surge} \\
+% \texttt{trans\_drift\_1}   & Temporary drift-rate boost                                       & \texttt{ingestion\_trans} \\
+% \texttt{trans\_drift\_2}   & Phase-gated transient drift modulator (cold contexts only)       & \texttt{icing} \\
+% \texttt{trans\_fouling\_1}  & Transient bias on the fouling channel                       & \texttt{fouling} \\
+% \texttt{sensor\_pulse\_1}  & Instantaneous outlier on one sensor channel                      & \texttt{sensor\_spike} \\
+% \texttt{regional\_perm\_1} & Region-gated permanent step (TurboSens2)                         & \texttt{ingestion\_regional} \\
+% \texttt{regional\_drift\_1}& Region-gated sustained drift (TurboSens2)                        & \texttt{corrosion\_regional} \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 
 \begin{table}[h]
 \centering
-\caption{Event library nomenclature. Labels are simulator agnostic and
-match the \texttt{EVENT\_NAMES} constant in the released codebase
-(\texttt{scenarios/scenario4/constants.py}). The physical interpretation
-column documents the phenomenon each label was calibrated to represent;
-none of these interpretations is a claim of quantitative realism.}
-\label{tab:event_nomenclature}
-\small
-\begin{tabular}{lll}
-\toprule
-Label & Category & Physical phenomenon modelled \\
-\midrule
-\texttt{ingestion\_perm}     & Permanent & Foreign object ingestion causing fan step damage \\
-\texttt{ingestion\_trans}    & Transient & Particulate ingestion episode elevating HPC wear rate \\
-\texttt{ingestion\_regional} & Transient & Regional particulate exposure (TurboSens4 only) \\
-\texttt{corrosion\_regional} & Transient & Regional corrosive aerosol exposure (TurboSens4 only) \\
-\texttt{burst}               & Sensor    & Short vibration burst on HP and LP shaft speed channels \\
-\texttt{shock}               & Permanent & Thermal transient on HPT and LPT sections \\
-\texttt{contamination}       & Sensor    & Multi step bias on the fuel flow channel \\
-\texttt{surge}               & Transient & Compressor surge episode with elevated wear rate \\
-\texttt{oil\_degradation}    & Permanent & Slow lubrication loss causing multi component drift \\
-\texttt{blade\_tip\_rub}     & Permanent & Single component step drop on Fan or HPC efficiency \\
-\texttt{sensor\_spike}       & Sensor    & Instantaneous outlier on one sensor channel \\
-\texttt{icing}               & Sensor    & Cold context bias on the Fan flow capacity sensor \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Stochastic event library: type and mean Poisson rate per 10{,}000 steps.}
+\caption{Stochastic event library: abstract label, type, and mean
+Poisson rate per $10{,}000$ steps. Rates and effect magnitudes are not
+calibrated to any real-world failure statistics.}
 \label{tab:events}
 \small
 \begin{tabular}{llcl}
 \toprule
 Event & Type & Rate / 10k & Effect \\
 \midrule
-Ingestion    & Permanent  & 0.1 & Fan damage \cite{payson1984bird, thorpe1977analysis} \\
-Ingestion    & Transient  & 1.5 & Elevated $\alpha$ (multi-step) \cite{alge1994modern} \\
-Burst   & Sensor     & 1.0 & Sensor noise burst \\
-Shock     & Permanent  & 0.3 & Turbine step damage \\
-Contamination & Sensor     & 0.2 & Sensor bias (multi-step) \\
-Surge  & Transient  & 0.5 & Elevated $\alpha$ (multi-step) \\
-Oil degradation   & Permanent  & 0.1 & Slow multi-component drift \\
-Blade tip rub     & Permanent  & 0.3 & Single-component step change \\
-Sensor spike      & Sensor     & 1.0 & Instantaneous outlier \\
-Icing             & Sensor     & 0.3 & Sensor bias (phase-gated) \\
+\texttt{perm\_step\_1}     & Permanent  & 0.1 & Single-component step decrement on $\mathbf{s}$ \\
+\texttt{perm\_step\_2}     & Permanent  & 0.3 & Step decrement on a different component group \\
+\texttt{perm\_drift\_1}    & Permanent  & 0.1 & Slow multi-component drift increment \\
+\texttt{perm\_drift\_2}    & Permanent  & 0.3 & Single-channel sustained drift \\
+\texttt{trans\_anomaly\_1}   & Transient  & 1.0 & Short pulse on shaft-speed channels \\
+\texttt{trans\_anomaly\_2}   & Transient  & 0.5 & Short pulse with elevated drift \\
+\texttt{trans\_drift\_1}   & Transient  & 1.5 & Multi-step drift-rate boost \\
+\texttt{trans\_drift\_2}   & Transient  & 0.3 & Phase-gated drift modulator (cold contexts) \\
+\texttt{trans\_fouling\_1}  & Transient  & 0.2 & Multi-step bias on fouling channel \\
+\texttt{sensor\_pulse\_1}  & Sensor     & 1.0 & Instantaneous outlier on one sensor channel \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -520,32 +549,32 @@ of the training split.
 
 \begin{table}[h]
 \centering
-\caption{Scenario 3 training split: summary statistics.}
+\caption{Scenario 1 released training split: summary statistics.}
 \label{tab:dataset_summary}
 \small
 \begin{tabular}{lr}
 \toprule
 Property & Value \\
 \midrule
-Episodes                         & 1{,}000 \\
-Total timesteps                  & 8{,}216{,}877 \\
-Mean episode length              & 8{,}217 steps \\
-Median episode length            & 9{,}084 steps \\
-Minimum / maximum episode length & 1{,}614 / 10{,}000 steps \\
+Episodes                         & 400 \\
+Total timesteps                  & $4 \times 10^6$ \\
+Episode length                   & 10{,}000 steps (all episodes at the cap) \\
+Archetype counts (A / B / C / D) & 121 / 104 / 102 / 73 \\
 NaN or Inf values in states      & 0 \\
 NaN or Inf values in sensors     & 0 \\
-Non-zero maintenance rate        & 0.04\% of timesteps \\
-Stochastic event rate            & 0.77\% of timesteps \\
+Non zero maintenance rate        & 0.04\% of timesteps \\
+Stochastic event rate            & ${<}1\%$ of timesteps \\
 Sensor observation shape         & $(N, 7, 12)$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Episode lengths are heavily right-skewed: the median (9{,}084 steps)
-substantially exceeds the mean (8{,}217 steps) because the distribution
-is bimodal, with a large mass of D-balanced episodes that reach the
-10{,}000-step ceiling and a longer tail of shorter episodes driven by
-early A and C failures.
+All released episodes run to the $10{,}000$ step cap; archetype D
+(balanced) under represents the failure modes that drive earlier
+termination, but with the maintenance policy in place, even the heavy
+archetypes A--C are kept within airworthiness limits and reach the
+maximum length. Users who want longer
+trajectories for forecasting can produce them with the same configuration.
 
 To characterise the separation between health regimes in the hidden
 state space, we assign a binary health label to each timestep: a
@@ -590,7 +619,7 @@ in archetypes A through C.
         \label{fig:healthy_degraded_test_hard}
     \end{subfigure}
     
-    \caption{Distribution for Scenario 3 of the ten health‑state components under healthy (blue) and degraded (orange) regimes. Train and test share the same distribution; test‑hard introduces stronger degradation, varied drift rates, and modified maintenance to assess generalization beyond the training manifold.}
+    \caption{Distribution for Scenario 1 of the ten health‑state components under healthy (blue) and degraded (orange) regimes. Train and test share the same distribution; test‑hard introduces stronger degradation, varied drift rates, and modified maintenance to assess generalization beyond the training manifold.}
     \label{fig:healthy_degraded_all}
 \end{figure}
 
@@ -598,22 +627,22 @@ in archetypes A through C.
 
 
 % =============================================================================
-%  TurboSens4 Dataset, LaTeX subsection (appendix version)
+%  TurboSens2 Dataset, LaTeX subsection (appendix version)
 %  Compile inside a document that loads: amsmath, booktabs, multirow,
 %  xcolor, hyperref (optional). Figures are referenced by label only;
 %  include them wherever suitable in your document.
 % =============================================================================
 
-\subsection{TurboSens4: Regional Operating Environments and Contamination Dynamics}
+\subsection{TurboSens2: Regional Operating Environments and Fouling Dynamics}
 \label{sec:dataset_scenario4}
 
-TurboSens4 extends the Scenario~3 dataset along three physical axes that
+TurboSens2 extends the Scenario~1 dataset along three physical axes that
 are absent from existing turbofan benchmarks: the operating environment
 in which an engine spends its service life, the separation between true
-mechanical wear and reversible contamination of the gas path, and the
+mechanical wear and reversible fouling of the gas path, and the
 cross-module aerodynamic coupling that causes a locally damaged component
 to make its neighbours appear healthier than they are. The scenario retains
-the core ingredients of Scenario~3 (heterogeneous degradation archetypes,
+the core ingredients of Scenario~1 (heterogeneous degradation archetypes,
 life-limiting-part regulatory constraints, an imperfect expert maintenance
 policy, a library of stochastic events, multi-context sensor observations
 and a fully exposed hidden state) and layers on top of them a regional
@@ -626,7 +655,7 @@ a distinct operating environment characterised by its dominant atmospheric
 stressor (sand, salt, humidity, pollution, thermal swing). A region
 archetype simultaneously biases the prior over degradation archetypes,
 scales the mechanical drift rates of the most exposed sub-systems,
-governs the contamination accumulation rate, restricts the library of
+governs the fouling accumulation rate, restricts the library of
 admissible stochastic events, and modulates the seasonal weather process
 and the flight cadence. Between 80 and 400 episodes are generated per
 region archetype, for a target total of approximately 1{,}500 episodes
@@ -637,8 +666,8 @@ timesteps.
 \subsubsection{Two-Channel Hidden State}
 \label{sec:scen4_state}
 
-\paragraph{Mechanical and contamination channels.}
-The Scenario~3 hidden health state $\mathbf{s}_t \in \mathbb{R}^{10}$
+\paragraph{Mechanical and fouling channels.}
+The Scenario~1 hidden health state $\mathbf{s}_t \in \mathbb{R}^{10}$
 is preserved and interpreted strictly as the \emph{mechanical} deviation
 of efficiency and corrected flow from nominal for the five sub-systems
 (Booster, Fan, HPC, HPT, LPT). Its evolution is driven solely by slow
@@ -646,8 +675,8 @@ stochastic wear (archetype-specific drift, burn-in transient, and
 speed-regime noise); it is irreversible except through partial
 restoration at shop visits. To capture the fast, reversible fouling
 of the gas path we introduce a second hidden channel
-$\mathbf{c}_t \in [0,1]^5$ encoding a normalised contamination level
-per sub-system. Contamination accumulates each flight at a rate
+$\mathbf{c}_t \in [0,1]^5$ encoding a normalised fouling level
+per sub-system. Fouling accumulates each flight at a rate
 conditioned on region, flight phase and active stochastic event set,
 and resets to zero after any engine-wash action. Crucially, $\mathbf{c}_t$
 does \emph{not} enter the mechanical state update: $\mathbf{s}_t$ and
@@ -666,7 +695,7 @@ effects that the simulator cannot model intrinsically:
     redirects airflow through neighbouring modules, producing
     corrected-flow readings that are anomalously high for the
     healthy-looking neighbour while the true cause lies elsewhere.
-  \item \emph{Contamination coupling}: surface fouling perturbs module
+  \item \emph{Fouling coupling}: surface fouling perturbs module
     efficiency and apparent flow even when the underlying mechanical
     state is pristine.
 \end{enumerate}
@@ -682,10 +711,10 @@ clipped to the validated thermodynamic operating range:
   \label{eq:phantom}
 \end{equation}
 where $M \in \mathbb{R}^{10 \times 10}$ is the sparse phantom
-flow-coupling matrix of Scenario~3 (strictly positive entries only on
+flow-coupling matrix of Scenario~1 (strictly positive entries only on
 flow dimensions immediately downstream of each degrading efficiency
 component), and $C \in \mathbb{R}^{10 \times 5}$ is a new sparse,
-non-negative contamination-to-phantom matrix whose entry $C_{km}$ is
+non-negative fouling-to-phantom matrix whose entry $C_{km}$ is
 non-zero only when fouling of module $m$ physically perturbs state
 dimension $k$ (for example, HPC fouling degrades HPC efficiency
 and biases HPC flow upward). The mechanical-state bounds
@@ -699,11 +728,15 @@ are exposed as named constants to support ablation studies; the
 matrices are fixed across the dataset while $\mathbf{s}_t$ and
 $\mathbf{c}_t$ vary per episode and timestep.
 
-\paragraph{Final observation map.}
-The simulator is queried on $\tilde{\mathbf{s}}_t$ rather than
-$\mathbf{s}_t$, so contamination and phantom coupling both reach the
-sensors through the same, physically grounded pathway, the state
-vector that the thermodynamic model actually consumes:
+\paragraph{Final observation map (TurboSens2).}
+This is the observation map for TurboSens2 only; in TurboSens1 the
+fouling channel is absent, $\tilde{\mathbf{s}}_t$ collapses to
+$\mathbf{s}_t$, and the simulator is queried directly on the
+mechanical state. In TurboSens2, the simulator is queried on
+$\tilde{\mathbf{s}}_t$ rather than $\mathbf{s}_t$, so fouling and
+phantom coupling both reach the sensors through the same physically
+grounded pathway, the state vector that the thermodynamic model
+actually consumes:
 \begin{equation}
   \mathbf{o}_t \;=\; g\!\bigl(\tilde{\mathbf{s}}_t, \omega_t\bigr)
   \;+\; \varepsilon_t,
@@ -725,16 +758,16 @@ Both $\mathbf{c}_t$ and the phantom contribution $\tilde{\mathbf{s}}_t - \mathbf
 Each episode is assigned one of six region archetypes at generation
 time (Table~\ref{tab:regions}). The names are deliberately
 environmental rather than geographic. A region archetype determines four generation-time
-parameters: (i) a prior over the four Scenario~3 degradation
+parameters: (i) a prior over the four Scenario~1 degradation
 archetypes, (ii) a per-subsystem mechanical drift scaling factor,
-(iii) a baseline contamination accumulation rate, and (iv) a mean
+(iii) a baseline fouling accumulation rate, and (iv) a mean
 flight cadence controlling how many simulated flights map to one
 calendar day.
 
 \begin{table}[h]
 \centering
-\caption{Region archetypes in TurboSens4. Severity is a qualitative
-summary of combined mechanical and contamination load.}
+\caption{Region archetypes in TurboSens2. Severity is a qualitative
+summary of combined mechanical and fouling load.}
 \label{tab:regions}
 \small
 \begin{tabular}{llll}
@@ -752,7 +785,7 @@ R6 & Industrial  & Chemical pollution, soot      & Moderate-Harsh  \\
 \end{table}
 
 \paragraph{Region-conditional archetype prior.}
-The four Scenario~3 degradation archetypes (A compressor-driven,
+The four Scenario~1 degradation archetypes (A compressor-driven,
 B fan/booster-driven, C turbine-driven, D balanced) are retained
 unchanged. Their prior probability is now conditioned on the region
 (Table~\ref{tab:region_archetype_prior}), so that for instance Arid
@@ -790,12 +823,12 @@ Highland shifts stress toward the thermal section.
 \begin{table}[h]
 \centering
 \caption{Region-induced mechanical drift multipliers on $\alpha_k$ and
-baseline contamination accumulation multiplier.}
+baseline fouling accumulation multiplier.}
 \label{tab:region_scaling}
 \small
 \begin{tabular}{lcccc}
 \toprule
-Region & HPC & Fan / Booster & HPT / LPT & Contamination rate \\
+Region & HPC & Fan / Booster & HPT / LPT & Fouling rate \\
 \midrule
 Continental & 1.0 & 1.0 & 1.0 & $1.0\times$ \\
 Littoral    & 1.0 & 1.5 & 1.1 & $1.4\times$ \\
@@ -808,14 +841,14 @@ Industrial  & 1.2 & 1.2 & 1.1 & $1.6\times$ \\
 \end{table}
 
 % -----------------------------------------------------------------------------
-\subsubsection{Degradation and Contamination Dynamics}
+\subsubsection{Degradation and Fouling Dynamics}
 \label{sec:scen4_degradation}
 
 \paragraph{Extended mechanical increment.}
-The Scenario~3 degradation increment~\eqref{eq:deg_increment} is
+The Scenario~1 degradation increment~\eqref{eq:deg_increment} is
 extended with two region-conditional terms: the region scaling
 $\rho^{(r)}_k$ and a slow corrosion term driven by the accumulated
-contamination,
+fouling,
 
 \begin{equation}
   \Delta s^k_t \;=\; -\beta_k e^{-t_k/\tau_k}
@@ -832,8 +865,8 @@ contribute an additional drift of the same order as 15 to 20 percent
 of the base archetype drift. Salt and sand therefore accelerate
 mechanical wear only to the extent that cleaning is deferred.
 
-\paragraph{Contamination increment.}
-Contamination accumulates between maintenance visits at a rate
+\paragraph{Fouling increment.}
+Fouling accumulates between maintenance visits at a rate
 modulated by the region archetype and the flight phase of each of the
 sixteen snapshot contexts seen within a step:
 
@@ -847,17 +880,18 @@ where $\eta^{(r)}_\ell$ is the region-conditional deposition rate
 normalisation by sub-system exposure), $w_{\phi_i}$ weights the
 contribution of each snapshot context by its flight phase (takeoff and
 climb deposit more than cruise), and $\delta$ is a small self-cleaning
-term accounting for aerodynamic blow-off. Contamination is clipped to
+term accounting for aerodynamic blow-off. Fouling is clipped to
 $[0, 1]$ per sub-system.
 
 Events (Section~\ref{sec:scen4_events}) can additionally apply a large
-step increment to $\mathbf{c}_t$ (an \texttt{ingestion\_trans} or
-\texttt{ingestion\_regional} event deposits a bulk of particulate onto
-the HPC in a single step) or, for severe events such as
-\texttt{ingestion\_perm}, a joint step change to both $\mathbf{s}_t$
+step increment to $\mathbf{c}_t$ (a \texttt{trans\_drift\_1} or
+\texttt{regional\_perm\_1} event deposits a bulk increment on
+$\mathbf{c}_t$ in a single step) or, for events such as
+\texttt{perm\_step\_1}, a joint step change to both $\mathbf{s}_t$
 and $\mathbf{c}_t$ that is visible in the snapshot at the event step.
-The mapping between these labels and the physical phenomena they model
-is given in Table~\ref{tab:event_nomenclature}.
+Abstract labels are used everywhere in the paper; the released
+simulator currently exposes legacy code labels that will be aligned
+with the abstract scheme in a subsequent release.
 
 \paragraph{Phantom-coupling interpretation.}
 Because the phantom map~\eqref{eq:phantom} depends on the true state
@@ -878,10 +912,10 @@ will mis-attribute the event.
 
 \paragraph{Engine water wash.}
 A seventh maintenance action, \texttt{engine\_wash}, is added to the
-original six Scenario~3 actions (Table~\ref{tab:scen4_actions}). A wash resets
-the contamination vector $\mathbf{c}_t$ to zero (up to a small residual
-noise), does not restore mechanical state, has a low cost (30 reward
-units) and incurs only a short downtime (no multi-month calendar jump).
+original six Scenario~1 actions (Table~\ref{tab:scen4_actions}). A wash resets
+the fouling vector $\mathbf{c}_t$ to zero (up to a small residual
+noise), does not restore mechanical state, and incurs only a short
+downtime (no multi-month calendar jump).
 Wash timings are not triggered by health; they follow a semi-periodic
 schedule per episode, with the mean wash interval drawn from
 $[50, 150]$ steps for benign regions and $[30, 90]$ steps for harsh
@@ -892,27 +926,27 @@ designed to expose.
 
 \begin{table}[h]
 \centering
-\caption{TurboSens4 maintenance actions. Actions 0 through 5 are
-inherited from Scenario~3; action 6 is the new engine wash.}
+\caption{TurboSens2 maintenance actions. Actions 0 through 5 are
+inherited from Scenario~1; action 6 is the new engine wash.}
 \label{tab:scen4_actions}
 \small
-\begin{tabular}{llcp{4.7cm}}
+\begin{tabular}{llp{6.5cm}}
 \toprule
-ID & Name & Cost & Target \\
+ID & Name & Target \\
 \midrule
-0 & \texttt{do\_nothing}       & 0   & None \\
-1 & \texttt{fan\_overhaul}     & 150 & Fan Eff, Fan Wc \\
-2 & \texttt{hpc\_overhaul}     & 200 & Booster Eff/Wc, HPC Eff/Wc \\
-3 & \texttt{turbine\_overhaul} & 200 & HPT Eff/Wc, LPT Eff/Wc \\
-4 & \texttt{full\_overhaul}    & 350 & All ten mechanical components \\
-5 & \texttt{targeted\_patch}   &  80 & Most-degraded component (oracle) \\
-6 & \texttt{engine\_wash}      &  30 & Reset $\mathbf{c}_t$ (contamination only) \\
+0 & \texttt{do\_nothing}       & None \\
+1 & \texttt{fan\_overhaul}     & Fan Eff, Fan Wc \\
+2 & \texttt{hpc\_overhaul}     & Booster Eff/Wc, HPC Eff/Wc \\
+3 & \texttt{turbine\_overhaul} & HPT Eff/Wc, LPT Eff/Wc \\
+4 & \texttt{full\_overhaul}    & All ten mechanical components \\
+5 & \texttt{targeted\_patch}   & Most-degraded component (oracle) \\
+6 & \texttt{engine\_wash}      & Reset $\mathbf{c}_t$ (fouling only) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Shop-visit downtime and calendar jumps.}
-Unlike Scenario~3, TurboSens4 represents the wall-clock cost of a
+Unlike Scenario~1, TurboSens2 represents the wall-clock cost of a
 shop visit in the weather process rather than abstracting it away.
 Each non-wash maintenance visit advances the episode calendar clock
 by a duration drawn from a severity-dependent range: light targeted
@@ -921,26 +955,28 @@ months, and heavy or extreme-degradation overhauls add 5 months.
 The seasonal weather state (Section~\ref{sec:scen4_weather}) jumps
 forward accordingly at the next step, producing abrupt ambient
 conditions transitions at the return from a shop visit that are a
-distinctive feature of fleet operations. Contamination is reset to
+distinctive feature of fleet operations. Fouling is reset to
 zero at every maintenance visit, whether or not a wash action is
 formally issued.
 
 \paragraph{Seasonal modulation of proactive scheduling.}
-Commercial operators defer non-critical maintenance during high-demand
-summer flying seasons. This is captured by scaling the Scenario~3
-proactive planning window $W_\mathrm{plan} \in [1500, 2500]$ by a
-seasonal factor $\kappa_\mathrm{season}(t) \in [0.6, 1.3]$ that peaks
-in local summer and is lowest in local winter. Life-limiting-part
-ceilings and emergency thresholds are not subject to this seasonal
-modulation: airworthiness-mandated replacement remains inflexible.
+Scenario~2 makes the calendar trigger from Scenario~1 explicit through
+the seasonal weather process. The proactive scheduler now scales its
+borderline window by a seasonal factor
+$\kappa_\mathrm{season}(t) \in [0.6, 1.3]$ that peaks in local summer
+(stronger deferral pressure) and is lowest in local winter
+(stronger anticipation pressure). Life-limiting-part ceilings and
+emergency thresholds are not subject to this seasonal modulation:
+airworthiness-mandated replacement remains inflexible whatever the
+season.
 
 \paragraph{LLP and base policy structure.}
 Life-limiting-part cycle limits are identical across all regions and
 archetypes, reflecting their regulatory origin rather than any physical
 susceptibility. Health-correlated scheduling, min-built bundling,
-findings and imperfect restoration behave exactly as in Scenario~3,
+deferred repairs and imperfect restoration behave exactly as in Scenario~1,
 operating on the mechanical state $\mathbf{s}_t$ and ignoring the
-contamination channel $\mathbf{c}_t$. The wash action is handled as a
+fouling channel $\mathbf{c}_t$. The wash action is handled as a
 separate track that never interacts with the LLP counter and never
 causes min-built bundling.
 
@@ -948,20 +984,18 @@ causes min-built bundling.
 \subsubsection{Stochastic Event Library}
 \label{sec:scen4_events}
 
-The Scenario~3 event library is retained and extended with region
-based gates on admissible events (see
-Table~\ref{tab:event_nomenclature} for the mapping between labels and
-their physical interpretation). \texttt{icing} is excluded in Arid and
-Equatorial regions regardless of instantaneous weather, reflecting the
-physical impossibility of in flight icing in hot environments.
-\texttt{ingestion\_regional} is strongly over represented in Arid and
-to a lesser extent Industrial regions. \texttt{corrosion\_regional},
-introduced in Scenario~4 as a new event type, is gated to Littoral
-and occasionally Equatorial. Events that jointly affect $\mathbf{s}_t$
-and $\mathbf{c}_t$ (\texttt{ingestion\_perm} and
-\texttt{ingestion\_regional}) apply their joint step change at the
+The Scenario~1 event library is retained and extended with region
+based gates on admissible events. \texttt{trans\_drift\_2} is excluded in Arid
+and Equatorial regions regardless of instantaneous weather, since the
+ambient temperature gate that conditions it is never satisfied in
+those regions. \texttt{regional\_perm\_1} is strongly over represented
+in Arid and to a lesser extent Industrial regions.
+\texttt{regional\_drift\_1}, introduced in Scenario~2 as a new event
+type, is gated to Littoral and occasionally Equatorial. Events that
+jointly affect $\mathbf{s}_t$ and $\mathbf{c}_t$ (\texttt{perm\_step\_1}
+and \texttt{regional\_perm\_1}) apply their joint step change at the
 event timestep, so that the snapshot observation at that step already
-reflects the damaged engine.
+reflects the perturbed engine.
 
 The event rate per region is calibrated to keep the global stochastic
 event rate below one percent of timesteps, preserving the sparsity
@@ -999,8 +1033,8 @@ the validated operating envelope of the physics simulator.
 \subsubsection{Seasonal Weather Process}
 \label{sec:scen4_weather}
 
-TurboSens4 replaces the single-level Ornstein-Uhlenbeck weather process
-of Scenario~3 with a three-level hierarchical generator that captures
+TurboSens2 replaces the single-level Ornstein-Uhlenbeck weather process
+of Scenario~1 with a three-level hierarchical generator that captures
 seasonality, flight-to-flight variability and within-snapshot noise.
 
 \paragraph{Seasonal baseline.}
@@ -1053,7 +1087,7 @@ emergency threshold are temporarily relaxed, allowing one or more
 components to traverse a deep sag down to 92 to 95 percent of the
 degradation bound before a heavy overhaul is dispatched. The overhaul
 restores the affected components to between 88 and 95 percent of the
-pristine bound, resets contamination, and advances the calendar clock
+pristine bound, resets fouling, and advances the calendar clock
 by five months. Extreme-degradation episodes are labelled and carry
 metadata describing the sag window, the components involved, the
 restoration quality and the post-visit calendar state. They are
@@ -1065,7 +1099,7 @@ gracefully handle the upper tail of the degradation distribution.
 \subsubsection{Ground-Truth Metadata}
 \label{sec:scen4_metadata}
 
-Every TurboSens4 episode carries a dense set of ground-truth labels
+Every TurboSens2 episode carries a dense set of ground-truth labels
 exposed alongside the sensor stream, making the dataset usable for
 self-supervised pretraining, probing, anomaly detection and fine
 grained diagnostic studies:
@@ -1074,13 +1108,13 @@ grained diagnostic studies:
 \item Region archetype label $r \in \{\text{R1},\ldots,\text{R6}\}$
       and degradation archetype label $\in \{\text{A,B,C,D}\}$.
 \item Mechanical state trajectory $\mathbf{s}_t \in \mathbb{R}^{10}$
-      and contamination trajectory $\mathbf{c}_t \in \mathbb{R}^{5}$
+      and fouling trajectory $\mathbf{c}_t \in \mathbb{R}^{5}$
       at every step.
 \item Phantom-coupled state $\tilde{\mathbf{s}}_t$ and the coupling
       matrix $M$ used to generate it.
 \item Action label $a_t \in \{0,\ldots,6\}$ including the new wash
-      action, together with the Scenario~3 extended action metadata
-      (component-service mask, visit-type flag, finding count).
+      action, together with the Scenario~1 extended action metadata
+      (component-service mask, visit-type flag, deferred repair count).
 \item Stochastic event mask and per-event parameters.
 \item Simulated calendar day $d_t$, season label, and flag indicating
       whether the step follows a shop-visit calendar jump.
@@ -1092,37 +1126,214 @@ grained diagnostic studies:
 \subsubsection{Dataset Statistics}
 \label{sec:scen4_stats}
 
-Table~\ref{tab:scen4_summary} summarises the target properties of the
-TurboSens4 release. The values are the current design targets;
-observed statistics will be reported after the first full generation
-run.
+Table~\ref{tab:scen4_summary} reports the observed statistics of the
+three released TurboSens2 splits. The train split contains 500 episodes,
+the two evaluation splits contain 60 episodes each (drawn with held-out
+seeds, identical generator), and all three splits use the same region
+and archetype priors.
 
 \begin{table}[h]
 \centering
-\caption{TurboSens4 target dataset statistics.}
+\caption{TurboSens2 dataset statistics, measured on the released HDF5 files.}
 \label{tab:scen4_summary}
 \small
-\begin{tabular}{lr}
+\begin{tabular}{lrrr}
 \toprule
-Property & Value \\
+Property & Train & Test & Test-hard \\
 \midrule
-Region archetypes                  & 6 \\
-Episodes per region                & 80 to 400 \\
-Total target episodes              & $\approx 1{,}500$ \\
-Mean episode length                & 14{,}000 steps \\
-Maximum episode length             & 20{,}000 steps \\
-Number of flight contexts          & 16 \\
-Maintenance actions                & 7 (including engine wash) \\
-Mechanical state dimension         & 10 \\
-Contamination state dimension      & 5 \\
-Phantom coupling matrix $M$        & fixed, sparse non-negative \\
-Extreme-degradation episode rate   & 1 to 5 percent \\
-Stochastic event rate              & below 1 percent of timesteps \\
-Sensor observation shape           & $(N, 7, 16)$ \\
-On-disk size (HDF5, gzip)          & 8 to 12 GB (estimated) \\
+Episodes                           & 500       & 60      & 60 \\
+Total flights                      & 7{,}010{,}872 & 830{,}756 & 854{,}710 \\
+Mean episode length (steps)        & 14{,}022  & 13{,}846 & 14{,}245 \\
+Min / max episode length           & 8{,}000 / 20{,}000 & 8{,}000 / 20{,}000 & 8{,}000 / 20{,}000 \\
+Extreme-degradation episodes       & 2.8\%     & 5.0\%    & 6.7\% \\
+Engine-wash fraction               & 1.052\%   & 1.044\%  & 1.044\% \\
+Repair fraction (non-wash)         & 0.093\%   & 0.094\%  & 0.090\% \\
+\quad of which proactive           & 0.085\%   & 0.085\%  & 0.083\% \\
+\quad of which deferred repair-forced      & 0.003\%   & 0.003\%  & 0.003\% \\
+\quad of which re-repair           & 0.004\%   & 0.005\%  & 0.004\% \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+All three splits exhibit a healthy 100\% valid-flight rate, reflecting
+the context-envelope hardening introduced in Scenario~2 (see
+\S\ref{sec:scen4_contexts}); no OpenDeckSMR convergence failures occur
+in the released data. Repair actions are dominated by \texttt{proactive}
+visits, consistent with the health-correlated maintenance policy:
+emergency visits are essentially absent because the maintenance scheduler
+intervenes before components exceed the airworthiness threshold.
+Engine-wash events fire roughly once per 100 flights, which amounts to
+about ten wash cycles per average-length episode and gives the world
+model meaningful opportunities to observe the phantom-to-true transition.
+
+\paragraph{Region and archetype coverage.}
+Table~\ref{tab:scen4_region_archetype} shows the joint region $\times$
+archetype episode distribution for the train split. The region prior
+is skewed toward Industrial (97) and Highland (91) and away from Arid
+(70) and Littoral (71); the archetype prior is dominated by
+A\_compressor (179) and B\_fan\_booster (128). The region-conditional
+archetype prior described in \S\ref{sec:scen4_regions} produces the
+expected concentrations (Arid is the only region where A\_compressor
+reaches 40 of 70, reflecting HPC-fouling bias; Highland reaches 42
+turbine episodes out of 91). Figure~\ref{fig:s4_region_archetype}
+visualises the full heatmap for all three splits.
+
+\begin{table}[h]
+\centering
+\caption{Region and archetype marginal counts for the TurboSens2 train split.}
+\label{tab:scen4_region_archetype}
+\small
+\begin{tabular}{lrlr}
+\toprule
+Region & \# Episodes & Archetype & \# Episodes \\
+\midrule
+Continental & 84 & A\_compressor   & 179 \\
+Littoral    & 71 & B\_fan\_booster & 128 \\
+Arid        & 70 & C\_turbine      & 121 \\
+Equatorial  & 87 & D\_balanced     &  72 \\
+Highland    & 91 & & \\
+Industrial  & 97 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Event rates by region.}
+Table~\ref{tab:scen4_event_rates} reports the rising-edge event rates
+per ten thousand flights on the train split. The two
+\emph{regional} events (\texttt{regional\_perm\_1},
+\texttt{regional\_drift\_1}) fire orders of magnitude more often than
+the global event library and carry strong regional gating:
+\texttt{regional\_perm\_1} reaches 898 firings per ten thousand
+flights in Arid and 339 in Industrial while dropping to 31 in Highland,
+and \texttt{regional\_drift\_1} is concentrated in Littoral, Equatorial
+and Industrial while being fully gated off in Arid and Highland.
+The global events retain order-of-magnitude rates of 0.1 to 2.7 per
+ten thousand flights across all regions, matching the scenario 1 rate
+envelope. Figure~\ref{fig:s4_event_rate_region} visualises the
+corresponding per-flight activity matrix.
+
+\begin{table}[h]
+\centering
+\caption{Event rising-edge rate per $10^4$ flights, TurboSens2 train split.
+Two rightmost columns show the two regional-only events; all other rows
+are the scenario 1 event library. Rates are sampling artefacts of the
+generator and not calibrated to real failure statistics.}
+\label{tab:scen4_event_rates}
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+Event & All & Cont. & Litt. & Arid & Equa. & High. & Ind. \\
+\midrule
+\texttt{perm\_step\_1}      &   0.11 &  0.14 &  0.18 &  0.07 &  0.11 &  0.08 &  0.09 \\
+\texttt{trans\_drift\_1}     &   1.80 &  1.50 &  1.04 &  3.93 &  1.13 &  0.78 &  2.65 \\
+\texttt{trans\_anomaly\_1}                &   1.05 &  1.05 &  1.09 &  0.91 &  1.18 &  1.01 &  1.03 \\
+\texttt{perm\_step\_2}                &   0.33 &  0.31 &  0.23 &  0.37 &  0.40 &  0.37 &  0.29 \\
+\texttt{trans\_fouling\_1}        &   0.19 &  0.24 &  0.16 &  0.17 &  0.17 &  0.16 &  0.21 \\
+\texttt{trans\_anomaly\_2}                &   0.44 &  0.46 &  0.40 &  0.34 &  0.47 &  0.44 &  0.50 \\
+\texttt{perm\_drift\_1}     &   0.11 &  0.14 &  0.15 &  0.08 &  0.08 &  0.10 &  0.10 \\
+\texttt{perm\_drift\_2}      &   0.30 &  0.37 &  0.30 &  0.26 &  0.34 &  0.30 &  0.25 \\
+\texttt{sensor\_pulse\_1}        &   1.00 &  0.92 &  0.98 &  1.12 &  1.05 &  0.98 &  0.96 \\
+\texttt{trans\_drift\_2}                &   0.23 &  0.25 &  0.17 &  0.00 &  0.00 &  0.65 &  0.21 \\
+\midrule
+\texttt{regional\_perm\_1}  & 245.91 & 49.38 & 48.54 & 897.67 & 197.38 & 30.76 & 338.53 \\
+\texttt{regional\_drift\_1}  &  23.70 & 33.93 &  1.51 &   0.00 &  47.92 &  0.00 &  48.96 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% -----------------------------------------------------------------------------
+\subsubsection{Sensor, Hidden-State and Fouling Marginals}
+\label{sec:scen4_eda_figures}
+
+The dataset ships with three empirical artefacts that together characterise
+the observation surface of TurboSens2. Figure~\ref{fig:s4_sensor_grid}
+overlays the marginal distribution of each of the seven DeckSMR sensors
+across the sixteen flight-phase contexts, illustrating both the context
+separation in the observation space and the inter-episode spread induced
+by the context-jitter mechanism described in \S\ref{sec:scen4_contexts}.
+Figure~\ref{fig:s4_state_marginals} contrasts the marginals of the true
+mechanical state $\mathbf{s}$ (blue) with those of the phantom state
+$\tilde{\mathbf{s}}$ (orange) on a per-component basis: the five Efficiency
+channels at even indices coincide almost perfectly, but the five flow
+capacity (Wc) channels at odd indices are systematically shifted upward
+in $\tilde{\mathbf{s}}$, a direct empirical footprint of the phantom
+coupling $C\mathbf{c}_t$ in equation~\ref{eq:phantom}. Figure~\ref{fig:s4_contamination}
+shows the per-module fouling marginals, bounded in $[0, 0.04]$ and
+exponentially decreasing due to the wash schedule. Figure~\ref{fig:s4_episode_length}
+shows the episode-length distribution, which is capped at
+$20\,000$ steps and floored at $8\,000$ steps.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/eda_s4_train_region_archetype.png}
+\caption{Region $\times$ archetype episode counts for the TurboSens2
+train split, together with the EOL-triggered rate per archetype
+(identically zero in all splits, consistent with the proactive
+maintenance policy).}
+\label{fig:s4_region_archetype}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/eda_s4_train_sensor_grid.png}
+\caption{Marginal distribution of the seven DeckSMR sensors across the
+sixteen flight-phase contexts, TurboSens2 train split. Each subplot
+overlays the sixteen contexts for one sensor on a shared log-scale
+y-axis; the separation between curves reflects the context-dependent
+operating envelope exposed to the world model via $\phi_t$.}
+\label{fig:s4_sensor_grid}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/eda_s4_train_state_marginals.png}
+\caption{Per-component marginals of the true mechanical state $\mathbf{s}_t$
+(blue) and the phantom state $\tilde{\mathbf{s}}_t$ (orange), TurboSens2
+train split. Efficiency channels at even indices overlap almost perfectly;
+flow capacity channels at odd indices are displaced upward in
+$\tilde{\mathbf{s}}_t$ by the fouling-driven coupling
+$C\mathbf{c}_t$. The gap between the two histograms is exactly the
+non-identifiability signal the world model must learn to close by
+integrating the action history.}
+\label{fig:s4_state_marginals}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/eda_s4_train_contamination.png}
+\caption{Marginal distribution of the five fouling channels
+(Booster, Fan, HPC, HPT, LPT), TurboSens2 train split. Log-scale
+y-axis. The HPC channel concentrates higher mass at large values,
+reflecting the combination of (i) higher base fouling rate
+and (ii) a sulfur-driven multiplier in the Industrial region.}
+\label{fig:s4_contamination}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/eda_s4_train_event_rate_region.png}
+\caption{Per-flight event activity matrix (fraction of flights with any
+positive entry in the event channel), TurboSens2 train split.
+The two rightmost columns correspond to the regional-only events
+and dominate the picture: \texttt{regional\_perm\_1} is concentrated
+in Arid / Industrial / Equatorial, \texttt{regional\_drift\_1} in
+Littoral / Equatorial / Industrial. Note that the figure axis labels
+in this rendering still use the legacy code labels of the released
+simulator. Figures for the test and test-hard splits are qualitatively
+identical and available in the released figure pack.}
+\label{fig:s4_event_rate_region}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/eda_s4_train_episode_length.png}
+\caption{Episode length distribution, TurboSens2 train split. Lengths
+are bounded in $[8\,000, 20\,000]$ steps and centred at roughly
+$14\,000$ steps; episodes are terminated when the maintenance
+scheduler cannot keep the mechanical state above the proactive
+threshold.}
+\label{fig:s4_episode_length}
+\end{figure}
 
 
 
@@ -1134,89 +1345,33 @@ On-disk size (HDF5, gzip)          & 8 to 12 GB (estimated) \\
 \section{Architecture and Implementation Details}
 \label{app:architecture}
 
+This section documents the encoder, predictor, optimisation, and probe
+configurations used to produce every JEPA and AR LSTM number reported
+in Section~\ref{sec:results}. The hyperparameters listed here are the
+defaults; per run deviations are recorded in
+Section~\ref{sec:run_inventory}.
+
 \subsection{Sensor Encoder}
 \label{app:sensor_encoder}
-
-Table~\ref{tab:sensor_encoder} summarises the sensor encoder hyperparameters
-used in all reported experiments.
-The Pre-LayerNorm variant (norm applied \emph{before} each sub-layer)
-is used throughout for training stability~\citep{xiong2020layer}.
-The embedding dimension $d{=}64$ is deliberately kept small to match
-the world-model latent size and avoid introducing an unnecessary projection
-bottleneck: the output of the sensor encoder is passed through a two-layer
-MLP projector (hidden size 2048, BatchNorm) before entering the JEPA
-predictor.
-
-\begin{table}[h]
-  \centering
-  \caption{Sensor encoder configuration.}
-  \label{tab:sensor_encoder}
-  \begin{tabular}{ll}
-    \toprule
-    Hyperparameter & Value \\
-    \midrule
-    Input tokens ($n_\text{sensors}$) & 28 (4 contexts $\times$ 7 channels) \\
-    Embedding dimension $d$ & 64 \\
-    Attention heads & 4 \\
-    Transformer layers $L$ & 2 \\
-    Feed-forward multiplier & 4$\times$ \\
-    Normalisation & Pre-LayerNorm \\
-    Dropout & 0.1 \\
-    Positional encoding & Learnable \\
-    Pooling & Mean over tokens \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\subsection{Temporal Aggregator}
-\label{app:temporal_agg}
-
-For window size $w > 1$, a lightweight Temporal Aggregator
-(Eq.~\eqref{eq:temporal_agg} in the main text) fuses $w$ consecutive
-per-frame embeddings into a single trajectory-aware representation.
-The aggregator is a one-layer transformer encoder (batch-first,
-$d{=}64$, 4 heads) with learnable positional embeddings for positions
-$0, \ldots, w_\text{max}-1$.
-The output at the \emph{last} position (most recent frame) is used as the
-aggregated embedding; this token attends over the full window and hence
-receives information from the entire $w$-step trajectory.
-The total number of parameters added by the aggregator is
-$\mathcal{O}(d^2)$, negligible relative to the predictor.
-
-The effective dataset loading changes with $w$: each training sample
-contains $T_\text{raw} = H + n_\text{pred} + w - 1$ frames, from which
-$T_\text{out} = H + n_\text{pred}$ output embeddings are produced via
-a sliding-window scan.
-Action embeddings are aligned by selecting the $w{-}1, \ldots, T_\text{raw}-1$
-positions from the full action-embedding sequence.
-
-
-\subsection{World Model Architecture}
-\label{sec:architecture}
-
-\paragraph{Observation representation.}
-A single turbofan observation $\mathbf{o}_t \in \mathbb{R}^{n_s}$, with
-$n_s = S \cdot C$, consists of $S{=}7$ sensor channels each measured under
-$C$ flight-phase contexts, all reflecting the \emph{same} degradation state
-at timestep~$t$.
-For TurboSens3, $C{=}12$ contexts yield $n_s{=}84$.
-Prior work encoded this vector as a grayscale image and applied a Vision
-Transformer (ViT)~\citep{dosovitskiy2021image} after nearest-neighbour
-upsampling, introducing significant inductive bias mismatch: patch-based
-tokenisation is designed for spatially structured images, whereas turbofan
-sensor readings are unordered scalar channels with no meaningful spatial
-layout.
-We therefore replace this pipeline with a \emph{sensor-native transformer}
-that treats each of the $n_s$ scalar values as an independent token
-(Section~\ref{sec:sensor_encoder}).
-
-\paragraph{Sensor encoder.}
 \label{sec:sensor_encoder}
-Our encoder $\mathrm{Enc}_\theta : \mathbb{R}^{n_s} \to \mathbb{R}^d$ projects each
-scalar $x_i$ to a $d$-dimensional token via a shared linear layer, adds a
-learnable positional embedding, processes the resulting $n_s$-token sequence
-through an $L$-layer Pre-LayerNorm Transformer~\citep{xiong2020layer}, and
-mean-pools the output tokens:
+
+A turbofan observation $\mathbf{o}_t \in \mathbb{R}^{n_s}$ with
+$n_s = S \cdot C$ is the concatenation of $S$ sensor channels read across
+$C$ flight phase contexts, all reflecting the same degradation state.
+TurboSens1 has $S{=}7$, $C{=}12$, $n_s{=}84$; TurboSens2 enlarges the
+context vector to include four operating point parameters per context,
+so $n_s = (7+4) \cdot 16 = 176$. Earlier iterations of this benchmark
+encoded $\mathbf{o}_t$ as a grayscale image and applied a Vision
+Transformer~\citep{dosovitskiy2021image}; we replace that pipeline with
+a sensor native transformer that treats each of the $n_s$ scalars as an
+independent token, removing the spatial inductive bias mismatch of the
+image based encoder.
+
+The encoder $\mathrm{Enc}_\theta : \mathbb{R}^{n_s} \to \mathbb{R}^d$
+projects each scalar $x_i$ to a $d$ dimensional token via a shared
+linear layer, adds a learnable positional embedding $\mathbf{p}_i$,
+runs the sequence through an $L$ layer Pre LayerNorm Transformer
+encoder~\citep{xiong2020layer}, and mean pools across tokens:
 \begin{equation}
   \mathbf{z}_t = \mathrm{LayerNorm}\!\left(
     \frac{1}{n_s}\sum_{i=1}^{n_s}
@@ -1226,36 +1381,68 @@ mean-pools the output tokens:
   \right), \quad \mathbf{z}_t \in \mathbb{R}^d.
   \label{eq:sensor_encoder}
 \end{equation}
+The encoder output dimension $d{=}64$ is matched to the world model
+latent dimension so the embedding is fed to the predictor without an
+extra projection bottleneck. Table~\ref{tab:sensor_encoder} summarises
+the configuration.
 
-\paragraph{Temporal depth.}
-\label{sec:temporal_depth}
-The encoder in Eq.~\eqref{eq:sensor_encoder} operates on a single snapshot and therefore cannot directly capture degradation rate or trend direction.
-We introduce an encoder-level temporal window of size $w$: the encoder processes each of the $w$ consecutive frames $\mathbf{o}_{t-w+1}, \ldots, \mathbf{o}_t$ independently with shared weights, producing per-frame embeddings $\mathbf{z}_{t-w+1}, \ldots, \mathbf{z}_t$.
-A lightweight Temporal Aggregator, a single-layer transformer that
-takes the $w$-token sequence and returns the last-token output, then
-compresses the window into one trajectory-aware embedding
-$\mathbf{z}^\mathrm{agg}_t \in \mathbb{R}^d$:
+\begin{table}[h]
+  \centering
+  \caption{Sensor encoder configuration.}
+  \label{tab:sensor_encoder}
+  \begin{tabular}{ll}
+    \toprule
+    Hyperparameter & Value \\
+    \midrule
+    Input tokens $n_s$       & 84 (TurboSens1) or 176 (TurboSens2) \\
+    Embedding dimension $d$  & 64 \\
+    Attention heads          & 4 \\
+    Transformer layers $L$   & 2 \\
+    Feed forward multiplier  & 4$\times$ \\
+    Normalisation            & Pre LayerNorm \\
+    Dropout                  & 0.1 \\
+    Positional encoding      & Learnable \\
+    Pooling                  & Mean over tokens \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Temporal Aggregator}
+\label{app:temporal_agg}
+
+The encoder in \eqref{eq:sensor_encoder} reads a single snapshot, so it
+cannot directly express degradation rate or trend direction. When the
+encoder is configured with a temporal window $w > 1$, each of the $w$
+consecutive frames $\mathbf{o}_{t-w+1}, \ldots, \mathbf{o}_t$ is encoded
+independently with shared weights, and a lightweight Temporal
+Aggregator fuses the per frame embeddings into one trajectory aware
+embedding $\mathbf{z}^\mathrm{agg}_t \in \mathbb{R}^d$. The aggregator
+is a single layer transformer encoder ($d{=}64$, 4 heads) with a
+learnable positional code per slot; the output at the last position
+attends over the full window and is used as the aggregated embedding:
 \begin{equation}
   \mathbf{z}^\mathrm{agg}_t = \mathrm{TempAgg}\!\left(
     \mathbf{z}_{t-w+1}, \ldots, \mathbf{z}_t
   \right).
   \label{eq:temporal_agg}
 \end{equation}
-Setting $w{=}1$ recovers the snapshot baseline with no aggregation.
-We study $w \in \{1, 5, 10\}$ as an ablation (Section~\ref{sec:ablation}).
+Setting $w{=}1$ recovers the snapshot baseline; the parameter overhead
+of the aggregator is $\mathcal{O}(d^2)$, negligible relative to the
+predictor.
 
-\paragraph{JEPA world model.}
-The world model follows the Joint-Embedding Predictive Architecture
+
+\subsection{World Model and Loss}
+\label{sec:architecture}
+
+The world model follows the Joint Embedding Predictive Architecture
 (JEPA, LeWM)~\citep{Balestriero_LeCun_2025, Maes_Lidec_Scieur_LeCun_Balestriero_2026}.
 Given a context window of $H$ consecutive embeddings
-$\mathbf{z}^\mathrm{agg}_{t-H+1}, \ldots, \mathbf{z}^\mathrm{agg}_t$ and the
-corresponding action embeddings, an autoregressive predictor
-$g_\psi$ predicts the next embedding $\mathbf{z}^\mathrm{agg}_{t+1}$ in latent
-space.
-The full training objective combines a JEPA prediction loss with a
-Signal Regularity (SIGReg) term~\citep{CITE} that encourages
-the learned latent space to follow an isotropic Gaussian distribution,
-preventing representational collapse:
+$\mathbf{z}^\mathrm{agg}_{t-H+1}, \ldots, \mathbf{z}^\mathrm{agg}_t$ and
+the corresponding action embeddings, an autoregressive predictor
+$g_\psi$ outputs the next latent
+$\hat{\mathbf{z}}^\mathrm{agg}_{t+1}$. Training combines a latent
+prediction loss with a SIGReg term~\cite{Balestriero_LeCun_2025} that
+encourages an isotropic Gaussian latent and prevents collapse:
 \begin{equation}
   \mathcal{L} = \underbrace{
     \left\lVert g_\psi(\mathbf{z}^\mathrm{agg}_{t-H:t},\, \mathbf{a}_{t-H:t})
@@ -1268,51 +1455,70 @@ preventing representational collapse:
 
 
 
-
-
-
-\subsection{Predictor}
+\subsection{Predictor and AR LSTM Baseline}
 \label{app:predictor}
 
-The autoregressive predictor $g_\psi$ is a causal transformer
-(depth 4, 8 heads, MLP dimension 512, head dimension 32) that takes
-the history of $H{=}3$ embeddings and their corresponding action embeddings
-as input and outputs one predicted next-step embedding.
-A second MLP projector (same architecture as the encoder projector) maps
-the predictor output back to the shared $d$-dimensional latent space.
+The JEPA predictor $g_\psi$ is a causal transformer (depth 4, 8 heads,
+MLP dimension 512, head dimension 32, dropout 0.1) that ingests the
+history of $H$ context embeddings and their action embeddings and emits
+one next step latent. A two layer MLP projector (BatchNorm) maps the
+predictor output back to the shared $d{=}64$ latent.
+
+The AR LSTM baseline shares the sensor encoder and the temporal
+aggregator and replaces only the latent dynamics: the transformer
+predictor is swapped for a two layer LSTM (hidden size 256, dropout
+0.1). All other components, including the SIGReg term and the
+projector, are identical, so any difference at evaluation time isolates
+the predictor family. The LSTM predictor has 1.14M parameters,
+comparable to the JEPA predictor.
 
 \subsection{Training Setup}
 \label{app:training}
 
-All models are trained for 100 epochs with AdamW ($\text{lr}=7{\times}10^{-5}$,
-weight decay $10^{-3}$) under a LinearWarmup-CosineAnnealing schedule.
-We use mixed-precision training (\texttt{fp16}) rather than \texttt{bfloat16}:
-in early experiments the 3-decimal-digit dynamic range of \texttt{bf16}
-produced silent overflows in the SIGReg operation, manifesting as a sudden
-spike in validation loss at epochs 7--8.
-Gradient clipping (global norm $0.3$) provides additional early-epoch
-stability before the cosine schedule begins to decay the learning rate.
-All runs use a single H100 GPU with batch size 128.
+All models train with AdamW ($\text{lr}{=}7\!\times\!10^{-5}$, weight
+decay $10^{-3}$) under a linear warmup followed by cosine annealing,
+gradient clipping at global norm $0.3$, and an effective batch size of
+$512$ (achieved either as a native batch of $512$ or as a smaller
+native batch with gradient accumulation; the effective batch is held
+constant across runs). The SIGReg regulariser uses
+$\lambda{=}0.15$, $17$ knots, $1024$ random projections.
+
+\paragraph{Epoch budget.}
+JEPA configurations are trained for $10$ epochs, sufficient for the
+latent prediction loss to plateau on TurboSens2 at the effective batch
+size of $512$; longer runs do not change the probe ranking. The AR LSTM
+baseline does not have to share the same epoch budget because its
+predictor family converges differently; we report it under a comparable
+wall budget for fairness, with per run details in
+Section~\ref{sec:run_inventory}.
+
+\paragraph{Hardware.}
+Each run uses a single GPU, either an RTX~5090 or an H100. The hardware
+choice does not affect the reported numbers; differences between runs
+are explained by the hyperparameters listed in
+Section~\ref{sec:run_inventory}.
 
 \begin{table}[h]
   \centering
-  \caption{Training hyperparameters.}
+  \caption{Default training hyperparameters used across JEPA and
+  AR LSTM runs.}
   \label{tab:training}
   \begin{tabular}{ll}
     \toprule
     Hyperparameter & Value \\
     \midrule
-    Optimiser & AdamW \\
-    Learning rate & $7{\times}10^{-5}$ \\
-    Weight decay & $10^{-3}$ \\
-    LR schedule & LinearWarmup + CosineAnnealing \\
-    Gradient clip (global norm) & 0.3 \\
-    Batch size & 128 \\
-    Epochs & 100 \\
-    Precision & fp16-mixed \\
-    SIGReg weight $\lambda$ & 0.15 \\
-    SIGReg knots / projections & 17 / 1024 \\
-    History $H$ & 1,3,10,50 \\
+    Optimiser                     & AdamW \\
+    Learning rate                 & $7\!\times\!10^{-5}$ \\
+    Weight decay                  & $10^{-3}$ \\
+    LR schedule                   & Linear warmup + cosine annealing \\
+    Gradient clip (global norm)   & 0.3 \\
+    Effective batch size          & 512 \\
+    Epochs (JEPA)                 & 10 \\
+    SIGReg weight $\lambda$       & 0.15 \\
+    SIGReg knots / projections    & 17 / 1024 \\
+    Predictor history $H$         & $\{8, 16, 32\}$ \\
+    Encoder window $w$            & $\{1, 5, 10\}$ \\
+    Predictor stride $S$          & $\{1, 5, 10, 20\}$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1320,72 +1526,475 @@ All runs use a single H100 GPU with batch size 128.
 \subsection{Downstream Evaluation Probes}
 \label{app:probes}
 
-\paragraph{Health Indicator (HI) probe.}
-After every $k{=}5$ training epochs we freeze the encoder and train a
-lightweight transformer regression head (2-layer, $d{=}64$, 4 heads) on
-top of the frozen embeddings to predict the 10 turbofan Health Indicator
-(HI) dimensions simultaneously.
-The probe is trained with Adam ($\text{lr}{=}10^{-3}$) for up to 150 epochs
-with early stopping (patience 20) on mean per-dimension RMSE.
-We report per-component $R^2$, RMSE, and Pearson-$r$.
+After training, the encoder and the temporal aggregator (when $w > 1$)
+are frozen, and small heads are trained on the frozen embeddings to
+expose what the world model representation actually captures. The
+probes use the same train and test splits as the world model, but they
+see the ground truth target as a supervised signal that the world model
+itself never accesses during pretraining.
 
-We evaluate two configurations to disentangle encoder-level from
-probe-level temporal reasoning:
+\paragraph{Health state probe.}
+The main probe maps a frozen embedding to the ten dimensional ground
+truth health state $\mathbf{s}_t$. We use a small transformer
+regression head (2 layers, hidden dimension 128, 4 heads), trained with
+Adam ($\text{lr}{=}10^{-3}$) for up to 150 epochs with early stopping
+on mean per dimension RMSE. We report per component $R^2$, RMSE, and
+Pearson $r$. Two probe input contexts are reported alongside each
+encoder, to separate encoder quality from probe expressivity:
 \begin{itemize}
-  \item \textbf{seq\_len=1}: each probe input is a single frozen embedding
-    (i.e.\ a snapshot).  Self-attention is trivial; the probe is functionally
-    an MLP.  This directly measures what the \emph{encoder} has learned.
-  \item \textbf{seq\_len=10}: each input is a window of 10 consecutive
-    embeddings.  The probe transformer can attend over the trajectory,
-    partially compensating for a snapshot encoder.  Comparing seq\_len=1
-    \emph{vs.} seq\_len=10 reveals how much temporal context is already
-    baked into the encoder embeddings.
+  \item \textbf{single embedding}: each input is one frozen embedding;
+    the probe head reduces to an MLP and reflects what the encoder
+    alone has captured;
+  \item \textbf{trajectory window}: each input is a window of 10
+    consecutive embeddings, so the probe transformer can attend over
+    the trajectory. Differences against the single embedding score show
+    how much temporal context the encoder has already absorbed.
 \end{itemize}
 
-\paragraph{Action-RUL probe.}
-We additionally train a single-output regression probe to predict
-$\tau_t = \min(\text{steps to next maintenance action}, \tau_\text{max})$,
-with $\tau_\text{max}{=}300$.
-Targets are log1p-transformed and StandardScaler-normalised before training.
-Because $\sim$19\% of timesteps have no future maintenance event within the
-horizon (censored, $\tau_t = \tau_\text{max}$), evaluation metrics (RMSE,
-MAE, $R^2$, Pearson-$r$) are computed exclusively on the uncensored subset
-($\tau_t < \tau_\text{max}$).
-We report the fraction of uncensored test samples alongside the metrics.
+\paragraph{Action timing probe.}
+A second, optional probe predicts the number of steps to the next
+maintenance action,
+$\tau_t = \min(\text{steps to next maintenance}, \tau_\text{max})$,
+with $\tau_\text{max}{=}300$. Targets are $\log(1 + \tau_t)$
+transformed before standardisation; metrics are computed on uncensored
+timesteps only. Across all reported encoders the linear probe Pearson
+is at or below $0.03$, indicating that 10 epoch self supervised
+training does not expose maintenance timing structure to a linear
+readout. We report this probe as a placeholder for future work that
+should explicitly handle event sparsity.
 
+\paragraph{What each temporal hyperparameter controls.}
+The encoder window $w$, the predictor history $H$, and the probe input
+length \texttt{seq\_len} are independent design knobs whose effects are
+summarised in Table~\ref{tab:temp_hyperparams}.
 
-
-\subsubsection{What each parameter actually controls}
-
-\begin{table}[]
+\begin{table}[h]
     \centering
-    \begin{tabular}{|p{3cm}|p{3cm}|p{3cm}|p{3cm}|} \hline
-        \textbf{Parameter} & \textbf{Affects Encoder?} & \textbf{Affects Predictor?} & \textbf{Affects Probe?} \\ \hline
-        $w$ (observation window size) &
-        \textbf{Yes}, the depth of temporal fusion inside $z_t$ &
-        Indirectly, richer $z_t$ creates a different loss surface &
-        Indirectly \\ \hline
-
-        $H$ (history size) &
-        \textbf{Yes}, how many past $z$'s the predictor sees &
-        No &
-        No \\ \hline
-
-        $\text{seq\_len}$ &
-        No &
-        No &
-        \textbf{Yes}, window fed to the probe head \\ \hline
+    \small
+    \begin{tabular}{p{3.0cm}p{3.5cm}p{3.5cm}p{3.0cm}}
+    \toprule
+    Parameter & Affects encoder? & Affects predictor? & Affects probe? \\
+    \midrule
+    $w$ (encoder window) &
+    Yes, depth of temporal fusion inside $\mathbf{z}_t$ &
+    Indirectly, through richer $\mathbf{z}_t$ &
+    Indirectly \\
+    $H$ (predictor history) &
+    No &
+    Yes, number of past embeddings the predictor sees &
+    No \\
+    \texttt{seq\_len} &
+    No &
+    No &
+    Yes, window fed to the probe head \\
+    \bottomrule
     \end{tabular}
-    \caption{What each temporal hyperparameter actually controls in the architecture.}
+    \caption{Effect of each temporal hyperparameter.}
     \label{tab:temp_hyperparams}
 \end{table}
 
 
-\subsection{Additional Tasks that can be done}
+% =============================================================================
+\section{TurboSens2 Sweep Campaign Details}
+\label{sec:campaign}
 
-\begin{enumerate}
-    \item Conformal predicito
-    \item New datasets
-    \item Transfer Learning
-    \item RL policy optimization
-\end{enumerate}
+This appendix records the per run accounting and the per HI breakdown
+referenced from Section~\ref{sec:results}.
+
+\subsection{Run inventory}
+\label{sec:run_inventory}
+
+Table~\ref{tab:runs_jepa} lists the JEPA runs. All runs use $P{=}4$,
+effective batch size $512$, AdamW with cosine schedule and learning
+rate $7 \cdot 10^{-5}$, and the \texttt{hi\_probe} callback firing at
+epochs 5 and 9. Activations rather than weights dominate VRAM, which is
+why $E_3$ at $S{=}5$ requires a native batch of 128 with gradient
+accumulation of four to keep the effective batch fixed.
+
+\begin{table}[h]
+\centering
+\caption{JEPA runs (TurboSens2 train split, 10 epochs).
+Final HI mean Pearson is reported as multi seed mean $\pm$ std where
+seeds were available. $E_4$ ($H{=}32$, $S{=}5$) is paused; $E_7$
+($H{=}16$, $S{=}20$) is queued.}
+\label{tab:runs_jepa}
+\small
+\begin{tabular}{l c c c c c c c c}
+\toprule
+ID       & $H$ & $S$ & $P$ & wall & fit/loss & seeds & test $r$ & test\_hard $r$ \\
+\midrule
+$E_1$    & 16 &  1 & 4 & 4.4h  & 0.406 & 2 & $0.447 \pm 0.033$ & $0.053 \pm 0.138$ \\
+$E_2$    & 32 &  1 & 4 & 8.2h  & 0.254 & 2/3 & $0.588 \pm 0.028$ & $0.262 \pm 0.073$ \\
+$E_3$    & 16 &  5 & 4 & 20h   & 0.259 & 2 & $0.431 \pm 0.032$ & $0.340 \pm 0.041$ \\
+$E_5$    &  8 &  1 & 4 & --    & --    & 2 & $0.514 \pm 0.007$ & $-0.028 \pm 0.092$ \\
+$E_6$    & 16 & 10 & 4 & --    & --    & 2/3 & $0.469 \pm 0.153$ & $0.369 \pm 0.052$ \\
+$E_4$    & 32 &  5 & 4 & --    & --    & -- & paused & paused \\
+$E_7$    & 16 & 20 & 4 & --    & --    & -- & queued & queued \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:runs_arlstm} lists the AR LSTM runs (1.14M predictor
+parameters). Final mean Pearson on the in distribution \texttt{test}
+split and the OOD \texttt{test\_hard} split is also given here for
+reference; these are the same numbers plotted in
+Figure~\ref{fig:s4_xarch}. Configurations $L_3$ and $L_4$ are deferred
+for the same reason as $E_4$: the specificity vs generality direction
+they would test is already established by the JEPA $S{=}5$ run.
+
+\begin{table}[h]
+\centering
+\caption{AR LSTM runs (TurboSens2 train split, 10 epochs).}
+\label{tab:runs_arlstm}
+\small
+\begin{tabular}{l c c c c c c c c}
+\toprule
+ID & $H$ & $S$ & $P$ & native bs / accum & wall & fit/loss & test $r$ & test\_hard $r$ \\
+\midrule
+$L_1$ & 16 & 1 & 4 & 512 / 1   & 7h    & 0.379 & 0.564  & 0.325 \\
+$L_2$ & 32 & 1 & 4 & 256 / 2   & 13h   & 0.234 & 0.495  & $-$0.014 \\
+$L_3$ & 16 & 5 & 4 & 128 / 4   & --    & --    & --    & -- \\
+$L_4$ & 32 & 5 & 4 & 64 / 8    & --    & --    & --    & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{VRAM scaling and effective sequence length}
+
+The encoder consumes the full window of raw frames before the strided
+subsampling step, so VRAM scales with the number of raw timesteps
+$n_\text{steps} = (H + P - 1) \cdot S + W$ rather than with the strided
+token count. An empirical fit on a 32~GB GPU gives
+$\text{VRAM (GB)} \approx 0.00146 \cdot \text{bs} \cdot n_\text{steps}$;
+the $E_3$ and $E_4$ rows in Table~\ref{tab:runs_jepa} are sized against
+this fit with a 28~GB safety budget. A practical consequence is that the
+$S{=}5$ runs are the most expensive in the sweep despite having the same
+strided history length as $S{=}1$.
+
+\subsection{Per HI breakdown of \texorpdfstring{$E_2$}{E2} and \texorpdfstring{$E_1$}{E1}}
+\label{sec:per_hi}
+
+Figure~\ref{fig:s4_per_hi_e2} reports per component Pearson (top) and
+RMSE (bottom) for the in distribution leader $E_2$ on both splits.
+Three dimensions sign flip on OOD (HI$_1$, HI$_2$, HI$_3$): the in
+distribution probe is anti correlated with the ground truth on the
+held out split for these components. The Pearson and RMSE rows
+disagree on which dimensions are well recovered: HI$_2$ has an
+acceptable OOD Pearson but the worst RMSE, while HI$_8$ has a high
+in distribution Pearson and a moderate one on OOD. Single metric
+reporting hides this disagreement.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/fig2_perHI_E2.png}
+    \caption{Per component Pearson (top) and RMSE (bottom) for $E_2$
+    ($H{=}32$, $S{=}1$) on \texttt{test} (blue) and \texttt{test\_hard}
+    (orange). Three sign flips on OOD; HI$_2$ has the worst RMSE
+    despite an acceptable Pearson. Pearson and RMSE rank components
+    differently.}
+    \label{fig:s4_per_hi_e2}
+\end{figure}
+
+Table~\ref{tab:per_hi_e1} reports the per dimension Pearson and
+relative drop for the $E_1$ encoder on a single seed
+(\texttt{seed=0}), the same data plotted in
+Figure~\ref{fig:s4_per_hi_e1}. The released eval pipeline currently
+aggregates only the mean Pearson across seeds; per dimension Pearson
+and RMSE will be added to the SUMMARY in the next release and the
+multi seed columns of Table~\ref{tab:per_hi_e1_main} will be filled
+in. HI$_3$ is the only dimension recovered nearly equally on both
+splits; HI$_8$ flips sign, indicating that the encoder learned a
+coupling that holds in the training draw but inverts on a different
+seed batch with a higher rate of extreme episodes. Most dimensions
+sit on a continuum between these extremes.
+
+\begin{table}[h]
+\centering
+\caption{Per HI Pearson breakdown for $E_1$ ($H{=}16$, $S{=}1$,
+TurboSens2, single seed). Negative relative deltas indicate OOD
+collapse; HI$_8$ flips sign.}
+\label{tab:per_hi_e1}
+\small
+\begin{tabular}{l c c c}
+\toprule
+HI dimension & test Pearson & test\_hard Pearson & relative drop \\
+\midrule
+HI$_0$ & $+0.43$ & $+0.02$ & $-94\%$ \\
+HI$_1$ & $+0.57$ & $+0.07$ & $-87\%$ \\
+HI$_2$ & $+0.51$ & $+0.12$ & $-76\%$ \\
+HI$_3$ & $+0.49$ & $+0.42$ & $-14\%$ \\
+HI$_4$ & $+0.51$ & $+0.17$ & $-67\%$ \\
+HI$_5$ & $+0.34$ & $+0.19$ & $-44\%$ \\
+HI$_6$ & $+0.73$ & $+0.23$ & $-68\%$ \\
+HI$_7$ & $+0.63$ & $+0.20$ & $-68\%$ \\
+HI$_8$ & $+0.71$ & $-0.27$ & $-138\%$ (sign flip) \\
+HI$_9$ & $+0.72$ & $+0.36$ & $-50\%$ \\
+\midrule
+mean   & $+0.563$ & $+0.152$ & $-73\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Probe over single embedding versus full history}
+\label{sec:per_archetype}
+
+The probe head used in Section~\ref{sec:results} reports
+$\mathrm{seq\_len}{=}1$ as default, mapping a single embedding
+$\mathbf{z}_t$ to $\mathbf{s}_t$. The released eval pipeline also
+supports temporally aggregated probes at $\mathrm{seq\_len} \in
+\{10, 50\}$. Single seed numbers for the AR LSTM checkpoints
+$L_1$ ($H{=}16$, $S{=}1$) and $L_\mathrm{big}$ ($H{=}32$, $S{=}1$,
+$W{=}4$) are summarised in Table~\ref{tab:seqlen_compare}; multi
+seed bands at $\mathrm{seq\_len}{=}10$ and $50$ are pending. The
+qualitative picture across these single seed measurements is that
+$\mathrm{seq\_len}{=}10$ helps slightly on the in distribution split
+and modestly on the OOD split for $L_\mathrm{big}$ but does not move
+the headline ranking; we recommend that future TurboSens evaluations
+report at least $\mathrm{seq\_len}{=}1$ and $\mathrm{seq\_len}{=}10$
+alongside.
+
+\begin{table}[h]
+\centering
+\small
+\caption{HI Pearson by probe $\mathrm{seq\_len}$ for two AR LSTM
+checkpoints. Single seed ($\mathrm{seed}{=}0$); multi seed bands at
+$\mathrm{seq\_len}{=}10, 50$ are pending a rerun.}
+\label{tab:seqlen_compare}
+\begin{tabular}{l c c c c c c}
+\toprule
+       & \multicolumn{3}{c}{\texttt{test}} & \multicolumn{3}{c}{\texttt{test\_hard}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+ckpt   & sl=1 & sl=10 & sl=50 & sl=1 & sl=10 & sl=50 \\
+\midrule
+$L_1$ ($H{=}16$, $S{=}1$, $W{=}1$) & 0.564 & 0.510 & 0.549 & 0.325 & 0.378 & 0.241 \\
+$L_\mathrm{big}$ ($H{=}32$, $S{=}1$, $W{=}4$) & 0.559 & 0.555 & 0.559 & 0.329 & 0.243 & 0.051 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Probe data size sensitivity}
+\label{sec:probe_size}
+
+The default in training probe sampled $28\,\text{k}$ embedding
+timesteps and reported a mean Pearson of $0.25$ for both the JEPA $E_1$
+and the AR LSTM $L_1$ encoder. Re evaluating the same encoders with
+the same linear head on the full $\sim$770k step training stream
+(\texttt{eval\_sweep}) raised the in distribution Pearson to $0.56$ for
+both, a $\times 2.3$ jump from a probe data budget change alone. An
+eight times wider probe head on the small budget did not close the gap
+and in some runs hurt the score, ruling out probe head capacity as the
+limiting factor. We therefore fix the larger budget for all numbers
+reported in Section~\ref{sec:results}.
+
+\subsection{Counterfactual fidelity curves}
+\label{sec:counterfactual_curves}
+
+Figure~\ref{fig:s4_counterfactual} reports the per checkpoint and
+per action curves underlying the counterfactual fidelity summary in
+Section~\ref{sec:results}. The top row plots absolute mean HI RMSE
+between the world model and the simulator under the same overridden
+action; the bottom row plots the differential
+$|\Delta_\mathrm{model}(a, 0) - \Delta_\mathrm{sim}(a, 0)|$, which
+subtracts the \emph{do nothing} baseline from both rollouts and
+isolates the action specific response. Curves are means over thirty
+episodes and three branch positions per checkpoint, with a one
+standard deviation band around the mean.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig5_counterfactual_fidelity.png}
+    \caption{Counterfactual fidelity per checkpoint and per action.
+    Top row: absolute HI RMSE between world model and simulator under
+    the same overridden action $a$. Bottom row: differential
+    $|\Delta_\mathrm{model}(a, 0) - \Delta_\mathrm{sim}(a, 0)|$,
+    isolating the response to the action change against the
+    \emph{do nothing} baseline.}
+    \label{fig:s4_counterfactual}
+\end{figure}
+
+\subsection{Cross split scatter}
+\label{sec:scatter}
+
+Figure~\ref{fig:s4_scatter} places each $(\text{architecture},
+\text{config})$ pair on the in distribution vs OOD plane. The dashed
+identity line marks perfect generalisation. JEPA $E_2$ and $E_3$ sit
+above the line (better OOD than in distribution), the AR LSTM $L_1$
+sits closest to the identity (most balanced), and $E_1$, $L_2$ sit
+below the line (specialised to in distribution). The figure
+makes the specificity vs generality axis legible at a glance and is
+complementary to the bar chart in Figure~\ref{fig:s4_xarch}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.65\linewidth]{figures/fig4_inDist_vs_OOD_scatter.png}
+    \caption{In distribution vs OOD HI Pearson for the five evaluated
+    configurations. JEPA in green circles, AR LSTM in red squares.
+    Dashed identity line marks perfect generalisation; points above the
+    line generalise better than they specialise.}
+    \label{fig:s4_scatter}
+\end{figure}
+
+% --- Action RUL probe details consolidated under the probe section
+% (Section~\ref{app:probes}, "Action timing probe"). Removed from here
+% to avoid duplication.
+
+% =============================================================================
+\section{Auxiliary Evaluation Tasks}
+\label{sec:auxiliary_tasks}
+
+The benchmark ships with two further tasks that are not the focus of
+the present paper but are useful for stress testing world model
+representations in future work. The data and metric infrastructure for
+both tasks is included in the released evaluation code.
+
+\subsection{Degradation velocity estimation}
+Rather than predicting the absolute health state, a velocity probe
+asks whether the encoder captures the local rate of change of
+degradation. The target is $\Delta\mathbf{s}_t = \mathbf{s}_t -
+\mathbf{s}_{t-1}$ within episode boundaries and restricted to non
+maintenance timesteps. Predicting $\Delta\mathbf{s}_t$ from a single
+snapshot is strictly harder than predicting $\mathbf{s}_t$: it requires
+the encoder to capture local curvature of the degradation manifold.
+A maintenance alarm score is defined by thresholding
+$\|\widehat{\Delta\mathbf{s}}_t\|_2$ and evaluated at horizons
+$K \in \{10, 20, 50, 100\}$ as the AUC of the binary event
+``maintenance occurs within $K$ steps''.
+
+\subsection{Deterministic replay and counterfactual API}
+\label{sec:replayer}
+
+The \texttt{scenarios.scenario4.replay.EpisodeReplayer} class is a
+pure python entry point around the simulator. It takes a generated
+HDF5 file, reads the \texttt{ep\_meta/seed}, region and
+\texttt{is\_extreme} flag of any episode, and either replays the full
+trajectory bit identically or forks it at a chosen branch point. The
+data class \texttt{CounterfactualSpec} exposes four levers:
+$\texttt{branch\_t}$ (where to fork), $\texttt{override\_action}$
+(closed loop, the expert maintenance policy resumes after the forced
+action), $\texttt{forced\_actions}$ (open loop, a fixed sequence of
+actions is applied after $\texttt{branch\_t}$), and
+$\texttt{weather\_seed}$ + $\texttt{weather\_overrides}$ (re seed the
+seasonal OU). Bit identity is enforced by a regression test
+(\texttt{test/scenario4/test\_replay\_bit\_identity.py}) and the
+schema requirement is documented in the file's docstring; the source
+tree currently lives on the \texttt{nodegpu} branch.
+
+\subsection{Latent forecasting with action divergence gap}
+The world model's latent predictor is evaluated directly by rolling
+out $\tau$ steps autoregressively from an initial context window and
+decoding each predicted embedding $\hat{\mathbf{z}}_{t+\tau}$ to HI
+space using the Task~1 probe (no additional training). Rollouts use
+zero actions; the world model propagates the current degradation
+trajectory without any maintenance intervention. To quantify the cost
+of ignoring maintenance, each $\tau$ step trajectory is split into
+clean segments (no maintenance event in $(t, t{+}\tau]$) and event
+segments (at least one maintenance event); we report mean HI RMSE on
+both and their difference
+$\delta(\tau) = \mathrm{RMSE}_\mathrm{event}(\tau) -
+\mathrm{RMSE}_\mathrm{clean}(\tau)$, the action divergence gap. A
+large gap at short horizons indicates that maintenance transitions are
+the primary source of forecast error and motivates action conditioned
+world modelling. The action conditioned counterfactual rollout that
+closes this gap is the camera ready experimental target referenced in
+Section~\ref{sec:results}.
+
+
+% =============================================================================
+\section{Illustrative Trajectories and Dataset Views}
+\label{sec:gallery}
+
+This section collects example renderings from the released simulator's
+EDA notebooks, intended to give the reader a qualitative sense of what
+TurboSens trajectories and observations look like. None of these
+figures is part of the evaluation protocol; they are illustrative.
+Some figures still carry the legacy event labels (e.g.\ \texttt{shock},
+\texttt{compressor\_surge}, \texttt{ingestion\_perm}) on their axes;
+these correspond to the abstract effect typed labels used in the rest
+of the paper.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/gallery_s3_archetypes.png}
+    \caption{TurboSens1 hidden state trajectories under the four
+    degradation archetypes (A compressor, B fan/booster, C turbine,
+    D balanced). Each panel overlays the ten state components for a
+    single representative episode; vertical green and orange lines
+    mark maintenance interventions. Archetype D produces nearly flat
+    trajectories that survive the full $10{,}000$ step horizon
+    without intervention, while A and C show the steeper early drift
+    that drives recurring maintenance.}
+    \label{fig:gallery_s3_archetypes}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/gallery_s3_episode.png}
+    \caption{Single TurboSens1 episode (archetype C, observed under
+    the \texttt{CR\_nominal} flight context). Top: the ten dimensional
+    hidden state $\mathbf{s}_t$ evolving as a sawtooth of partial
+    resets. Middle: the seven dimensional sensor stream
+    $\mathbf{o}_t$ at the chosen context, showing how observation
+    noise and contextual variation obscure the underlying state.
+    Bottom: the discrete maintenance action sequence; coloured
+    markers indicate the action type at each maintenance event.}
+    \label{fig:gallery_s3_episode}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/gallery_s3_weather.png}
+    \caption{Weather process for a single TurboSens1 episode: the
+    ambient temperature deviation $\Delta T_\mathrm{amb}$ follows a
+    slow Ornstein-Uhlenbeck trajectory (top) and rain events
+    (bottom) are gated by the seasonal phase, here at a $22.7\%$
+    episode wide rain rate.}
+    \label{fig:gallery_s3_weather}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/gallery_s3_sensor_state_corr.png}
+    \caption{TurboSens1 sensor / state correlation matrix.
+    Context averaged Pearson correlations between the seven sensor
+    channels and the ten hidden state dimensions, computed over the
+    train split. Most cells are near zero, but a handful of strong
+    positive (HP shaft speed vs HPC efficiency / flow,
+    $r \in [0.5, 0.6]$) and strong negative (LP shaft speed vs HPC
+    flow, $r = -0.76$) couplings establish that the observation map
+    is informative about the latent state but far from a
+    one-to-one decoder; this is the structure the inverse evaluation
+    protocol asks the encoder to recover.}
+    \label{fig:gallery_s3_sensor_state_corr}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/gallery_s4_regions.png}
+    \caption{TurboSens2 per region sensor distributions, pooled over
+    all timesteps and contexts. Each panel shows a box plot of one of
+    the seven sensor channels across the six geographic regions
+    (Arid, Littoral, Continental, Equatorial, Highland, Industrial).
+    Region affects both the median and the spread of every channel,
+    most noticeably on HPC inlet and outlet temperatures (HPC\_Tin,
+    HPC\_Tout) where the Highland and Arid extremes are visibly
+    separated. The OOD evaluation in Section~\ref{sec:ood} relies on
+    held out region / archetype draws sitting in these distributional
+    tails.}
+    \label{fig:gallery_s4_regions}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/gallery_s4_trajectory_arid.png}
+    \caption{Full trajectory of a TurboSens2 episode in the Arid
+    region (archetype C, $T \approx 8000$ steps, $\sim 100$ engine
+    washes, $5$ shop visits). Each row shows one of the seven
+    sensors over the full episode. Vertical red and orange markers
+    indicate shop visits and engine washes respectively; the
+    dramatic dips in HP\_Nmech and HPC\_Pout\_st around the shop
+    visits are visible directly in the sensor stream. The bottom
+    two rows show the calendar month and a fouling proxy,
+    illustrating how often the wash action is exercised in a high
+    fouling region.}
+    \label{fig:gallery_s4_trajectory_arid}
+\end{figure}

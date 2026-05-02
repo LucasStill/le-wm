@@ -1,0 +1,114 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{Balestriero_LeCun_2025,Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025,okada2021dreaming,okada2022dreamingv2,Maes_Lidec_Scieur_LeCun_Balestriero_2026}
+\citation{bear1physion,riochet2018intphys,Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025,Saxena_Goebel_Simon_Eklund_2008}
+\citation{psaropoulos_2025_17804895}
+\@writefile{toc}{\setcounter {tocdepth}{-3}}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:introduction}{{1}{1}{Introduction}{section.1}{}}
+\citation{Balestriero_LeCun_2025,Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025,Maes_Lidec_Scieur_LeCun_Balestriero_2026}
+\citation{okada2021dreaming,okada2022dreamingv2}
+\citation{wang2020data,krishnan2022self,deng2024enhancing,calabrese2021predictive}
+\citation{bear1physion}
+\citation{yiclevrer}
+\citation{riochet2018intphys,Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025}
+\@writefile{toc}{\contentsline {paragraph}{Contributions.}{2}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{2}{section.2}\protected@file@percent }
+\newlabel{sec:related_work}{{2}{2}{Related Work}{section.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why turbofan engines.}{2}{section*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{World models and physical understanding.}{2}{section*.4}\protected@file@percent }
+\citation{towers2024gymnasium,todorov2012mujoco}
+\citation{Maulana_Starr_Ompusunggu_2023}
+\citation{Saxena_Goebel_Simon_Eklund_2008}
+\citation{Arias_Chao_Kulkarni_Goebel_Fink_2021}
+\citation{Ramasso_Saxena}
+\@writefile{toc}{\contentsline {paragraph}{Interactive simulators and agentic environments.}{3}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Turbofan degradation datasets.}{3}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Problem Formulation}{3}{section.3}\protected@file@percent }
+\newlabel{sec:formulation}{{3}{3}{Problem Formulation}{section.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Step 1 observation, state, and the OpenDeckSMR map.}{3}{section*.8}\protected@file@percent }
+\newlabel{eq:obs}{{1}{3}{Step 1 observation, state, and the OpenDeckSMR map}{equation.3.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Step 2 TurboSens1: degradation archetypes, weather, maintenance.}{3}{section*.9}\protected@file@percent }
+\newlabel{eq:s_transition}{{2}{3}{Step 2 TurboSens1: degradation archetypes, weather, maintenance}{equation.3.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \textbf  {The TurboSens evaluation framework. (i)} A turbofan engine is decomposed into subsystems whose health degrades over time, modulated by operating context, fouling, and maintenance actions $a$ that restore selected components of the health state. \textbf  {(ii)} Subsystem health and fouling channels assemble into a global state $\omega $ that OpenDeckSMR (ODSMR) maps to sensor observations across $C$ flight phase contexts. \textbf  {(iii)} A world model learns a representation from these observations in a self supervised manner; at test time, the frozen representations are probed against the true subsystem health, framing representation evaluation as an inverse problem. \textbf  {(iv)} Companion downstream tasks include forecasting possible futures conditioned on candidate maintenance policies.\relax }}{4}{figure.caption.7}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:problem_formulation}{{1}{4}{\textbf {The TurboSens evaluation framework. (i)} A turbofan engine is decomposed into subsystems whose health degrades over time, modulated by operating context, fouling, and maintenance actions $a$ that restore selected components of the health state. \textbf {(ii)} Subsystem health and fouling channels assemble into a global state $\omega $ that OpenDeckSMR (ODSMR) maps to sensor observations across $C$ flight phase contexts. \textbf {(iii)} A world model learns a representation from these observations in a self supervised manner; at test time, the frozen representations are probed against the true subsystem health, framing representation evaluation as an inverse problem. \textbf {(iv)} Companion downstream tasks include forecasting possible futures conditioned on candidate maintenance policies.\relax }{figure.caption.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Step 3 TurboSens2: fouling, phantom observation, regions, wash actions.}{4}{section*.10}\protected@file@percent }
+\newlabel{eq:phantom}{{4}{4}{Step 3 TurboSens2: fouling, phantom observation, regions, wash actions}{equation.3.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{POMDP form and evaluation task.}{5}{section*.11}\protected@file@percent }
+\newlabel{eq:probe}{{7}{5}{POMDP form and evaluation task}{equation.3.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}The TurboSens Dataset}{5}{section.4}\protected@file@percent }
+\newlabel{sec:dataset}{{4}{5}{The TurboSens Dataset}{section.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Core notation used in the main body; the full symbol table (probe, objective, and scenario specific symbols) is in Appendix\nobreakspace  {}\ref  {sec:notation_full}.\relax }}{5}{table.caption.12}\protected@file@percent }
+\newlabel{tab:notation}{{1}{5}{Core notation used in the main body; the full symbol table (probe, objective, and scenario specific symbols) is in Appendix~\ref {sec:notation_full}.\relax }{table.caption.12}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces OpenDeckSMR environment properties across scenarios. Episode length for TurboSens2 is the mean across the train split. The repair rate counts steps with any non-wash maintenance action; the wash rate counts engine-wash actions separately since TurboSens1 has no fouling channel to clean.\relax }}{5}{table.caption.13}\protected@file@percent }
+\newlabel{tab:odsmr_base}{{2}{5}{OpenDeckSMR environment properties across scenarios. Episode length for TurboSens2 is the mean across the train split. The repair rate counts steps with any non-wash maintenance action; the wash rate counts engine-wash actions separately since TurboSens1 has no fouling channel to clean.\relax }{table.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Datasets Coverage}{6}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Degradation and Maintenance Mechanisms}{6}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Heterogeneous archetypes.}{6}{section*.14}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Degradation archetypes in TurboSens1.\relax }}{6}{table.caption.15}\protected@file@percent }
+\newlabel{tab:archetypes}{{3}{6}{Degradation archetypes in TurboSens1.\relax }{table.caption.15}{}}
+\@writefile{toc}{\contentsline {paragraph}{Realistic maintenance.}{6}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Evaluation Framework}{7}{section.5}\protected@file@percent }
+\newlabel{sec:evaluation}{{5}{7}{Evaluation Framework}{section.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Task 1 Health Indicator state estimation.}{7}{section*.17}\protected@file@percent }
+\newlabel{sec:ood}{{5}{7}{Task 2 OOD probing}{section*.18}{}}
+\@writefile{toc}{\contentsline {paragraph}{Task 2 OOD probing.}{7}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Probe over single embedding versus full history.}{7}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Results}{7}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:results}{{5.1}{7}{Results}{subsection.5.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Encoder representation quality across two architectures and seven temporal configurations on TurboSens2. Mean HI Pearson on the in distribution \texttt  {test} split (blue) and the OOD \texttt  {test\_hard} split (orange); JEPA error bars are multi seed std ($n{=}5$ to $6$ valid seeds, one degenerate seed filtered); AR LSTM rows ($L_1$, $L_2$, $L_\mathrm  {big}$) are single seed. Inside JEPA the in distribution leader is $E_2$ and the OOD leader is $E_7$ at $0.394 \pm 0.025$, with the OOD trend monotone in stride at $H{=}16$. The scatter view in Appendix\nobreakspace  {}\ref  {sec:scatter} places each configuration relative to the identity line.\relax }}{8}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:s4_xarch}{{2}{8}{Encoder representation quality across two architectures and seven temporal configurations on TurboSens2. Mean HI Pearson on the in distribution \texttt {test} split (blue) and the OOD \texttt {test\_hard} split (orange); JEPA error bars are multi seed std ($n{=}5$ to $6$ valid seeds, one degenerate seed filtered); AR LSTM rows ($L_1$, $L_2$, $L_\mathrm {big}$) are single seed. Inside JEPA the in distribution leader is $E_2$ and the OOD leader is $E_7$ at $0.394 \pm 0.025$, with the OOD trend monotone in stride at $H{=}16$. The scatter view in Appendix~\ref {sec:scatter} places each configuration relative to the identity line.\relax }{figure.caption.21}{}}
+\@writefile{toc}{\contentsline {paragraph}{Stride $S$ monotonically improves OOD generalisation.}{8}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Per-component behaviour: Pearson and RMSE disagree on rankings.}{8}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Baseline anchors.}{8}{section*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Counterfactual fidelity.}{8}{section*.25}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Mean HI Pearson on \texttt  {test} and OOD \texttt  {test\_hard} (probe $\mathrm  {seq\_len}{=}1$). Seeds: valid seeds out of five or six (degenerate probe init seeds filtered). The supervised oracle and \texttt  {raw\_sensors} are diagnostic baselines (ceiling and floor); both have a near zero OOD gap.\relax }}{9}{table.caption.24}\protected@file@percent }
+\newlabel{tab:s4_main}{{4}{9}{Mean HI Pearson on \texttt {test} and OOD \texttt {test\_hard} (probe $\mathrm {seq\_len}{=}1$). Seeds: valid seeds out of five or six (degenerate probe init seeds filtered). The supervised oracle and \texttt {raw\_sensors} are diagnostic baselines (ceiling and floor); both have a near zero OOD gap.\relax }{table.caption.24}{}}
+\@writefile{toc}{\contentsline {paragraph}{More temporal context closes the OOD gap, across architectures.}{9}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Action conditioned counterfactuals (ongoing).}{9}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Discussion}{9}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:discussion}{{5.2}{9}{Discussion}{subsection.5.2}{}}
+\bibstyle{plainnat}
+\bibdata{references}
+\bibcite{Arias_Chao_Kulkarni_Goebel_Fink_2021}{{1}{2021}{{Arias~Chao et~al.}}{{Arias~Chao, Kulkarni, Goebel, and Fink}}}
+\bibcite{Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025}{{2}{2025}{{Assran et~al.}}{{Assran, Bardes, Fan, Garrido, Howes, Mojtaba, Komeili, Muckley, Rizvi, Roberts, Sinha, Zholus, Arnaud, Gejji, Martin, Hogan, Dugas, Bojanowski, Khalidov, Labatut, Massa, Szafraniec, Krishnakumar, Li, Ma, Chandar, Meier, LeCun, Rabbat, and Ballas}}}
+\bibcite{Balestriero_LeCun_2025}{{3}{2025}{{Balestriero and LeCun}}{{}}}
+\bibcite{bear1physion}{{4}{}{{Bear et~al.}}{{Bear, Wang, Mrowca, Binder, Tung, Pramod, Holdaway, Tao, Smith, Sun, et~al.}}}
+\bibcite{Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025}{{5}{2025}{{Bordes et~al.}}{{Bordes, Garrido, Kao, Williams, Rabbat, and Dupoux}}}
+\bibcite{calabrese2021predictive}{{6}{2021}{{Calabrese et~al.}}{{Calabrese, Regattieri, Bortolini, Gamberi, and Pilati}}}
+\bibcite{deng2024enhancing}{{7}{2024}{{Deng et~al.}}{{Deng, Nguyen, Gogu, Medjaher, and Morio}}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{10}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{10}{Conclusion}{section.6}{}}
+\bibcite{krishnan2022self}{{8}{2022}{{Krishnan et~al.}}{{Krishnan, Rajpurkar, and Topol}}}
+\bibcite{Maes_Lidec_Scieur_LeCun_Balestriero_2026}{{9}{2026}{{Maes et~al.}}{{Maes, Lidec, Scieur, LeCun, and Balestriero}}}
+\bibcite{Maulana_Starr_Ompusunggu_2023}{{10}{2023}{{Maulana et~al.}}{{Maulana, Starr, and Ompusunggu}}}
+\bibcite{okada2021dreaming}{{11}{2021}{{Okada and Taniguchi}}{{}}}
+\bibcite{okada2022dreamingv2}{{12}{2022}{{Okada and Taniguchi}}{{}}}
+\bibcite{psaropoulos_2025_17804895}{{13}{2025}{{Psaropoulos et~al.}}{{Psaropoulos, Gkoutzamanis, Kalfas, Giannakakis, Razakarivony, Thepaut, and Vu}}}
+\bibcite{Ramasso_Saxena}{{14}{2015}{{Ramasso and Saxena}}{{}}}
+\bibcite{riochet2018intphys}{{15}{2018}{{Riochet et~al.}}{{Riochet, Castro, Bernard, Lerer, Fergus, Izard, and Dupoux}}}
+\bibcite{Saxena_Goebel_Simon_Eklund_2008}{{16}{2008}{{Saxena et~al.}}{{Saxena, Goebel, Simon, and Eklund}}}
+\bibcite{todorov2012mujoco}{{17}{2012}{{Todorov et~al.}}{{Todorov, Erez, and Tassa}}}
+\bibcite{towers2024gymnasium}{{18}{2024}{{Towers et~al.}}{{Towers, Kwiatkowski, Terry, Balis, De~Cola, Deleu, Goul{\~a}o, Kallinteris, Krimmel, KG, et~al.}}}
+\bibcite{wang2020data}{{19}{2020}{{Wang et~al.}}{{Wang, Qiao, Zhang, Yang, and Snoussi}}}
+\bibcite{yiclevrer}{{20}{}{{Yi et~al.}}{{Yi, Gan, Li, Kohli, Wu, Torralba, and Tenenbaum}}}
+\@writefile{toc}{\setcounter {tocdepth}{2}}
+\@input{appendix.aux}
+\gdef \@abspage@last{46}

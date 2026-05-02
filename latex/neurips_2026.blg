@@ -1,0 +1,69 @@
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: neurips_2026.aux
+The style file: plainnat.bst
+A level-1 auxiliary file: appendix.aux
+Database file #1: references.bib
+Warning--string name "june" is undefined
+--line 63 of file references.bib
+Warning--entry type for "psaropoulos_2025_17804895" isn't style-file defined
+--line 138 of file references.bib
+Warning--string name "june" is undefined
+--line 204 of file references.bib
+Warning--I didn't find a database entry for "dosovitskiy2021image"
+Warning--I didn't find a database entry for "xiong2020layer"
+Warning--empty journal in Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025
+Warning--there's a number but no volume in Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025
+Warning--empty journal in Balestriero_LeCun_2025
+Warning--there's a number but no volume in Balestriero_LeCun_2025
+Warning--empty year in bear1physion
+Warning--empty year in bear1physion
+Warning--empty journal in Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025
+Warning--there's a number but no volume in Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025
+Warning--empty journal in Maes_Lidec_Scieur_LeCun_Balestriero_2026
+Warning--there's a number but no volume in Maes_Lidec_Scieur_LeCun_Balestriero_2026
+Warning--empty publisher in Ramasso_Saxena
+Warning--empty year in yiclevrer
+Warning--empty year in yiclevrer
+You've used 20 entries,
+            2773 wiz_defined-function locations,
+            742 strings with 11264 characters,
+and the built_in function-call counts, 13205 in all, are:
+= -- 1097
+> -- 1174
+< -- 8
++ -- 392
+- -- 372
+* -- 1235
+:= -- 2104
+add.period$ -- 87
+call.type$ -- 20
+change.case$ -- 181
+chr.to.int$ -- 20
+cite$ -- 53
+duplicate$ -- 465
+empty$ -- 783
+format.name$ -- 400
+if$ -- 2691
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 20
+newline$ -- 131
+num.names$ -- 80
+pop$ -- 370
+preamble$ -- 1
+purify$ -- 162
+quote$ -- 0
+skip$ -- 407
+stack$ -- 0
+substring$ -- 266
+swap$ -- 69
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 215
+warning$ -- 13
+while$ -- 78
+width$ -- 0
+write$ -- 305
+(There were 18 warnings)

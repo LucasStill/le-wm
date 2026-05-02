@@ -1,0 +1,223 @@
+% =============================================================================
+%  ECMLPKDD_DatasetExps.tex
+%
+%  Holding file for experimental content that was produced on a previous
+%  dataset release (the ECMLPKDD-era TurboSens1 and an interim
+%  scenario-3 generation that is no longer part of the released benchmark).
+%
+%  These paragraphs were lifted out of the main NeurIPS 2026 submission on
+%  2026-04-26 to keep the paper focused on TurboSens3 and TurboSens4 only.
+%  Numbers, component labels, and figures here refer to data that no longer
+%  ships with the repository, so they should not be re-introduced into the
+%  main body without re-running the corresponding probes on the current
+%  TurboSens releases.
+%
+%  Sections preserved verbatim:
+%    A.  Synthetic OOD scenario descriptions (formerly main-body §Task 4)
+%    B.  §Results subsection (Tasks 1, 2, 2bis, 3, 4 prose)
+%    C.  Old Task 1 HI estimation table (tab:task1)
+%    D.  Old Task 3 forecasting table (tab:task3)
+%    E.  Older paper_results_section.tex draft with the (w, H) probe sweep
+% =============================================================================
+
+\section*{A. Synthetic OOD scenario descriptions (legacy)}
+
+The three paragraphs below described the synthetic OOD construction that the
+older experimental pipeline used. The current paper instead evaluates OOD
+generalisation on the held-out \texttt{test\_hard} split of TurboSens4
+(different episode seeds, drawn from the same region prior with a higher
+extreme-degradation rate). The synthetic constructions below are kept for
+reference only.
+
+\paragraph{OOD scenario 1: premature maintenance.}
+A maintenance action (HI restoration) is triggered while the engine health
+is still near nominal, a configuration never present in the training set
+where maintenance always follows significant degradation.
+The predictor, calibrated to slow monotonic drift, expects continuation of
+near-nominal dynamics; the sudden restoration jump produces a spike in
+$\mathcal{S}$ localised to the event timestep.
+
+\paragraph{OOD scenario 2: accelerated degradation.}
+Degradation-rate parameters are set to values outside the training range
+(multiplied by factors of $3\times$ and $5\times$).
+The latent trajectory traverses the learned degradation manifold at an
+anomalous speed; the predictor underestimates the per-step displacement,
+causing $\mathcal{S}$ to grow proportionally to the rate multiplier.
+
+\paragraph{OOD scenario 3: correlated component failure.}
+Two turbofan components whose degradation is statistically independent in
+the training distribution (fan and turbine) are forced to degrade
+simultaneously at elevated rate.
+Even if each component's individual rate lies within the training range,
+the joint dynamics occupy a low-density region of the latent space,
+detectable via the Mahalanobis distance
+$d_M(\mathbf{z}_t) = \sqrt{(\mathbf{z}_t - \boldsymbol{\mu})^\top
+                     \boldsymbol{\Sigma}^{-1}
+                     (\mathbf{z}_t - \boldsymbol{\mu})}$
+computed from the training embedding distribution.
+
+
+% -----------------------------------------------------------------------------
+\section*{B. Legacy main-body §Results subsection}
+
+The four paragraphs below report HI-state estimation, velocity, forecasting
+and OOD detection on a JEPA model trained on a previous scenario release
+that is no longer in the repository. The mean $R^2$ values
+($\bar R^2 = 0.83$ at $w{=}1$, $0.85$ at $w{=}10$) and the $\delta(\tau)$
+peak around $\tau \approx 6$ are from that older snapshot. They predate
+the dragon / OT campaign on TurboSens4 reported in the current main body.
+
+\paragraph{Task 1: Health-Indicator State Estimation.}
+Table~\ref{tab:legacy_task1} reports per-component $R^2$, RMSE, and Pearson-$r$ for the HI state estimation probe trained on frozen embeddings.
+The snapshot encoder ($w{=}1$) achieves a mean $R^2$ of $0.834$ across all ten turbofan health-indicator dimensions, with the single-embedding probe already recovering high-amplitude components nearly perfectly ($R^2 = 0.956$ for \texttt{H/Eff}, $R^2 = 0.935$ for \texttt{Fan/Wc}).
+The temporally aggregated encoder ($w{=}10$) improves the mean to $0.852$, with gains concentrated in low-amplitude, slowly varying components: \texttt{Bst/Wc} improves by $+0.10$ and \texttt{TrbH/Eff} by $+0.06$, while high-amplitude components remain essentially unchanged.
+This pattern is consistent with the TemporalAggregator acting as a noise-smoothing mechanism: components whose instantaneous sensor signal is weak benefit from averaging over a short trajectory window, whereas already-discriminative components saturate regardless. The lowest-performing dimension, \texttt{TrbL/Wc} ($R^2 \approx 0.71$), corresponds to a slow, low-amplitude degradation mode that is hard to separate from sensor noise at any window size.
+
+\paragraph{Task 2: Degradation Velocity Estimation.}
+The velocity probe (predicting $\Delta\mathbf{s}_t = \mathbf{s}_t - \mathbf{s}_{t-1}$ from a single embedding) yields $R^2 \approx -0.02$ for both model variants, with the probe converging to predicting the mean (near zero) within 21 epochs. This result is expected and informative.
+The per-step degradation increment is approximately $2.3 \times 10^{-5}$ in normalised units, five orders of magnitude smaller than the HI amplitude, with variance so low that the RMSE of a constant-mean predictor equals the empirical standard deviation.
+The JEPA objective only requires predicting the \emph{position} of the next latent state, not the velocity of transition; accordingly, the encoder has no gradient pressure to encode degradation rate in its geometry. We evaluate the same probe with trajectory windows of $\mathrm{seq\_len} \in \{1, 10, 50\}$:
+a probe attending over a window of consecutive embeddings can compute a finite-difference estimate of the local slope, which is the natural
+information source for velocity estimation. Whether this suffices to push $R^2$ into positive territory is an open question we report in Table~\ref{tab:legacy_task3}.
+The maintenance alarm (Task~2b), scored by the predicted $\|\Delta\hat{\mathbf{s}}_t\|_2$, yields AUC$=0.50$ at all horizons when the velocity probe is constant, confirming that snapshot embeddings carry no direct alarm signal.
+
+\paragraph{Task 2 (bis): Degradation Archetype Classification.}
+Simply from some sequence, predict the current degradation archetype.
+
+\paragraph{Task 3: Latent Forecasting and Action Divergence.}
+Figure~\ref{fig:legacy_task3} reports the mean HI RMSE of the zero-action autoregressive rollout as a function of forecast horizon $\tau$. We distinguish \emph{clean} trajectories (no maintenance event in $(t, t{+}\tau]$) from \emph{event} trajectories (at least one maintenance event), and define the action-divergence gap $\delta(\tau) = \mathrm{RMSE}_\mathrm{event}(\tau) - \mathrm{RMSE}_\mathrm{clean}(\tau)$.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/fig_task3_curves.pdf}
+    \caption{Latent forecasting comparison of window sizes for le-wm over latent forecasting (Task 3). Legacy figure on a previous scenario release.}
+    \label{fig:legacy_task3}
+\end{figure}
+
+Three findings stand out. First, the one-step clean RMSE of the world model matches the direct encoder RMSE from Task~1 to within numerical precision: $0.00199$ vs.\ $0.00198$ for $w{=}1$, and $0.00186$ vs.\ $0.00187$ for $w{=}10$.
+The predictor adds negligible error at $\tau{=}1$ for smooth degradation trajectories; the encoder representation is the performance bottleneck, not the dynamics model.
+
+Second, the $w{=}10$ model consistently outperforms $w{=}1$ on clean trajectories at all horizons, with RMSE at $\tau{=}50$ of $0.00480$ versus $0.00572$ (a $16\%$ reduction). Temporal aggregation at the encoder level propagates useful trajectory direction information into the initial latent state, giving the predictor a better-informed context for multi-step rollout.
+
+Third, the action-divergence gap $\delta(\tau)$ peaks at $\tau \approx 6$ (gap $\approx +0.0031$ for $w{=}1$, $+0.0029$ for $w{=}10$) and decays monotonically toward zero by $\tau{=}50$. The peak reflects the average proximity of a sampled starting frame to the next maintenance event in the dataset. The decay is a statistical dilution effect: at large $\tau$, the event set is dominated by trajectories whose maintenance event falls late in the window, contributing minimal extra error at the evaluated prediction target. The peak gap ($\approx 0.003$) is larger than the per-step degradation drift at any horizon, establishing maintenance transitions as the dominant source of forecast error. This motivates action-conditioned world modelling as a direct and quantified next step: closing the gap would require the predictor to condition on the binary maintenance signal, which is precisely the information discarded in the zero-action baseline.
+
+We evaluate three unsupervised OOD detectors on frozen JEPA representations. Distribution-based methods (Mahalanobis, k-NN) achieve moderate AUC (0.69-0.77), demonstrating that JEPA embeddings carry distributional information about the training regime. Notably, prediction error (Surprise) is an unreliable OOD signal — OOD trajectories are often more predictable than training ones because fast monotonic degradation is locally smooth. This motivates future work on representations explicitly trained with anomaly-sensitivity objectives.
+
+
+% -----------------------------------------------------------------------------
+\section*{C. Legacy Task 1 table}
+
+%% ── Table 1: Task 1 HI State Estimation ─────────────────────────────────────
+\begin{table}[h]
+\centering
+\caption{%
+  Legacy Task~1: Health-indicator state estimation.
+  A TransformerProbe is trained on frozen embeddings to predict
+  each of the ten turbofan HI dimensions.
+  Results are shown for the snapshot encoder ($w{=}1$) and the
+  temporally aggregated encoder ($w{=}10$). Numbers are from a
+  previous scenario release.
+}
+\label{tab:legacy_task1}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{3}{c}{$w = 1$} & \multicolumn{3}{c}{$w = 10$} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Component & $R^2$ & RMSE & Pearson & $R^2$ & RMSE & Pearson \\
+\midrule
+Bst/Eff    & 0.847 & 0.00185 & 0.926 & 0.850 & 0.00183 & 0.930 \\
+Bst/Wc     & 0.762 & 0.00233 & 0.883 & 0.865 & 0.00176 & 0.939 \\
+Fan/Eff    & 0.782 & 0.00217 & 0.888 & 0.785 & 0.00216 & 0.891 \\
+Fan/Wc     & 0.935 & 0.00107 & 0.969 & 0.954 & 0.00090 & 0.979 \\
+H/Eff      & 0.956 & 0.00162 & 0.978 & 0.957 & 0.00159 & 0.978 \\
+H/Wc       & 0.863 & 0.00285 & 0.930 & 0.874 & 0.00274 & 0.935 \\
+TrbH/Eff   & 0.792 & 0.00202 & 0.890 & 0.850 & 0.00172 & 0.924 \\
+TrbH/Wc    & 0.869 & 0.00145 & 0.933 & 0.855 & 0.00152 & 0.926 \\
+TrbL/Eff   & 0.819 & 0.00195 & 0.906 & 0.818 & 0.00196 & 0.906 \\
+TrbL/Wc    & 0.713 & 0.00249 & 0.845 & 0.714 & 0.00248 & 0.846 \\
+\midrule
+\textbf{Mean} & \textbf{0.834} & \textbf{0.00198} & \textbf{0.915}
+              & \textbf{0.852} & \textbf{0.00187} & \textbf{0.925} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% -----------------------------------------------------------------------------
+\section*{D. Legacy Task 3 table}
+
+%% ── Table 2: Task 3 Summary ──────────────────────────────────────────────────
+\begin{table}[h]
+\centering
+\caption{%
+  Legacy Task~3: Latent forecasting RMSE at selected horizons $\tau$.
+  \emph{Clean}: no maintenance event in $(t, t{+}\tau]$.
+  \emph{Event}: at least one maintenance event in $(t, t{+}\tau]$.
+  \emph{Gap}: $\delta(\tau) = \mathrm{RMSE}_\mathrm{event} -
+  \mathrm{RMSE}_\mathrm{clean}$, quantifying the action-divergence cost of the zero-action forecaster. All values are mean HI RMSE $\times 10^{3}$.
+  Numbers are from a previous scenario release.
+}
+\label{tab:legacy_task3}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{r ccc ccc}
+\toprule
+& \multicolumn{3}{c}{$w = 1$} & \multicolumn{3}{c}{$w = 10$} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+$\tau$ & Clean & Event & Gap & Clean & Event & Gap \\
+\midrule
+ 1  & 1.99 & 4.52 & $+$2.54 & 1.86 & 4.28 & $+$2.42 \\
+ 5  & 2.07 & 5.10 & $+$3.04 & 1.91 & 4.75 & $+$2.83 \\
+10  & 2.22 & 5.04 & $+$2.83 & 2.03 & 4.64 & $+$2.61 \\
+20  & 3.04 & 5.03 & $+$1.99 & 2.57 & 4.43 & $+$1.86 \\
+30  & 4.21 & 5.26 & $+$1.05 & 3.47 & 4.49 & $+$1.01 \\
+50  & 5.72 & 5.89 & $+$0.17 & 4.80 & 4.75 & $-$0.05 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% -----------------------------------------------------------------------------
+\section*{E. Older paper\_results\_section.tex draft (full $w \times H$ sweep)}
+
+The block below was previously held in \texttt{paper\_results\_section.tex}
+at the repo root. It reports a six-variant probe sweep across two
+architectures (JEPA, AR-LSTM) at three encoder window sizes
+$w \in \{1, 50\}$ and three predictor history lengths
+$H \in \{1, 50, 100\}$. The numbers refer to the same legacy scenario
+release as section~B above.
+
+\begin{table}[h]
+\centering
+\caption{%
+  \textbf{Legacy Task 1 — HI State Estimation, $w \times H$ sweep.}
+  Frozen encoder probe trained on embeddings from six model variants.
+  Means are macro-averaged over the ten HI dimensions.
+  Best result per metric in \textbf{bold}.
+}
+\label{tab:legacy_task1_sweep}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llcc rrr cc}
+\toprule
+\multirow{2}{*}{Architecture} & \multirow{2}{*}{Config} &
+  \multirow{2}{*}{$w$} & \multirow{2}{*}{$H$} &
+  \multicolumn{3}{c}{Mean (all 10 dims)} &
+  \multicolumn{2}{c}{Hardest dims} \\
+\cmidrule(lr){5-7}\cmidrule(lr){8-9}
+ & & & & R$^2$ & RMSE\textsuperscript{\dag} & Pearson-$r$ & TrbH/Eff & TrbL/Wc \\
+\midrule
+AR-LSTM & $w{=}1,H{=}1$  & 1 &  1 & \textbf{0.792} & 2.23 & \textbf{0.892} & 0.782 & 0.687 \\
+AR-LSTM & $w{=}1,H{=}50$ & 1 & 50 & 0.776          & 2.31 & 0.887          & 0.762 & 0.661 \\
+\midrule
+JEPA    & $w{=}1,H{=}50$ & 1 &  50 & 0.763          & 2.42 & 0.878          & 0.760 & 0.683 \\
+JEPA    & $w{=}1,H{=}100$& 1 & 100 & 0.785          & 2.26 & 0.891          & 0.769 & 0.691 \\
+JEPA    & $w{=}50,H{=}1$ & 50&   1 & 0.709          & 2.13 & 0.857          & 0.643 & 0.532 \\
+JEPA    & $w{=}50,H{=}50$& 50&  50 & 0.736          & \textbf{2.03} & 0.874 & 0.634 & 0.622 \\
+\bottomrule
+\end{tabular}\\
+\textsuperscript{\dag}RMSE in units of normalised HI ($\times 10^{-3}$).
+\end{table}
+
+% -----------------------------------------------------------------------------
+% End of file. Anything below this line is for the maintainer's notes.
+% -----------------------------------------------------------------------------

@@ -329,8 +329,9 @@ class HIProbeCallback(pl.Callback):
                     "HDF5 file has neither 'pixels' nor 'observation.sensors' key."
                 )
             pixels = f[obs_key][:]
-            # For sensor encoder: flatten spatial dims → (N, n_sensors)
-            if self.encoder_type == "sensor" and pixels.ndim > 2:
+            # For sensor / rssm encoders: flatten spatial dims → (N, n_sensors).
+            # Both flatten (N, n_channels, n_contexts) → (N, n_channels*n_contexts).
+            if self.encoder_type in ("sensor", "rssm") and pixels.ndim > 2:
                 pixels = pixels.reshape(len(pixels), -1)
             logging.info(f"[HIProbe] Loading observations from key '{obs_key}' "
                          f"(encoder_type={self.encoder_type}, shape={pixels.shape})")
@@ -482,7 +483,9 @@ class HIProbeCallback(pl.Callback):
         """
         device = next(pl_module.model.parameters()).device
         w = self.obs_window_size
-        is_sensor = (self.encoder_type == "sensor")
+        # RSSM uses the sensor input pipeline (flat n_sensors-dim vectors)
+        # but its encode() runs the dynamics under the hood.
+        is_sensor = (self.encoder_type in ("sensor", "rssm"))
 
         if not is_sensor:
             mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)

@@ -1,0 +1,115 @@
+# DreamerV3 RSSM baseline on TurboSens2 (scenario 4 in code).
+#
+# Mirrors baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml as much as
+# possible so reviewers can diff the two configs and see exactly where the
+# Dreamer-specific knobs live.
+#
+# Effective batch size, learning rate, weight decay, gradient clip and
+# scheduler are matched to the AR-LSTM config so the comparison is fair.
+
+defaults:
+  - _self_
+
+output_model_name: rssm_s4
+subdir: ${hydra:job.id}
+
+num_workers: 6
+train_split: 0.9
+seed: 3072
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+# Dreamer trains on contiguous chunks of length `num_steps`. This is the
+# *only* knob controlling the temporal context the model sees; there is no
+# JEPA-style strided history / num_preds machinery.
+data:
+  dataset:
+    num_steps: 64                       # contiguous chunk length per sample
+    frameskip: 1
+    name: scenario4_train_lewm
+    cache_dir: /home/lucas/.stable_worldmodel
+    keys_to_load:
+      - pixels
+      - action
+    keys_to_cache:
+      - action
+      - pixels                          # ~4.9 GB; avoids LZF chunk thrash
+
+# ── Encoder / dynamics / decoder ──────────────────────────────────────────────
+n_sensors: 176                          # 11 channels x 16 contexts
+num_actions: 7                          # 0=do_nothing .. 6=engine_wash
+
+rssm:
+  embed_size:     512                   # encoder MLP output dim
+  encoder_hidden: 512
+  decoder_hidden: 512
+  encoder_layers: 2
+  decoder_layers: 2
+  symlog_inputs:  true                  # V3 default
+
+  # Stochastic latent: 32 cats x 32 dims => 1024-dim flat (V3 default).
+  stoch:    32
+  discrete: 32
+  deter:    512
+  hidden:   512
+  unimix_ratio: 0.01
+  norm: true
+
+# ── KL hyperparameters (V3 defaults) ──────────────────────────────────────────
+loss:
+  kl_free:   1.0                        # free bits (per timestep)
+  dyn_scale: 0.5                        # weight on dyn KL (post.detach() vs prior)
+  rep_scale: 0.1                        # weight on rep KL (post vs prior.detach())
+
+# ── Training ──────────────────────────────────────────────────────────────────
+trainer:
+  max_epochs: 10                        # matches JEPA / AR-LSTM budget
+  devices: auto
+  accelerator: gpu
+  precision: bf16-mixed
+  gradient_clip_val: 0.3
+
+loader:
+  batch_size: 16                        # 16 x 64 = 1024 timesteps/batch
+                                        # Keep effective batch ~512 sequences via
+                                        # accumulate_grad_batches if you need to
+                                        # match AR-LSTM exactly.
+  num_workers: ${num_workers}
+  persistent_workers: True
+  prefetch_factor: 3
+  pin_memory: True
+
+optimizer:
+  type: AdamW
+  lr: 1e-4                              # V3 model_lr default; AR-LSTM uses 7e-5
+                                        # — RSSM tends to need a slightly higher
+                                        # lr for the GRU to wake up. Tune.
+  weight_decay: 1e-3
+
+# ── WandB ─────────────────────────────────────────────────────────────────────
+wandb:
+  enabled: True
+  config:
+    entity: thil-ecole-polytechnique
+    project: turbofan_S4
+    name: ${output_model_name}
+    resume: never
+    log_model: False
+
+# ── HI probe (identical wiring to AR-LSTM / JEPA scenario 4) ─────────────────
+hi_probe:
+  enabled: false                        # override via CLI
+  eval_interval: 5
+  n_probe_epochs: 150
+  probe_lr: 1e-3
+  probe_patience: 20
+  d_model: 128
+  nhead: 4
+  num_layers: 3
+  probe_dropout: 0.1
+  probe_batch_size: 256
+  probe_seq_len: 1
+  n_subsample: 200000
+  enc_batch_size: 2048
+  rul_max_horizon: 300
+
+img_size: 28                            # unused by RSSM; kept for HIProbeCallback compat
