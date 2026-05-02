@@ -94,3 +94,19 @@ Keep **Open questions** current so the user can answer them on reconnect.
   experiment with probe-first + OOM fallback. All runs keep P=4 for comparability.
 - Launched orchestrator in tmux `campaign` — will auto-kick-off E2 when E1 finishes.
 - Monitor `bm27v1cyh` on E1 still active.
+
+### 2026-05-03 ~04:30 UTC — RSSM (DreamerV3) run found stuck; killed and relaunched
+- Inherited a `train_rssm.py` run from previous session (PID 2332842, started 2026-05-02 21:18
+  local). Diagnosis:
+  - Process at 100% CPU and 1.4 GB GPU (40% util) but **no log writes for 7+ hours**.
+  - `outputs/.../train_rssm.log` last touched 21:18:34 (after HIProbe init).
+  - `s4_rssm_20260502_2118.log` (tee'd) last touched 21:18:45 (after env_info callback).
+  - `wandb/.../run-*.wandb` stopped at 21:27, `wandb/.../files/output.log` at 21:23.
+  - `wandb/debug-cli.lthil.log` ballooned to **1.27 GB** by 21:28 — strongly suggests a
+    runaway wandb-core write loop / deadlock during training startup.
+- Killed: `tmux kill-session -t s4_rssm`, `pkill -9 -f train_rssm`, `pkill -9 wandb-core`.
+  GPU returned to 0%/2 MiB.
+- Relaunched via `train_rssm_scenario4_orailix.sh` in tmux `s4_rssm`, with
+  `STABLEWM_HOME=/home/lthil/.stable_worldmodel` and default `WANDB_MODE=offline`.
+  Same hyperparams: bs=16, T=64, stoch=32x32, deter=512, hi_probe=on, max_epochs=10.
+- Monitoring for first iteration / sanity-check output to confirm it's actually stepping.
