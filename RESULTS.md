@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-05-02 22:14 UTC_
+_Last regenerated: 2026-05-02 22:24 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -22,13 +22,14 @@ Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 ### OrailixTower (AR-LSTM, RTX A6000)
 
 
-- **Nothing.** GPU idle. Eval_sweep done, results landed, results.md
-  updated under "Calibrated eval_sweep task-1" section. Open ask to
-  dragon in my log.md for the next task. Standing by.
-- **Tmux `eval_sweep`** — still alive (post-run shell only).
-- **Tmux `bigger_probe`** — still alive (post-run shell only).
-- **Tmux `s4_arlstm_L2`** — still alive (post-training shell only).
+- **Tmux `s4_arlstm_Lbig`** — overnight run: W=4, H=32, S=1, P=4
+  (TemporalAggregator engaged for first time in sweep). bs=256 accum=2,
+  bf16-mixed, compile_encoder=true, 10 epochs. Started 19:41 UTC. Healthy:
+  GPU 99 %, 13.99 GB VRAM, 72 trainable params, first backward ✓.
+  ETA ~09:30 UTC tomorrow. Log: `logs/s4_arlstm_Lbig_20260426_2141.log`.
 - **Tmux `wandb_sync`** — offline→cloud sync daemon, still ticking.
+- Other tmux sessions are zombie post-run shells (bigger_probe,
+  eval_sweep, sanity, s4_arlstm_L2) — keep-alive only.
 
 
 ---
@@ -193,6 +194,125 @@ total-param counts alongside metrics in the paper table.
 - L2: `5iu3jbtt` (offline; sync_wandb daemon will push)
 - L3: pending
 - L4: pending
+
+## Per-archetype HI Pearson on L1 (T3)
+
+`baselines/ar_lstm/per_archetype_diag.py`. L1's frozen encoder, eval_sweep
+HI-probe pipeline (~770K probe-train windows), split test predictions by
+the 4 scenario-4 archetypes (A_compressor, B_fan_booster, C_turbine,
+D_balanced).
+
+### TEST set — single-seed (subject to same noise caveat as T2)
+
+| archetype     | n windows (sl=1) | sl=1 Pearson | sl=10 Pearson |
+|---------------|-----------------:|-------------:|--------------:|
+| A_compressor  | 31,224 | **0.533** | 0.531 |
+| B_fan_booster | **0**  | — (none in test set) | — |
+| C_turbine     | 23,432 | 0.236 | 0.267 |
+| D_balanced    | 29,791 | 0.360 | 0.417 |
+| **L1 aggregate (ref)** | 84,447 | 0.564 | 0.510 |
+
+### Findings
+
+1. **Regular test contains zero B_fan_booster windows.** All B episodes
+   are routed to test_hard. This is a real **dataset-design** finding
+   relevant for the dataset paper: the test_hard split is partly defined
+   by B as the held-out OOD archetype, not just by perturbed weather /
+   degradation profiles. (Test_hard run pending — will populate the full
+   4×Pearson matrix once GPU is free.)
+
+2. **>2× spread between archetypes in distribution.** A_compressor (0.53)
+   is much easier to predict HI for than C_turbine (0.24); D_balanced sits
+   in the middle (0.36). The aggregate L1 Pearson 0.564 is mostly carried
+   by A_compressor (~37 % of test windows, easiest archetype).
+
+3. **sl=10 windowing helps D_balanced and C_turbine but NOT A_compressor.**
+   A is at saturation already — extra sequence context can't help. C and
+   D both gain ~0.03–0.06 Pearson from sl=1 → sl=10. So "sequence context
+   helps" is archetype-specific, not universal.
+
+### Implications for the paper
+
+The dataset's **per-archetype heterogeneity** is a feature worth reporting:
+benchmark numbers should be quoted both aggregate AND per-archetype to
+avoid a single archetype dominating the headline. C_turbine is the
+hardest of the three in-distribution archetypes — likely the right
+"benchmark difficulty" reference point.
+
+CSV: `logs/per_archetype_results.csv`. Test_hard pending.
+
+## Sanity / lower-bound baselines (T2) — single-seed, **NOISY**
+
+⚠️ **All numbers below are single-seed point estimates and are highly
+unstable.** `eval_sweep.train_probe` does NOT seed the probe-head init or
+the DataLoader shuffle. Two back-to-back runs of the *same* config give
+swings of up to ~0.5 in mean Pearson (raw_sensors @ sl=1 test: smoke 0.593
+vs full-run nan, same code path, different probe-init seed). All single-
+seed Pearson numbers in this document — including the calibrated L1/L2
+rows below — should be treated as ±0.2 minimum until we re-run with
+multiple seeds.
+
+`baselines/ar_lstm/sanity_baselines.py` — runs the eval_sweep task-1
+pipeline (~770K probe-train windows, default TransformerProbe head) on
+two encoder-free / random baselines:
+
+- **raw_sensors**: skip the encoder. Probe input is the raw 176-dim
+  sensor vector.
+- **random_encoder**: build JEPA + LSTMPredictor via `build_ar_lstm`,
+  keep at random init (no checkpoint), encode normally → 64-dim
+  embeddings → probe.
+
+### Single-seed numbers (caveat: noisy)
+
+|                 | sl=1   | sl=10 | sl=50 |
+|-----------------|-------:|------:|------:|
+| **TEST**        |        |       |       |
+| raw_sensors     | nan¹   | nan¹  | 0.373 |
+| random_encoder  | 0.157  | **0.629** | 0.247 |
+| L1 trained (ref)| 0.564  | 0.510 | 0.549 |
+| L2 trained (ref)| 0.495  | 0.533 | 0.504 |
+| **TEST_HARD**   |        |       |       |
+| raw_sensors     | 0.474  | 0.468 | **0.808** |
+| random_encoder  | 0.002  | 0.360 | nan¹  |
+| L1 trained (ref)| 0.325  | 0.378 | 0.241 |
+| L2 trained (ref)| -0.014 | 0.330 | 0.376 |
+
+¹ `nan` when probe predictions have zero variance on a column → degenerate
+local minimum. Different probe-init seed avoids it.
+
+### What stands out even through the noise
+
+1. **random_encoder @ sl=10 test = 0.629** beats every trained encoder at
+   the same sl (L1 0.510, L2 0.533). A random-init JEPA + 10-frame probe
+   windows extracts more HI signal than the trained encoders. Strong
+   suggestion that **trained-encoder benefit is small or zero on this
+   benchmark task**.
+2. **raw_sensors @ sl=50 test_hard = 0.808** — by far the best OOD number
+   we've seen. Direct readout from raw sensors with sequence context
+   generalises better than any encoder pipeline.
+3. **raw_sensors @ sl=1 test smoke = 0.593** (single sample, but matches
+   in spirit) is *higher* than L1's 0.564 and E1's 0.563. Encoders may
+   be losing HI-relevant signal in service of the JEPA / AR-rollout
+   objective.
+
+### Implication for the dataset paper
+
+If these patterns hold under multi-seed evaluation, the dataset-paper
+headline becomes: **"This benchmark task is hard enough that trained
+encoders do not outperform raw-feature linear-on-transformer probes."**
+That's a positive finding for a dataset paper — it positions the dataset
+as a real challenge rather than something where pretraining trivially
+wins.
+
+### NEXT STEP STRONGLY RECOMMENDED — multi-seed re-run
+
+Run each baseline (raw_sensors, random_encoder, L1, L2) × {test, test_hard}
+× {sl=1, 10, 50} with at least **3 seeds** and report mean ± std. Cost
+estimate: ~1.5 h GPU. Without this, none of the T2 / calibrated numbers
+are paper-grade.
+
+Files: `logs/sanity_baselines_results.csv` (per-component), 
+`logs/sanity_baselines_20260426_1652.log` (full run log).
 
 ## Calibrated eval_sweep task-1 — L1 + L2 (the "true Pearson" rows)
 
@@ -407,16 +527,16 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 ### OrailixTower log
 ```
-       paper row. Standing by until you share the spec.
+  to finish. When chain lands (~19:30Z) it'll run:
+    T7-A: counterfactual fidelity on L1 (30 eps × 7 actions × 3 fracs,
+          horizon=200)
+    T7-B: counterfactual fidelity on L_big (same protocol, history=32)
+    T8:   per-archetype on L_big × test_hard (~15 min)
+  Total ~75-95 min after the previous chain finishes. JSONs land in
+  eval_results/counterfactual/results_{L1,Lbig}.json + summary.json.
 
-   (d) Larger-S follow-up Lucas mentioned (S>5)? Define on dragon's side?
-
-   (e) Help OOD eval pipeline you ran on E1 — would running task-2
-       (delta-HI / forecasting) on L1+L2 add anything for the paper, or
-       is task 1 alone enough for the headline rows?
-
-  Tell me your priority and I'll go. Also feel free to drop my open
-  questions (E2 calibrated Pearson, csv-fix yes/no) when you next sync.
+  No additional dataset issues — sensors.h5 has ep_meta/seed +
+  ctx_fill_seed, EpisodeReplayer instantiates cleanly here.
 ```
 
 ---
