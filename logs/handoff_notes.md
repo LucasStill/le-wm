@@ -11,16 +11,20 @@ Keep **Open questions** current so the user can answer them on reconnect.
 
 ## Current state
 
-- **E1 (active):** 10-epoch H=16 training — tmux `s4`, log `logs/s4_real_20260424_1709.log`.
-  Config: bs=512 nw=4 bf16 H=16 S=1 P=4. Epoch 8 done at 21:14. 1 epoch to go. Finish ~21:41 UTC.
-- **Campaign queued:** tmux `campaign` is waiting for `s4` to end, then auto-runs E2→E3→E4.
-  See `logs/experiment_plan.md` for the design and `run_experiments.sh` for the orchestrator.
-  Per-run logs land in `logs/campaign/*.log`, status files in `logs/campaign/*.status`.
-- **E2 next:** H=32 S=1 P=4, bs=256 + accum=2 (effective bs=512 preserved). Probe first, then 10 epochs.
-- **E3 then E4:** H=16 S=5 (~4.5h) and H=32 S=5 (~8-9h). P=4 fixed across all runs for comparability.
-  Stride bumped from 2 → 5 at user request to probe longer temporal spans (episodes ~14k frames).
-- Hi_probe fires at epoch 5 (interval) and epoch 9 (final) for every run — `hi_probe.py` patch applies.
-- See `logs/session_2026-04-24_changes.md` for a full explainer of earlier changes.
+- **RSSM/DreamerV3 baseline (active)** — tmux `s4_rssm`, PID 2335665, started 2026-05-02 21:30 UTC.
+  Launcher: `train_rssm_scenario4_orailix.sh` (default config, no env-var overrides).
+  Config: bs=16 nw=8 T=64 stoch=32x32 deter=512, hi_probe=on (eval_interval=5, +final epoch),
+  max_epochs=10, bf16-mixed, WANDB_MODE=offline. Tee log: `logs/s4_rssm_20260502_2130.log`.
+  Wandb run: `wandb/offline-run-20260502_213013-q8y7e7qx`.
+- **Live status (21:52 UTC):** healthy and stepping. global_step=10899, epoch=0,
+  loss=0.60 (recon=0.003, kl=0.6, dyn=1.0, rep=1.0), runtime=15.6 min so far,
+  throughput ≈ 11.65 it/s. GPU 40 % util, 1.4 GB VRAM (huge headroom on 32 GB).
+- **Epoch ETA (computed, not measured):** dataset has 6,979,372 stride-1 windows;
+  train split (0.9) → 6,281,434 → **392,589 steps/epoch at bs=16** →
+  **~9.4 h/epoch → ~3.9 days for 10 epochs**. See Open question #1 below.
+- **Older AE/JEPA campaign (Apr 24 → Apr 27):** finished. tmux `s4` and `campaign`
+  are gone; corresponding entries in the Decisions log + Timeline below describe
+  what was done. Not active any more.
 
 ## Open questions for the user
 
