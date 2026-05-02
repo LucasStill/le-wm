@@ -1,6 +1,6 @@
 # Scenario-4 TurboSens — cross-architecture results
 
-_Last regenerated: 2026-05-02 21:54 UTC_
+_Last regenerated: 2026-05-02 22:04 UTC_
 
 Auto-aggregated from `coordination/{dragon,orailixtower}/` and
 `hi_probe_metrics.csv`. **Do not edit by hand** — run `./aggregate_results.sh`.
@@ -480,6 +480,7 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 | epoch | global_step | seq_len | R²    | RMSE     | Pearson-r |
 |-------|-------------|---------|-------|----------|-----------|
+| 0 | 0 | 1 | -0.0102 | 0.003734 | 0.0000 |
 | 0 | 0 | 16 | -0.0412 | 0.003529 | 0.0000 |
 | 0 | 0 | 16 | -0.3201 | 0.002349 | 0.2431 |
 | 0 | 0 | 16 | -0.3280 | 0.002368 | 0.2461 |
@@ -502,6 +503,7 @@ CSV with per-component rows: `logs/bigger_probe_results.csv`.
 
 | epoch | global_step | seq_len | R²    | RMSE   | Pearson-r |
 |-------|-------------|---------|-------|--------|-----------|
+| 0 | 0 | 1 | -0.1631 | 35.2572 | 0.0000 |
 | 0 | 0 | 16 | -0.1502 | 33.4724 | 0.0963 |
 | 0 | 0 | 16 | -0.1547 | 27.6228 | 0.0166 |
 | 0 | 0 | 16 | -0.1561 | 27.6384 | 0.0000 |
