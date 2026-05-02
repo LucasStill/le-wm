@@ -147,3 +147,20 @@ Keep **Open questions** current so the user can answer them on reconnect.
   → **~4–5 h for 10 epochs**. Comfortably under the 9–10 h budget.
 - Persistent monitor armed (`grep` over the tee log) for OOMs / errors / epoch
   boundaries / "Training complete". Wakeup scheduled at 22:37 UTC for a re-check.
+
+### 2026-05-02 22:37 UTC — wakeup re-check; epoch 0+1 done; pace holding
+- `_runtime=2046`, `global_step=16,999`, `epoch=1` (just kicked off epoch 2).
+  Throughput **8.30 it/s** (vs 8.63 at first flush — slight slowdown after the
+  first hi_probe pass at end of epoch 0, expected).
+- Validation metrics from epoch 0/1: `validate/loss=0.602`, `recon=0.0022`,
+  `kl=0.60`, `dyn/rep=1.00` — train and val tracking each other tightly.
+- VRAM jumped from 7.9 → 13.7 GB (hi_probe state retained between epochs);
+  still safe under the 28 GB limit. GPU 70 %.
+- One checkpoint saved: `rssm_s4_T64_S32x32_D512_epoch_1_object.ckpt` (22 MB).
+- Refined ETA: 24.6 min/epoch (training) + ~1 min/epoch val/hi_probe →
+  **finish ~02:20 UTC**, ~4.3 h total. Within the 9–10 h budget.
+- Eval pipeline scaffolding shipped tonight: `multiseed_eval_rssm.py`,
+  `eval_rssm.py`, `per_archetype_rssm.py`, `counterfactual_fidelity_rssm.py`,
+  `render_results.py`, `BASELINE_TEMPLATE.md`. tmux `eval_watch` polling for
+  `Training complete.` to fire `run_post_training_eval.sh`. Smoke test of
+  multiseed eval against `epoch_1` ckpt running concurrently as a sanity check.
