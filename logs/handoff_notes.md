@@ -312,3 +312,40 @@ Keep **Open questions** current so the user can answer them on reconnect.
   init. Reported to user; awaiting decision on next experiment (likely
   rep_scale=1.0 + kl_free=0, or KL annealing, or drop recon entirely → JEPA-
   style). Run is still going; not killing without user direction.
+
+### 2026-05-03 07:50 UTC — kl_free=0 + rep_scale=1.0 launched (A2.1)
+- User OK'd trying to break the post=prior fixed point by 10×-ing rep_scale
+  (0.1 → 1.0). Hypothesis: stronger rep loss creates a tug-of-war with dyn
+  loss that prevents the trivial KL=0 attractor. Honest caveat: at the exact
+  fixed point both KL gradients are 0 regardless of weight, so this might
+  not move it; still worth a data point.
+- Killed `s4_rssm_kf0` + `eval_watch_kf0` cleanly; relaunched in
+  `s4_rssm_kf0r10` with `KL_FREE=0.0 REP_SCALE=1.0 RUN_SUFFIX=_kf0_rep10`.
+  Output dir: `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512_kf0_rep10/`.
+  Eval watcher armed for `RESULTS_RSSM_kf0_rep10.md`.
+- Pre-training validate at init was VERY different from kf0-only:
+  `loss=5.48`, `recon=0.31`, KL contribution=5.17 (dyn≈rep≈3.4 at init).
+  So at random init the encoder produces a posterior that's far from prior.
+  Question: does training maintain this or slide back to KL=0?
+
+### 2026-05-03 08:36 UTC — kf0+rep10 also collapsed to post=prior
+- 46 min in, end of epoch 0 + into epoch 1. Wandb summary at step 18,649:
+  - `fit/recon_loss = 0.00939` (≈ data variance — decoder is still constant)
+  - `fit/kl_loss   = 1.3e-5` (≈ ZERO — collapsed despite rep_scale=10×)
+  - `fit/dyn_loss  = 9e-6`, `fit/rep_loss = 9e-6`
+- Same destination as kf0-only. Confirmed: **KL-weight rebalancing alone
+  cannot prevent the post=prior collapse on this dataset**. The fixed point
+  is too gravitational — even starting from KL=5.17 at init, the model raced
+  to KL≈0 within epoch 0.
+- Two collapses now characterised:
+  | variant | recon | KL | what it learned |
+  |---------|-------|-----|-----------------|
+  | kl_free=1.0, rep=0.1 (orig) | 0.002 | 0.6 (pinned at floor) | encoder copies input |
+  | kl_free=0.0, rep=0.1        | 0.010 | ~0 | post=prior; decoder = mean |
+  | kl_free=0.0, rep=1.0        | 0.009 | ~0 | post=prior (same trap) |
+- Reported to user; proposed three remaining options:
+  1. `kl_free=0.1` (small but nonzero) — mathematically kills the KL=0 fixed
+     point at minimal cost. Single-knob change. ~4h.
+  2. KL annealing (kl_free 1.0 → 0.1 over epochs).
+  3. Drop recon, JEPA-style latent prediction.
+- Awaiting user choice. Not killing this run without direction.
