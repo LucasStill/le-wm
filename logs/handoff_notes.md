@@ -185,3 +185,55 @@ Keep **Open questions** current so the user can answer them on reconnect.
 - HIProbe at epoch 5 boundary trained the TransformerProbe to mean RMSE=0.00372
   (in the JEPA/AR-LSTM ballpark — encouraging that the encoder is now learning
   signal even if the Pearson story is messy).
+
+### 2026-05-03 02:14 UTC — Training complete (10 ckpts saved); eval pipeline fired
+- 10 epochs, ~24-28 min/epoch (slower epochs are the ones with hi_probe).
+- Total wallclock: 22:01 → 02:14 = **4 h 13 min** for training proper, well under
+  the 9-10 h budget.
+- Final-epoch hi_probe at 02:13 hit best mean RMSE 0.00371 (= epoch 5's 0.00372,
+  basically flat — the encoder representation didn't materially change between
+  epoch 5 and epoch 10).
+- `eval_watch` autonomously fired `run_post_training_eval.sh` ~30 s after
+  `Training complete.` printed.
+
+### 2026-05-03 02:34 UTC — eval pipeline finished with two failures
+- Pipeline ran 5 steps in ~20 min. **task3** (test + test_hard) and
+  **counterfactual_fidelity_rssm.py** finished cleanly. **multiseed** and
+  **per_archetype** OOM'd at `seq_len=10`: RSSM feat = 1536 (32×32 stoch +
+  512 deter, vs JEPA's 64) makes the windowed train tensor (745k × 10 × 1536)
+  ≈ 46 GB, doesn't fit on 32 GB. Both crashed mid-script and lost partial
+  data because writes happen after both seq_lens complete.
+- Patched `multiseed_eval_rssm.py` to write CSV per-sl and default `--seq-lens 1`
+  only. Updated launcher to pass `--seq-lens 1` for both multiseed +
+  per_archetype. Hard-card decision: keep sl=10 disabled until we either run a
+  smaller-feat RSSM or write a streaming probe.
+- Initial render produced `RESULTS_RSSM.md` with **headline metric missing**
+  (multiseed CSV empty) but Ridge-probe + counterfactual + Task 3 + 3-of-4
+  archetype rows present.
+
+### 2026-05-03 02:35 UTC — eval_redo tmux launched to fill gaps
+- Re-runs multiseed (test + test_hard, seeds 0-5, sl=1 only) → per_archetype
+  (test + test_hard, sl=1 only) → re-renders RESULTS_RSSM.md. Each multiseed
+  step ~12 min (6 seeds × ~2 min/probe), per_archetype ~1 min. Total ~25-30 min.
+- Wakeup queued at 03:18 UTC to verify completion + write final summary.
+
+### Key findings so far (will be finalized after eval_redo)
+- **Encoder collapse on HI:** Ridge Task 1 mean Pearson **+0.048** on test,
+  **+0.058** on test_hard — vs JEPA E2's +0.597 on test. Per-archetype Pearson
+  is NaN (probe predictions are constant within each archetype slice). KL is
+  pinned at the kl_free=1.0 floor, indicating the posterior collapsed to the
+  prior.
+- **Action effects DID survive the collapse:** counterfactual differentials
+  fan_overhaul 0.0023 / full_overhaul 0.0052 / hpc_overhaul 0.0029 — same
+  ballpark as JEPA E1 (0.0037 / 0.0047 / 0.0028). The RSSM dynamics learned
+  what each action does even though the encoder didn't preserve HI structure.
+- **Latent forecasting gap ≈ 0:** RMSE_event − RMSE_clean is essentially zero
+  across all τ ∈ [1, 50] on both splits, so latent forecasting can't
+  distinguish maintenance from clean trajectories. Consistent with the
+  collapsed encoder story.
+- **Recon loss is fine** (0.002) — the decoder fits the input perfectly. The
+  collapse is in the latent space's task-relevance, not in pixel space.
+- **Recommendation for paper:** report this as the headline RSSM number with
+  a paragraph on "default V3 hyperparams collapse on TurboSens 2"; the obvious
+  follow-up is to retrain with `kl_free=0.0` to remove the free-bits relief.
+  Queued as item A2 in `EVAL_PLAN_RSSM.md`.
