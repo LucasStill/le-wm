@@ -320,3 +320,13 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
   No additional dataset issues — sensors.h5 has ep_meta/seed +
   ctx_fill_seed, EpisodeReplayer instantiates cleanly here.
+
+2026-05-03T21:01Z  AR-LSTM counterfactual chain (L1, L2, L_big) launched — protocol matches dragon's JEPA E1/E2/E5/E6probe/E7probe: --n_episodes 30 --horizon 100 --actions 0..6 --branch_fracs 0.25 0.5 0.75 --history H_train (16 for L1, 32 for L2/L_big — dir name says w4_H32 so L_big uses 32, not 16 as the task hint suggested).
+2026-05-03T20:58Z  L1 done: 630 rollouts, 0 NaN, mean Pearson=+0.112, mean ‖model‖/‖sim‖=2.486. results_L1.json saved.
+2026-05-03T21:34Z  L2 done: 630 rollouts, 0 NaN, mean Pearson=+0.131, mean ‖model‖/‖sim‖=2.980. results_L2.json saved.
+2026-05-03T20:54Z  L_big first attempt FAILED — all 630 rollouts errored "Sizes of tensors must match except in dimension 2. Expected size 29 but got size 32" because counterfactual_fidelity.py doesn't trim actions to match emb length when obs_window_size>1 (W=4 for L_big → encoder produces H-3 emb rows from H input frames). Discovered that the OLD T7-B run on Apr 28 had this fix LOCALLY but it never got committed (found it in git stash@{0}).
+2026-05-03T21:01Z  Applied W>1 fix locally: trim `actions = info["action"][:, -T_emb:]` so action length matches embedding length. Also use T_emb in the HS computation. Diff is 6 lines; preserves parity with dragon's JEPA runs (all W=1 so no behaviour change there).
+2026-05-03T23:01Z  L_big rerun done: 630 rollouts, 0 NaN, mean Pearson=+0.106, mean ‖model‖/‖sim‖=1.658. results_Lbig.json saved.
+2026-05-03T23:02Z  Ran action_conditioned_cf_probe.py: produced metrics_{L1,L2,Lbig}.json. Wrote render_action_cf_probe_unified.py to combine OT's metrics with dragon's existing metrics_E*/RSSM.json into a unified ACTION_CF_PROBE.md (didn't touch action_conditioned_cf_probe.py — kept harness parity).
+2026-05-03T23:02Z  Headline cross-arch ranking (mean Pearson across 6 actions): E5=0.204 > E6probe=0.197 > E1=0.165 > E2=0.141 > L2=0.131 > L1=0.112 > Lbig=0.106 > E7probe=0.077. RSSM action-blind (Pearson NaN, ‖model‖/‖sim‖≈0). Sign-agreement leader: L_big=0.744. n_pairs=90 for every (action × ckpt).
+2026-05-03T23:02Z  Open issue for dragon: counterfactual_fidelity.py W>1 fix is a real bug — the script only worked on Apr 28 because of the un-committed local patch. Recommend committing the fix on dragon's side too. Diff is small (6 lines around line 76-86 in current file).
