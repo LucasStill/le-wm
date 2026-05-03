@@ -291,3 +291,24 @@ Keep **Open questions** current so the user can answer them on reconnect.
   if `fit/kl_loss` is now much bigger than 0.6, the latent is encoding info
   under KL pressure → collapse fix is working).
 - ETA at same throughput as first run: 4h13m → finish ~10:55 UTC.
+
+### 2026-05-03 07:44 UTC — kl_free=0 wakeup: collapsed the OTHER way
+- 62 min in, 2 ckpts saved (epochs 1, 2), epoch 2 done at 07:30ish; ~22-25 min/epoch
+  (faster than the first run because the constant-decoder loss path is computationally
+  cheaper).
+- Loss decomposition at step 27,849:
+  - `fit/recon_loss = 0.00965` (≈ 5× the previous run's 0.00200 → no real
+    reconstruction; decoder is outputting the per-target mean and recon = data
+    variance)
+  - `fit/kl_loss   = 1.1e-5`   (≈ZERO; previous run was 0.60 pinned at the floor)
+  - `fit/dyn_loss  = 1.9e-5`
+  - `fit/rep_loss  = 1.9e-5`
+- **Diagnosis:** with `kl_free=0`, the model found the *opposite* trivial optimum:
+  `post == prior` (KL = 0, no penalty) → the latent carries zero information
+  from the encoder → the decoder must output a constant → recon = irreducible
+  variance ≈ 0.01.
+- Both kl_free settings produce degenerate solutions; default V3 has *two*
+  trivial optima on this dataset and the model finds whichever is nearer to
+  init. Reported to user; awaiting decision on next experiment (likely
+  rep_scale=1.0 + kl_free=0, or KL annealing, or drop recon entirely → JEPA-
+  style). Run is still going; not killing without user direction.
