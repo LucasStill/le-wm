@@ -237,3 +237,35 @@ Keep **Open questions** current so the user can answer them on reconnect.
   a paragraph on "default V3 hyperparams collapse on TurboSens 2"; the obvious
   follow-up is to retrain with `kl_free=0.0` to remove the free-bits relief.
   Queued as item A2 in `EVAL_PLAN_RSSM.md`.
+
+### 2026-05-03 03:16 UTC — eval_redo finished; RESULTS_RSSM.md finalized
+- Multiseed completed (6 seeds × 2 splits, sl=1 only): all 12 probe runs
+  produced **NaN Pearson** with R² ≈ -0.04 (test) / -0.11 (test_hard) and
+  RMSE ≈ 0.0032 / 0.0045. Confirms encoder collapse is universal across probe
+  seeds, not a one-off.
+- Per-archetype completed: 4 archetypes × 2 splits, all with NaN Pearson too.
+- `RESULTS_RSSM.md` re-rendered with: (a) the RSSM headline row labelled
+  `NaN (6/6 probes)` instead of being silently dropped, (b) a backup table
+  reporting R²/RMSE means since those are non-degenerate, (c) a TL;DR
+  paragraph at the top with the headline + recommendation.
+- Final artifact list:
+  - `RESULTS_RSSM.md` (headline report)
+  - `EVAL_PLAN_RSSM.md` (what ran + 7 follow-up experiments)
+  - `BASELINE_TEMPLATE.md` (how to add the next baseline)
+  - `eval_results/rssm_s4/{multiseed_results.csv, per_archetype.csv,
+    task_results_test.json, task_results_test_hard.json}`
+  - `eval_results/counterfactual_rssm/{results_RSSM.json, summary.json}`
+  - 10 RSSM checkpoints under `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512/`
+- Total wallclock for the night: training 22:01 → 02:14 (4h13m) +
+  eval pipeline 02:14 → 02:34 (20 min) + eval re-do 02:35 → 03:16 (41 min) =
+  **5h15m end-to-end**, well inside the 9-10 h budget.
+
+### Open follow-ups
+1. **A2 in `EVAL_PLAN_RSSM.md`**: re-train RSSM with `kl_free=0.0` to test
+   whether the collapse is hyperparameter-driven. If the new run hits JEPA
+   territory (Pearson 0.4+) that's the actual paper number; if not, the
+   "RSSM doesn't fit TurboSens 2" conclusion stands.
+2. **A3**: smaller-feat RSSM (stoch=16, deter=256) to enable sl=10 probing
+   without OOM.
+3. **B-G**: per-checkpoint trace, capacity sweep, action-conditioning
+   ablation, etc. — see `EVAL_PLAN_RSSM.md`.
