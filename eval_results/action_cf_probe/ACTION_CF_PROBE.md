@@ -46,12 +46,33 @@ For every (episode, branch_t) we compute Δ_sim(a) = sim_HI(a) − sim_HI(do_not
 | E7probe | patch | 90 | +0.086 | -2.839 | 0.864 | 1.839 |
 | E7probe | wash | 90 | +0.022 | -115.747 | 0.547 | 10.749 |
 |      |        |         |         |     |           |               |
-| RSSM | fan_overhaul | 90 | +nan | -0.156 | nan | 0.000 |
-| RSSM | hpc_overhaul | 90 | +nan | -0.458 | nan | 0.000 |
-| RSSM | turbine_overhaul | 90 | +nan | -0.404 | nan | 0.000 |
-| RSSM | full_overhaul | 90 | +nan | -2.840 | nan | 0.000 |
-| RSSM | patch | 90 | +nan | -0.079 | nan | 0.000 |
-| RSSM | wash | 90 | +nan | -0.001 | nan | 0.000 |
+| RSSM | fan_overhaul | 90 | — | -0.156 | — | 0.000 |
+| RSSM | hpc_overhaul | 90 | — | -0.458 | — | 0.000 |
+| RSSM | turbine_overhaul | 90 | — | -0.404 | — | 0.000 |
+| RSSM | full_overhaul | 90 | — | -2.840 | — | 0.000 |
+| RSSM | patch | 90 | — | -0.079 | — | 0.000 |
+| RSSM | wash | 90 | — | -0.001 | — | 0.000 |
+|      |        |         |         |     |           |               |
+| L1 | fan_overhaul | 90 | -0.089 | -1.368 | 0.779 | 1.168 |
+| L1 | hpc_overhaul | 90 | +0.523 | -0.296 | 0.825 | 0.994 |
+| L1 | turbine_overhaul | 90 | -0.363 | -3.310 | 0.228 | 1.257 |
+| L1 | full_overhaul | 90 | +0.347 | -2.406 | 0.613 | 0.573 |
+| L1 | patch | 90 | +0.219 | -2.510 | 0.770 | 1.816 |
+| L1 | wash | 90 | +0.036 | -82.637 | 0.632 | 9.105 |
+|      |        |         |         |     |           |               |
+| L2 | fan_overhaul | 90 | -0.088 | -1.760 | 0.772 | 1.364 |
+| L2 | hpc_overhaul | 90 | +0.307 | -0.594 | 0.800 | 1.146 |
+| L2 | turbine_overhaul | 90 | +0.373 | -0.913 | 0.780 | 1.077 |
+| L2 | full_overhaul | 90 | +0.077 | -3.329 | 0.561 | 0.501 |
+| L2 | patch | 90 | +0.094 | -2.217 | 0.592 | 1.586 |
+| L2 | wash | 90 | +0.027 | -149.237 | 0.426 | 12.208 |
+|      |        |         |         |     |           |               |
+| Lbig | fan_overhaul | 90 | -0.148 | -0.629 | 0.678 | 0.659 |
+| Lbig | hpc_overhaul | 90 | +0.046 | -0.461 | 0.794 | 0.623 |
+| Lbig | turbine_overhaul | 90 | +0.387 | -0.038 | 0.847 | 0.792 |
+| Lbig | full_overhaul | 90 | +0.182 | -1.867 | 0.845 | 0.368 |
+| Lbig | patch | 90 | +0.150 | -0.879 | 0.774 | 1.156 |
+| Lbig | wash | 90 | +0.017 | -40.344 | 0.527 | 6.349 |
 |      |        |         |         |     |           |               |
 
 ## Cross-architecture summary (mean across the 6 non-zero actions)
@@ -64,6 +85,9 @@ For every (episode, branch_t) we compute Δ_sim(a) = sim_HI(a) − sim_HI(do_not
 | E6probe | +0.197 | -15.687 | 0.724 | 2.366 |
 | E7probe | +0.077 | -20.444 | 0.731 | 2.687 |
 | RSSM | — | -0.656 | — | 0.000 |
+| L1 | +0.112 | -15.421 | 0.641 | 2.486 |
+| L2 | +0.131 | -26.342 | 0.655 | 2.980 |
+| Lbig | +0.106 | -7.370 | 0.744 | 1.658 |
 
 ## Horizon decay (mean across actions, per τ)
 
@@ -75,3 +99,6 @@ For every (episode, branch_t) we compute Δ_sim(a) = sim_HI(a) − sim_HI(do_not
 | E6probe | +0.228 | +0.207 | +0.190 | 0.720 | 0.718 | 0.701 |
 | E7probe | +0.178 | +0.076 | +0.065 | 0.741 | 0.720 | 0.722 |
 | RSSM | — | — | — | — | — | — |
+| L1 | +0.111 | +0.121 | +0.112 | 0.660 | 0.651 | 0.630 |
+| L2 | +0.139 | +0.130 | +0.146 | 0.743 | 0.630 | 0.643 |
+| Lbig | +0.107 | +0.119 | +0.110 | 0.694 | 0.709 | 0.785 |

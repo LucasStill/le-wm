@@ -35,6 +35,9 @@ from scenarios.scenario4.replay import EpisodeReplayer, CounterfactualSpec
 # Reuse eval_sweep machinery for probe training
 sys.path.insert(0, "/home/lthil/thesis/le-wm")
 import eval_sweep
+# Import LSTMPredictor so torch.load can deserialize AR-LSTM checkpoints
+# (orailix-only shim; dragon's JEPA ckpts don't need this)
+from baselines.ar_lstm.model import LSTMPredictor  # noqa: F401
 
 
 def model_rollout_HI(model, probe, scaler, sensors_history: np.ndarray,
@@ -73,12 +76,14 @@ def model_rollout_HI(model, probe, scaler, sensors_history: np.ndarray,
         "action": torch.as_tensor(hist_actions).unsqueeze(0).unsqueeze(-1).float().to(device),
     }
     out = model.encode(info)
-    emb = out["emb"]  # (1, H, D)
-    actions = info["action"]  # (1, H, 1)
+    emb = out["emb"]  # (1, T_emb, D) — W>1 models reduce T: T_emb = H - W + 1
+    T_emb = emb.shape[1]
+    # Trim actions to match embedding length (W>1 sliding window reduces length)
+    actions = info["action"][:, -T_emb:]  # (1, T_emb, 1)
 
     # 2. Autoregressive predict
-    HS = model.wm.history_size if hasattr(model, "wm") else H  # context window for predictor
-    HS = min(HS, H)
+    HS = model.wm.history_size if hasattr(model, "wm") else T_emb
+    HS = min(HS, T_emb)
     rollout_embs = []
     for t in range(horizon):
         emb_ctx = emb[:, -HS:]                      # (1, HS, D)
