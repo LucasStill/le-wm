@@ -59,7 +59,11 @@ MAX_EPOCHS=${MAX_EPOCHS:-10}
 ACCUM_GRAD=${ACCUM_GRAD:-1}             # bump to 2/4 to push effective batch size
 LR=${LR:-1e-4}
 
-RUN_NAME=rssm_s4_T${NUM_STEPS}_S${STOCH}x${DISCRETE}_D${DETER}
+RUN_SUFFIX=${RUN_SUFFIX:-}                # optional, e.g. "_klfree0" — appended
+                                          # to subdir + output_model_name so
+                                          # variant runs don't overwrite each
+                                          # other's checkpoints.
+RUN_NAME=rssm_s4_T${NUM_STEPS}_S${STOCH}x${DISCRETE}_D${DETER}${RUN_SUFFIX}
 
 echo "Run name : ${RUN_NAME}"
 echo "Config   : T=${NUM_STEPS} stoch=${STOCH}x${DISCRETE} deter=${DETER} bs=${BATCH_SIZE}"
@@ -87,7 +91,7 @@ python -u baselines/rssm/train_rssm.py \
     trainer.precision=${PRECISION} \
     data.dataset.cache_dir=${STABLEWM_HOME} \
     wandb.config.project=turbofan_S4 \
-    subdir=rssm_scenario4_T${NUM_STEPS}_S${STOCH}x${DISCRETE}_D${DETER} \
+    subdir=rssm_scenario4_T${NUM_STEPS}_S${STOCH}x${DISCRETE}_D${DETER}${RUN_SUFFIX} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=1 \

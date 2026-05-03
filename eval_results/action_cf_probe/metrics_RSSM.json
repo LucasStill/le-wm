@@ -1,0 +1,236 @@
+{
+  "1": {
+    "name": "fan_overhaul",
+    "all_tau": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.1558644215575118,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.00255435100279076,
+      "rms_model": 0.0
+    },
+    "tau10": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.16494286331374663,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.002629293682590571,
+      "rms_model": 0.0
+    },
+    "tau50": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.15417958607225124,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0025539280875479763,
+      "rms_model": 0.0
+    },
+    "tau99": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.14986990357665686,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0024508612876936752,
+      "rms_model": 0.0
+    }
+  },
+  "2": {
+    "name": "hpc_overhaul",
+    "all_tau": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.45826032213643986,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.002959371156781124,
+      "rms_model": 0.0
+    },
+    "tau10": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.4777955424891682,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0031318576417026416,
+      "rms_model": 0.0
+    },
+    "tau50": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.46017870250781123,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0029583737364250796,
+      "rms_model": 0.0
+    },
+    "tau99": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.43587311833997266,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0027425641833444445,
+      "rms_model": 0.0
+    }
+  },
+  "3": {
+    "name": "turbine_overhaul",
+    "all_tau": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.40409199622617575,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.002383052056719148,
+      "rms_model": 0.0
+    },
+    "tau10": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.44035060328081665,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0024952398282689606,
+      "rms_model": 0.0
+    },
+    "tau50": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.3974939607016099,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.002367771808623222,
+      "rms_model": 0.0
+    },
+    "tau99": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.37710018860436234,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.002232325417145355,
+      "rms_model": 0.0
+    }
+  },
+  "4": {
+    "name": "full_overhaul",
+    "all_tau": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -2.839718315731126,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.005123418304125933,
+      "rms_model": 0.0
+    },
+    "tau10": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -3.142701735337515,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0053566554457047276,
+      "rms_model": 0.0
+    },
+    "tau50": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -2.823761517945449,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.005114654916157888,
+      "rms_model": 0.0
+    },
+    "tau99": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -2.5455173645858316,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.004829804673255343,
+      "rms_model": 0.0
+    }
+  },
+  "5": {
+    "name": "patch",
+    "all_tau": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.07916742918808839,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0015775467614984494,
+      "rms_model": 0.0
+    },
+    "tau10": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.09002294962802093,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0016455226793933345,
+      "rms_model": 0.0
+    },
+    "tau50": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.08027522654037789,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0015742847271606583,
+      "rms_model": 0.0
+    },
+    "tau99": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.06742171866600288,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.001486728022836722,
+      "rms_model": 0.0
+    }
+  },
+  "6": {
+    "name": "wash",
+    "all_tau": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.0013130846392250817,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0002699572269666767,
+      "rms_model": 0.0
+    },
+    "tau10": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -9.799212860461815e-05,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 3.483668682846884e-05,
+      "rms_model": 0.0
+    },
+    "tau50": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.0021698112268537795,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.0003052724897093658,
+      "rms_model": 0.0
+    },
+    "tau99": {
+      "n_pairs": 90,
+      "pearson": NaN,
+      "r2": -0.0021571467525483,
+      "sign_agree": NaN,
+      "magnitude_ratio": 0.0,
+      "rms_sim": 0.00029739249797725546,
+      "rms_model": 0.0
+    }
+  }
+}

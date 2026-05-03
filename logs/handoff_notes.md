@@ -11,20 +11,24 @@ Keep **Open questions** current so the user can answer them on reconnect.
 
 ## Current state
 
-- **E1 (active):** 10-epoch H=16 training — tmux `s4`, log `logs/s4_real_20260424_1709.log`.
-  Config: bs=512 nw=4 bf16 H=16 S=1 P=4. Epoch 8 done at 21:14. 1 epoch to go. Finish ~21:41 UTC.
-- **Campaign queued:** tmux `campaign` is waiting for `s4` to end, then auto-runs E2→E3→E4.
-  See `logs/experiment_plan.md` for the design and `run_experiments.sh` for the orchestrator.
-  Per-run logs land in `logs/campaign/*.log`, status files in `logs/campaign/*.status`.
-- **E2 next:** H=32 S=1 P=4, bs=256 + accum=2 (effective bs=512 preserved). Probe first, then 10 epochs.
-- **E3 then E4:** H=16 S=5 (~4.5h) and H=32 S=5 (~8-9h). P=4 fixed across all runs for comparability.
-  Stride bumped from 2 → 5 at user request to probe longer temporal spans (episodes ~14k frames).
-- Hi_probe fires at epoch 5 (interval) and epoch 9 (final) for every run — `hi_probe.py` patch applies.
-- See `logs/session_2026-04-24_changes.md` for a full explainer of earlier changes.
+- **RSSM/DreamerV3 baseline @ bs=512 (active)** — tmux `s4_rssm`, started 2026-05-02
+  22:01 UTC. Launcher: `train_rssm_scenario4_orailix.sh` with env-var overrides
+  `BATCH_SIZE=512 NUM_WORKERS=8 ACCUM_GRAD=1 MAX_EPOCHS=10 WANDB_MODE=offline`.
+  Tee log: `logs/s4_rssm_bs512_2201.log`. Wandb run: `wandb/offline-run-20260502_220125-9inzwnrj`.
+  Config: T=64, stoch=32x32, deter=512, hi_probe=on (eval_interval=5 + final epoch),
+  bf16-mixed, optimizer.lr=1e-4. Effective bs=512 matches AR-LSTM scenario4 exactly.
+- **Live status (22:11 UTC, ~10 min in):** healthy. global_step=4149 in 481 s →
+  **8.63 it/s @ bs=512 = 4,418 samples/s** (23.7× faster than bs=16). Loss 0.602
+  (recon 0.002, kl 0.60, dyn/rep 1.00). GPU 64-70 %, VRAM 7.93 GB.
+- **Measured ETA:** 23.7 min/epoch training + ~1 min/epoch val/hi_probe →
+  **~4–5 h for 10 epochs**. Well inside the 9–10 h budget.
+- **Older AE/JEPA campaign (Apr 24 → Apr 27):** finished. tmux `s4` and `campaign`
+  are gone; corresponding entries in the Decisions log + Timeline below describe
+  what was done. Not active any more.
 
 ## Open questions for the user
 
-- _(none yet)_
+- _(none yet — bs=512 launch is the agreed plan; user said "let it run")_
 
 ## Decisions log
 
@@ -94,3 +98,282 @@ Keep **Open questions** current so the user can answer them on reconnect.
   experiment with probe-first + OOM fallback. All runs keep P=4 for comparability.
 - Launched orchestrator in tmux `campaign` — will auto-kick-off E2 when E1 finishes.
 - Monitor `bm27v1cyh` on E1 still active.
+
+### 2026-05-03 ~04:30 UTC — RSSM (DreamerV3) run found stuck; killed and relaunched
+- Inherited a `train_rssm.py` run from previous session (PID 2332842, started 2026-05-02 21:18
+  local). Diagnosis:
+  - Process at 100% CPU and 1.4 GB GPU (40% util) but **no log writes for 7+ hours**.
+  - `outputs/.../train_rssm.log` last touched 21:18:34 (after HIProbe init).
+  - `s4_rssm_20260502_2118.log` (tee'd) last touched 21:18:45 (after env_info callback).
+  - `wandb/.../run-*.wandb` stopped at 21:27, `wandb/.../files/output.log` at 21:23.
+  - `wandb/debug-cli.lthil.log` ballooned to **1.27 GB** by 21:28 — strongly suggests a
+    runaway wandb-core write loop / deadlock during training startup.
+- Killed: `tmux kill-session -t s4_rssm`, `pkill -9 -f train_rssm`, `pkill -9 wandb-core`.
+  GPU returned to 0%/2 MiB.
+- Relaunched via `train_rssm_scenario4_orailix.sh` in tmux `s4_rssm`, with
+  `STABLEWM_HOME=/home/lthil/.stable_worldmodel` and default `WANDB_MODE=offline`.
+  Same hyperparams: bs=16, T=64, stoch=32x32, deter=512, hi_probe=on, max_epochs=10.
+- Monitoring for first iteration / sanity-check output to confirm it's actually stepping.
+
+### 2026-05-02 21:45 UTC — bs=16 run was healthy but 4-day ETA detected
+- The relaunch (PID 2335665) was confirmed live: at 21:45 it was at global_step=10899
+  in 935.86s of runtime → **11.65 it/s, loss=0.60 (recon=0.003, kl=0.6, dyn=1.0, rep=1.0)**.
+- Computed steps/epoch: HDF5Dataset had 6,979,372 stride-1 windows → train split (0.9)
+  = 6,281,434 → **392,589 steps/epoch at bs=16 → ~9.4 h/epoch → ~3.9 days for 10 epochs.**
+- User flagged this as unacceptable (initial mental budget was ~2 hours; settled on
+  9–10 h budget on reconnect).
+
+### 2026-05-02 21:55 UTC — killed bs=16, probed bs=128, then launched bs=512
+- Killed `s4_rssm` tmux + `train_rssm` + `wandb-core` PIDs. GPU returned to 0 %/2 MiB.
+  No checkpoint had been saved (only 0.3 % into epoch 0), nothing lost.
+- bs=128 probe (`tmux probe128`, WANDB_MODE=disabled): VRAM 4.85 GB, GPU 49 %.
+  Only +8 pp utilization for 8x batch → **GRU sequential is the bottleneck**, not memory.
+  Killed the probe (couldn't read it/s with wandb disabled).
+- Launched real run **bs=512, accum=1, nw=8, MAX_EPOCHS=10, WANDB_MODE=offline**
+  in tmux `s4_rssm` at 22:01:25 UTC. Tee log: `logs/s4_rssm_bs512_2201.log`,
+  wandb dir: `wandb/offline-run-20260502_220125-9inzwnrj`. Effective bs=512 matches
+  AR-LSTM scenario4 exactly (fair comparison preserved, no dataset subsampling).
+- At 22:07 UTC: GPU 70 % / 7.93 GB VRAM, wandb .wandb file growing (96 KB).
+  No tqdm/wandb-summary visible yet (Lightning quirk + sparse logging cadence at
+  large bs). Run is healthy. Theoretical ETA: 9–12 h for 10 epochs.
+
+### 2026-05-02 22:11 UTC — first wandb-summary flushed; speed confirmed
+- `_runtime=481`, `global_step=4149`, `epoch=0`. Throughput **8.63 it/s @ bs=512
+  = 4,418 samples/s** — 23.7× faster than bs=16 (186 samples/s). The GRU
+  bottleneck saturates well at bs=512 even though GPU is "only" 64-70 % util.
+- Loss curve mirrors bs=16 run: recon=0.002, kl=0.60, dyn/rep=1.00, total=0.602.
+  KL/dyn/rep are pinned to the kl_free=1.0 boundary as expected for early training.
+- Refined ETA: 12,268 steps / 8.63 it/s = 23.7 min/epoch + val/hi_probe overhead
+  → **~4–5 h for 10 epochs**. Comfortably under the 9–10 h budget.
+- Persistent monitor armed (`grep` over the tee log) for OOMs / errors / epoch
+  boundaries / "Training complete". Wakeup scheduled at 22:37 UTC for a re-check.
+
+### 2026-05-02 22:37 UTC — wakeup re-check; epoch 0+1 done; pace holding
+- `_runtime=2046`, `global_step=16,999`, `epoch=1` (just kicked off epoch 2).
+  Throughput **8.30 it/s** (vs 8.63 at first flush — slight slowdown after the
+  first hi_probe pass at end of epoch 0, expected).
+- Validation metrics from epoch 0/1: `validate/loss=0.602`, `recon=0.0022`,
+  `kl=0.60`, `dyn/rep=1.00` — train and val tracking each other tightly.
+- VRAM jumped from 7.9 → 13.7 GB (hi_probe state retained between epochs);
+  still safe under the 28 GB limit. GPU 70 %.
+- One checkpoint saved: `rssm_s4_T64_S32x32_D512_epoch_1_object.ckpt` (22 MB).
+- Refined ETA: 24.6 min/epoch (training) + ~1 min/epoch val/hi_probe →
+  **finish ~02:20 UTC**, ~4.3 h total. Within the 9–10 h budget.
+- Eval pipeline scaffolding shipped tonight: `multiseed_eval_rssm.py`,
+  `eval_rssm.py`, `per_archetype_rssm.py`, `counterfactual_fidelity_rssm.py`,
+  `render_results.py`, `BASELINE_TEMPLATE.md`. tmux `eval_watch` polling for
+  `Training complete.` to fire `run_post_training_eval.sh`. Smoke test of
+  multiseed eval against `epoch_1` ckpt running concurrently as a sanity check.
+
+### 2026-05-03 00:38 UTC — wakeup mid-training audit; 6 epochs done
+- 6 ckpts on disk (`epoch_{1..6}_object.ckpt`). Currently in epoch 6 (~5 min in,
+  expecting ~25 min). No `Training complete.` yet, no post-training eval log yet.
+- All 4 tmux sessions alive: `s4_rssm`, `eval_watch`, `peer_sync`, `wandb_sync`.
+- Throughput holding at ~25 min/epoch (slightly slower epochs that include
+  the hi_probe pass — epoch 5 took 28 min because of that).
+- 4 epochs to go (incl. epoch 9 with hi_probe + eval) → **finish ~02:18 UTC**.
+- Smoke test of `multiseed_eval_rssm.py` against the epoch_1 ckpt completed
+  at 22:48 UTC: pipeline runs cleanly end-to-end, but Pearson r is NaN per HI
+  dim because the encoder at epoch 1 is still close to random (KL pinned at
+  the kl_free=1.0 boundary). Expected to resolve as KL pressure forces the
+  latent to encode useful info; if Pearson is still NaN at epoch 10, that's a
+  real result (RSSM default V3 hyperparams underfit) not a pipeline bug.
+- Recon-loss validation curve so far (small but monotone-ish):
+  epoch 0 = 0.00223, epoch 1 = 0.00204, epoch 2 = 0.00208, epoch 3 = 0.00200,
+  epoch 4 = 0.00202, epoch 5 = 0.00204. Loss ~0.6020, KL/dyn/rep at the
+  free-bits floor.
+- HIProbe at epoch 5 boundary trained the TransformerProbe to mean RMSE=0.00372
+  (in the JEPA/AR-LSTM ballpark — encouraging that the encoder is now learning
+  signal even if the Pearson story is messy).
+
+### 2026-05-03 02:14 UTC — Training complete (10 ckpts saved); eval pipeline fired
+- 10 epochs, ~24-28 min/epoch (slower epochs are the ones with hi_probe).
+- Total wallclock: 22:01 → 02:14 = **4 h 13 min** for training proper, well under
+  the 9-10 h budget.
+- Final-epoch hi_probe at 02:13 hit best mean RMSE 0.00371 (= epoch 5's 0.00372,
+  basically flat — the encoder representation didn't materially change between
+  epoch 5 and epoch 10).
+- `eval_watch` autonomously fired `run_post_training_eval.sh` ~30 s after
+  `Training complete.` printed.
+
+### 2026-05-03 02:34 UTC — eval pipeline finished with two failures
+- Pipeline ran 5 steps in ~20 min. **task3** (test + test_hard) and
+  **counterfactual_fidelity_rssm.py** finished cleanly. **multiseed** and
+  **per_archetype** OOM'd at `seq_len=10`: RSSM feat = 1536 (32×32 stoch +
+  512 deter, vs JEPA's 64) makes the windowed train tensor (745k × 10 × 1536)
+  ≈ 46 GB, doesn't fit on 32 GB. Both crashed mid-script and lost partial
+  data because writes happen after both seq_lens complete.
+- Patched `multiseed_eval_rssm.py` to write CSV per-sl and default `--seq-lens 1`
+  only. Updated launcher to pass `--seq-lens 1` for both multiseed +
+  per_archetype. Hard-card decision: keep sl=10 disabled until we either run a
+  smaller-feat RSSM or write a streaming probe.
+- Initial render produced `RESULTS_RSSM.md` with **headline metric missing**
+  (multiseed CSV empty) but Ridge-probe + counterfactual + Task 3 + 3-of-4
+  archetype rows present.
+
+### 2026-05-03 02:35 UTC — eval_redo tmux launched to fill gaps
+- Re-runs multiseed (test + test_hard, seeds 0-5, sl=1 only) → per_archetype
+  (test + test_hard, sl=1 only) → re-renders RESULTS_RSSM.md. Each multiseed
+  step ~12 min (6 seeds × ~2 min/probe), per_archetype ~1 min. Total ~25-30 min.
+- Wakeup queued at 03:18 UTC to verify completion + write final summary.
+
+### Key findings so far (will be finalized after eval_redo)
+- **Encoder collapse on HI:** Ridge Task 1 mean Pearson **+0.048** on test,
+  **+0.058** on test_hard — vs JEPA E2's +0.597 on test. Per-archetype Pearson
+  is NaN (probe predictions are constant within each archetype slice). KL is
+  pinned at the kl_free=1.0 floor, indicating the posterior collapsed to the
+  prior.
+- **Action effects DID survive the collapse:** counterfactual differentials
+  fan_overhaul 0.0023 / full_overhaul 0.0052 / hpc_overhaul 0.0029 — same
+  ballpark as JEPA E1 (0.0037 / 0.0047 / 0.0028). The RSSM dynamics learned
+  what each action does even though the encoder didn't preserve HI structure.
+- **Latent forecasting gap ≈ 0:** RMSE_event − RMSE_clean is essentially zero
+  across all τ ∈ [1, 50] on both splits, so latent forecasting can't
+  distinguish maintenance from clean trajectories. Consistent with the
+  collapsed encoder story.
+- **Recon loss is fine** (0.002) — the decoder fits the input perfectly. The
+  collapse is in the latent space's task-relevance, not in pixel space.
+- **Recommendation for paper:** report this as the headline RSSM number with
+  a paragraph on "default V3 hyperparams collapse on TurboSens 2"; the obvious
+  follow-up is to retrain with `kl_free=0.0` to remove the free-bits relief.
+  Queued as item A2 in `EVAL_PLAN_RSSM.md`.
+
+### 2026-05-03 03:16 UTC — eval_redo finished; RESULTS_RSSM.md finalized
+- Multiseed completed (6 seeds × 2 splits, sl=1 only): all 12 probe runs
+  produced **NaN Pearson** with R² ≈ -0.04 (test) / -0.11 (test_hard) and
+  RMSE ≈ 0.0032 / 0.0045. Confirms encoder collapse is universal across probe
+  seeds, not a one-off.
+- Per-archetype completed: 4 archetypes × 2 splits, all with NaN Pearson too.
+- `RESULTS_RSSM.md` re-rendered with: (a) the RSSM headline row labelled
+  `NaN (6/6 probes)` instead of being silently dropped, (b) a backup table
+  reporting R²/RMSE means since those are non-degenerate, (c) a TL;DR
+  paragraph at the top with the headline + recommendation.
+- Final artifact list:
+  - `RESULTS_RSSM.md` (headline report)
+  - `EVAL_PLAN_RSSM.md` (what ran + 7 follow-up experiments)
+  - `BASELINE_TEMPLATE.md` (how to add the next baseline)
+  - `eval_results/rssm_s4/{multiseed_results.csv, per_archetype.csv,
+    task_results_test.json, task_results_test_hard.json}`
+  - `eval_results/counterfactual_rssm/{results_RSSM.json, summary.json}`
+  - 10 RSSM checkpoints under `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512/`
+- Total wallclock for the night: training 22:01 → 02:14 (4h13m) +
+  eval pipeline 02:14 → 02:34 (20 min) + eval re-do 02:35 → 03:16 (41 min) =
+  **5h15m end-to-end**, well inside the 9-10 h budget.
+
+### Open follow-ups
+1. **A2 in `EVAL_PLAN_RSSM.md`**: re-train RSSM with `kl_free=0.0` to test
+   whether the collapse is hyperparameter-driven. If the new run hits JEPA
+   territory (Pearson 0.4+) that's the actual paper number; if not, the
+   "RSSM doesn't fit TurboSens 2" conclusion stands.
+2. **A3**: smaller-feat RSSM (stoch=16, deter=256) to enable sl=10 probing
+   without OOM.
+3. **B-G**: per-checkpoint trace, capacity sweep, action-conditioning
+   ablation, etc. — see `EVAL_PLAN_RSSM.md`.
+
+### 2026-05-03 06:42 UTC — kl_free=0 retrain launched (A2 follow-up)
+- Hypothesis: removing the free-bits floor will force the latent to actively
+  compress, making it carry HI-relevant info → headline Pearson should land
+  in the 0.4+ JEPA range.
+- Launched in tmux `s4_rssm_kf0` with the same launcher + `KL_FREE=0.0
+  RUN_SUFFIX=_klfree0`. Added a `RUN_SUFFIX` env var to
+  `train_rssm_scenario4_orailix.sh` (backwards-compatible — defaults to empty)
+  so the new ckpts land in `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512_klfree0/`
+  without overwriting the original run.
+- Also added `CKPT_DIR_OVERRIDE` / `CKPT_PREFIX_OVERRIDE` /
+  `OUT_DIR_OVERRIDE` / `CF_DIR_OVERRIDE` / `RESULTS_OVERRIDE` env-var support
+  to `run_post_training_eval.sh` so the eval pipeline can be retargeted at
+  the variant run without code edits.
+- Eval auto-fire armed via `.eval_watch_kf0.sh` running in tmux
+  `eval_watch_kf0`. Will produce `RESULTS_RSSM_klfree0.md`,
+  `eval_results/rssm_s4_klfree0/`, and `eval_results/counterfactual_rssm_klfree0/`.
+- Monitor `bcv4p5tmo` armed for epoch boundaries / errors.
+- Wakeup at 07:44 UTC for first throughput + kl_loss check (key signal:
+  if `fit/kl_loss` is now much bigger than 0.6, the latent is encoding info
+  under KL pressure → collapse fix is working).
+- ETA at same throughput as first run: 4h13m → finish ~10:55 UTC.
+
+### 2026-05-03 07:44 UTC — kl_free=0 wakeup: collapsed the OTHER way
+- 62 min in, 2 ckpts saved (epochs 1, 2), epoch 2 done at 07:30ish; ~22-25 min/epoch
+  (faster than the first run because the constant-decoder loss path is computationally
+  cheaper).
+- Loss decomposition at step 27,849:
+  - `fit/recon_loss = 0.00965` (≈ 5× the previous run's 0.00200 → no real
+    reconstruction; decoder is outputting the per-target mean and recon = data
+    variance)
+  - `fit/kl_loss   = 1.1e-5`   (≈ZERO; previous run was 0.60 pinned at the floor)
+  - `fit/dyn_loss  = 1.9e-5`
+  - `fit/rep_loss  = 1.9e-5`
+- **Diagnosis:** with `kl_free=0`, the model found the *opposite* trivial optimum:
+  `post == prior` (KL = 0, no penalty) → the latent carries zero information
+  from the encoder → the decoder must output a constant → recon = irreducible
+  variance ≈ 0.01.
+- Both kl_free settings produce degenerate solutions; default V3 has *two*
+  trivial optima on this dataset and the model finds whichever is nearer to
+  init. Reported to user; awaiting decision on next experiment (likely
+  rep_scale=1.0 + kl_free=0, or KL annealing, or drop recon entirely → JEPA-
+  style). Run is still going; not killing without user direction.
+
+### 2026-05-03 07:50 UTC — kl_free=0 + rep_scale=1.0 launched (A2.1)
+- User OK'd trying to break the post=prior fixed point by 10×-ing rep_scale
+  (0.1 → 1.0). Hypothesis: stronger rep loss creates a tug-of-war with dyn
+  loss that prevents the trivial KL=0 attractor. Honest caveat: at the exact
+  fixed point both KL gradients are 0 regardless of weight, so this might
+  not move it; still worth a data point.
+- Killed `s4_rssm_kf0` + `eval_watch_kf0` cleanly; relaunched in
+  `s4_rssm_kf0r10` with `KL_FREE=0.0 REP_SCALE=1.0 RUN_SUFFIX=_kf0_rep10`.
+  Output dir: `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512_kf0_rep10/`.
+  Eval watcher armed for `RESULTS_RSSM_kf0_rep10.md`.
+- Pre-training validate at init was VERY different from kf0-only:
+  `loss=5.48`, `recon=0.31`, KL contribution=5.17 (dyn≈rep≈3.4 at init).
+  So at random init the encoder produces a posterior that's far from prior.
+  Question: does training maintain this or slide back to KL=0?
+
+### 2026-05-03 08:36 UTC — kf0+rep10 also collapsed to post=prior
+- 46 min in, end of epoch 0 + into epoch 1. Wandb summary at step 18,649:
+  - `fit/recon_loss = 0.00939` (≈ data variance — decoder is still constant)
+  - `fit/kl_loss   = 1.3e-5` (≈ ZERO — collapsed despite rep_scale=10×)
+  - `fit/dyn_loss  = 9e-6`, `fit/rep_loss = 9e-6`
+- Same destination as kf0-only. Confirmed: **KL-weight rebalancing alone
+  cannot prevent the post=prior collapse on this dataset**. The fixed point
+  is too gravitational — even starting from KL=5.17 at init, the model raced
+  to KL≈0 within epoch 0.
+- Two collapses now characterised:
+  | variant | recon | KL | what it learned |
+  |---------|-------|-----|-----------------|
+  | kl_free=1.0, rep=0.1 (orig) | 0.002 | 0.6 (pinned at floor) | encoder copies input |
+  | kl_free=0.0, rep=0.1        | 0.010 | ~0 | post=prior; decoder = mean |
+  | kl_free=0.0, rep=1.0        | 0.009 | ~0 | post=prior (same trap) |
+- Reported to user; proposed three remaining options:
+  1. `kl_free=0.1` (small but nonzero) — mathematically kills the KL=0 fixed
+     point at minimal cost. Single-knob change. ~4h.
+  2. KL annealing (kl_free 1.0 → 0.1 over epochs).
+  3. Drop recon, JEPA-style latent prediction.
+- Awaiting user choice. Not killing this run without direction.
+
+### 2026-05-03 09:04 UTC — auto-launched kl_free=0.1 (option 1)
+- Auto mode + user not responding to options menu; killed kf0_rep10
+  (collapsed for 3 epochs, clearly nowhere) and launched
+  `KL_FREE=0.1 RUN_SUFFIX=_kf01` (option 1: small but nonzero KL floor).
+- Output dir `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512_kf01/`,
+  watcher `eval_watch_kf01`, results target `RESULTS_RSSM_kf01.md`.
+
+### 2026-05-03 09:32 UTC — first non-degenerate run! 🎉
+- End of epoch 0 validation: `validate/loss=0.072`, `validate/recon=0.00436`,
+  KL contribution=0.068.
+- Decomposition: KL = 0.5*dyn + 0.1*rep, with dyn=rep≈0.1 (sitting at the
+  new kl_free=0.1 floor, neither escaping nor collapsing to 0).
+- Recon=0.00436 is BETWEEN the input-copy collapse (0.002) and the post=prior
+  collapse (0.010) — the latent is encoding ~0.1 nats/timestep of input info,
+  and the decoder is using it. **First non-trivial baseline.**
+
+### 2026-05-03 09:50 UTC — wakeup mid-epoch-1: still healthy
+- 46 min in, 1 ckpt saved (epoch 1 just finished).
+- Wandb summary at step 19,949: `fit/recon_loss=0.01101`, `fit/kl_loss=0.06129`,
+  `fit/dyn_loss=0.10215`, `fit/rep_loss=0.10215`.
+- KL ≥ 0.05 ✓ (sitting at the 0.06 floor, model not abandoning the latent).
+- Note: training-step recon (0.011) is higher than end-of-epoch-0 validate
+  (0.0044). Could be transient (single-step training noise vs averaged
+  validation), or could indicate gradient pressure pushing toward the
+  post=prior trap (dyn/rep are riding right at the 0.1 floor with thin margin).
+  Will know at end of epoch 1 validate (next monitor ping).
+- Throughput: ~24 min/epoch (same as the other variants). ETA finish ~13:05 UTC.
