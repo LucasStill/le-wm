@@ -164,3 +164,24 @@ Keep **Open questions** current so the user can answer them on reconnect.
   `render_results.py`, `BASELINE_TEMPLATE.md`. tmux `eval_watch` polling for
   `Training complete.` to fire `run_post_training_eval.sh`. Smoke test of
   multiseed eval against `epoch_1` ckpt running concurrently as a sanity check.
+
+### 2026-05-03 00:38 UTC — wakeup mid-training audit; 6 epochs done
+- 6 ckpts on disk (`epoch_{1..6}_object.ckpt`). Currently in epoch 6 (~5 min in,
+  expecting ~25 min). No `Training complete.` yet, no post-training eval log yet.
+- All 4 tmux sessions alive: `s4_rssm`, `eval_watch`, `peer_sync`, `wandb_sync`.
+- Throughput holding at ~25 min/epoch (slightly slower epochs that include
+  the hi_probe pass — epoch 5 took 28 min because of that).
+- 4 epochs to go (incl. epoch 9 with hi_probe + eval) → **finish ~02:18 UTC**.
+- Smoke test of `multiseed_eval_rssm.py` against the epoch_1 ckpt completed
+  at 22:48 UTC: pipeline runs cleanly end-to-end, but Pearson r is NaN per HI
+  dim because the encoder at epoch 1 is still close to random (KL pinned at
+  the kl_free=1.0 boundary). Expected to resolve as KL pressure forces the
+  latent to encode useful info; if Pearson is still NaN at epoch 10, that's a
+  real result (RSSM default V3 hyperparams underfit) not a pipeline bug.
+- Recon-loss validation curve so far (small but monotone-ish):
+  epoch 0 = 0.00223, epoch 1 = 0.00204, epoch 2 = 0.00208, epoch 3 = 0.00200,
+  epoch 4 = 0.00202, epoch 5 = 0.00204. Loss ~0.6020, KL/dyn/rep at the
+  free-bits floor.
+- HIProbe at epoch 5 boundary trained the TransformerProbe to mean RMSE=0.00372
+  (in the JEPA/AR-LSTM ballpark — encouraging that the encoder is now learning
+  signal even if the Pearson story is messy).
