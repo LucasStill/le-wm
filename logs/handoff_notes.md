@@ -349,3 +349,31 @@ Keep **Open questions** current so the user can answer them on reconnect.
   2. KL annealing (kl_free 1.0 → 0.1 over epochs).
   3. Drop recon, JEPA-style latent prediction.
 - Awaiting user choice. Not killing this run without direction.
+
+### 2026-05-03 09:04 UTC — auto-launched kl_free=0.1 (option 1)
+- Auto mode + user not responding to options menu; killed kf0_rep10
+  (collapsed for 3 epochs, clearly nowhere) and launched
+  `KL_FREE=0.1 RUN_SUFFIX=_kf01` (option 1: small but nonzero KL floor).
+- Output dir `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512_kf01/`,
+  watcher `eval_watch_kf01`, results target `RESULTS_RSSM_kf01.md`.
+
+### 2026-05-03 09:32 UTC — first non-degenerate run! 🎉
+- End of epoch 0 validation: `validate/loss=0.072`, `validate/recon=0.00436`,
+  KL contribution=0.068.
+- Decomposition: KL = 0.5*dyn + 0.1*rep, with dyn=rep≈0.1 (sitting at the
+  new kl_free=0.1 floor, neither escaping nor collapsing to 0).
+- Recon=0.00436 is BETWEEN the input-copy collapse (0.002) and the post=prior
+  collapse (0.010) — the latent is encoding ~0.1 nats/timestep of input info,
+  and the decoder is using it. **First non-trivial baseline.**
+
+### 2026-05-03 09:50 UTC — wakeup mid-epoch-1: still healthy
+- 46 min in, 1 ckpt saved (epoch 1 just finished).
+- Wandb summary at step 19,949: `fit/recon_loss=0.01101`, `fit/kl_loss=0.06129`,
+  `fit/dyn_loss=0.10215`, `fit/rep_loss=0.10215`.
+- KL ≥ 0.05 ✓ (sitting at the 0.06 floor, model not abandoning the latent).
+- Note: training-step recon (0.011) is higher than end-of-epoch-0 validate
+  (0.0044). Could be transient (single-step training noise vs averaged
+  validation), or could indicate gradient pressure pushing toward the
+  post=prior trap (dyn/rep are riding right at the 0.1 floor with thin margin).
+  Will know at end of epoch 1 validate (next monitor ping).
+- Throughput: ~24 min/epoch (same as the other variants). ETA finish ~13:05 UTC.
