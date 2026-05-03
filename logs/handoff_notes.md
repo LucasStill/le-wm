@@ -269,3 +269,25 @@ Keep **Open questions** current so the user can answer them on reconnect.
    without OOM.
 3. **B-G**: per-checkpoint trace, capacity sweep, action-conditioning
    ablation, etc. — see `EVAL_PLAN_RSSM.md`.
+
+### 2026-05-03 06:42 UTC — kl_free=0 retrain launched (A2 follow-up)
+- Hypothesis: removing the free-bits floor will force the latent to actively
+  compress, making it carry HI-relevant info → headline Pearson should land
+  in the 0.4+ JEPA range.
+- Launched in tmux `s4_rssm_kf0` with the same launcher + `KL_FREE=0.0
+  RUN_SUFFIX=_klfree0`. Added a `RUN_SUFFIX` env var to
+  `train_rssm_scenario4_orailix.sh` (backwards-compatible — defaults to empty)
+  so the new ckpts land in `~/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512_klfree0/`
+  without overwriting the original run.
+- Also added `CKPT_DIR_OVERRIDE` / `CKPT_PREFIX_OVERRIDE` /
+  `OUT_DIR_OVERRIDE` / `CF_DIR_OVERRIDE` / `RESULTS_OVERRIDE` env-var support
+  to `run_post_training_eval.sh` so the eval pipeline can be retargeted at
+  the variant run without code edits.
+- Eval auto-fire armed via `.eval_watch_kf0.sh` running in tmux
+  `eval_watch_kf0`. Will produce `RESULTS_RSSM_klfree0.md`,
+  `eval_results/rssm_s4_klfree0/`, and `eval_results/counterfactual_rssm_klfree0/`.
+- Monitor `bcv4p5tmo` armed for epoch boundaries / errors.
+- Wakeup at 07:44 UTC for first throughput + kl_loss check (key signal:
+  if `fit/kl_loss` is now much bigger than 0.6, the latent is encoding info
+  under KL pressure → collapse fix is working).
+- ETA at same throughput as first run: 4h13m → finish ~10:55 UTC.
