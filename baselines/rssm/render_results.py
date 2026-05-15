@@ -416,10 +416,10 @@ def render(args):
     # ── Per-component HI breakdown (Ridge probe) ────────────────────────
     if test_json:
         md.append("## Per-component HI metrics (Ridge probe, single probe seed)\n")
-        md.append("**Test split (`scenario4_test_lewm.h5`)**\n")
+        md.append("**Test split (`turbosens2_test.h5`)**\n")
         md.append(per_hi_table(test_json["task1"], test_json["hi_labels"]) + "\n")
         if th_json:
-            md.append("**Hard test split (`scenario4_test_hard_lewm.h5`)**\n")
+            md.append("**Hard test split (`turbosens2_test_hard.h5`)**\n")
             md.append(per_hi_table(th_json["task1"], th_json["hi_labels"]) + "\n")
 
     # ── Per-archetype breakdown ─────────────────────────────────────────

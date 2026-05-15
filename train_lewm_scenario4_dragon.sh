@@ -55,7 +55,7 @@ echo "Config   : w=${WIN_SIZE} H=${HISTORY_LEN} s=${H_STEP} P=${NUM_PREDS} bs=${
 echo "========================================"
 
 python -u train.py \
-    data=scenario4 \
+    data=turbosens2 \
     encoder_type=sensor \
     n_sensors=${N_SENSORS} \
     +sensor_encoder.max_sensors=${MAX_SENSORS} \
@@ -71,7 +71,7 @@ python -u train.py \
     trainer.precision=${PRECISION} \
     data.dataset.cache_dir=${STABLEWM_HOME} \
     wandb.config.project=turbofan_S4 \
-    subdir=scenario4_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
+    subdir=turbosens2_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN} \

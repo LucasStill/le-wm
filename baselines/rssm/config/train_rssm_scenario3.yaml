@@ -1,5 +1,5 @@
 # DreamerV3 RSSM baseline on TurboSens1 (scenario 3 in code).
-# Same defaults as scenario4 except n_sensors and num_actions.
+# Same defaults as turbosens2 except n_sensors and num_actions.
 
 defaults:
   - _self_
@@ -15,7 +15,7 @@ data:
   dataset:
     num_steps: 64
     frameskip: 1
-    name: scenario3_train_lewm
+    name: turbosens1_train
     cache_dir: /home/lucas/.stable_worldmodel
     keys_to_load:
       - pixels

@@ -52,7 +52,7 @@ export WANDB_HTTP_TIMEOUT=5
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # ── Data: copy HDF5 to fast local NVMe ($SCRATCH) ────────────────────────────
-HDF5_NAME=scenario4_train_lewm.h5
+HDF5_NAME=turbosens2_train.h5
 echo "Copying ${HDF5_NAME} to \$SCRATCH ..."
 cp $STABLEWM_HOME/${HDF5_NAME} $SCRATCH/
 echo "Copy done. Data dir: $SCRATCH"
@@ -76,7 +76,7 @@ ZERO_PAD_PROB=0.0
 RUN_NAME=lewm_s4_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS}
 
 srun python -u train.py \
-    data=scenario4 \
+    data=turbosens2 \
     encoder_type=sensor \
     n_sensors=${N_SENSORS} \
     +sensor_encoder.max_sensors=${MAX_SENSORS} \
@@ -92,7 +92,7 @@ srun python -u train.py \
     trainer.precision=bf16-mixed \
     data.dataset.cache_dir=${DATA_DIR} \
     wandb.config.project=turbofan_S4 \
-    subdir=scenario4_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
+    subdir=turbosens2_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}

@@ -53,16 +53,16 @@ export STABLEWM_HOME=/lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
 
 # -- Batch: JEPA baselines (v3 / S5 variants) --
 # CKPTS=(
-#     "scenario3_sensor_w1_H50_v3:${STABLEWM_HOME}/scenario3_sensor_w1_H50_v3/lewm_s3_sensor_w1_H50_v3_epoch_10_object.ckpt"
-#     "scenario3_sensor_w1_H50_S5:${STABLEWM_HOME}/scenario3_sensor_w1_H50_S5/lewm_s3_sensor_w1_H50_S5_epoch_10_object.ckpt"
-#     "scenario3_sensor_w5_H50_S5:${STABLEWM_HOME}/scenario3_sensor_w5_H50_S5/lewm_s3_sensor_w5_H50_S5_epoch_10_object.ckpt"
+#     "turbosens1_sensor_w1_H50_v3:${STABLEWM_HOME}/turbosens1_sensor_w1_H50_v3/lewm_s3_sensor_w1_H50_v3_epoch_10_object.ckpt"
+#     "turbosens1_sensor_w1_H50_S5:${STABLEWM_HOME}/turbosens1_sensor_w1_H50_S5/lewm_s3_sensor_w1_H50_S5_epoch_10_object.ckpt"
+#     "turbosens1_sensor_w5_H50_S5:${STABLEWM_HOME}/turbosens1_sensor_w5_H50_S5/lewm_s3_sensor_w5_H50_S5_epoch_10_object.ckpt"
 # )
 
 # -- Batch: JEPA large-stride variants --
 # CKPTS=(
-#     "scenario3_sensor_w10_H10_S10:${STABLEWM_HOME}/scenario3_sensor_w10_H10_S10/lewm_s3_sensor_w10_H10_S10_epoch_10_object.ckpt"
-#     "scenario3_sensor_w1_H10_S10:${STABLEWM_HOME}/scenario3_sensor_w1_H10_S10/lewm_s3_sensor_w1_H10_S10_epoch_10_object.ckpt"
-#     "scenario3_sensor_w1_H100_v3:${STABLEWM_HOME}/scenario3_sensor_w1_H100_v3/lewm_s3_sensor_w1_H100_v3_epoch_10_object.ckpt"
+#     "turbosens1_sensor_w10_H10_S10:${STABLEWM_HOME}/turbosens1_sensor_w10_H10_S10/lewm_s3_sensor_w10_H10_S10_epoch_10_object.ckpt"
+#     "turbosens1_sensor_w1_H10_S10:${STABLEWM_HOME}/turbosens1_sensor_w1_H10_S10/lewm_s3_sensor_w1_H10_S10_epoch_10_object.ckpt"
+#     "turbosens1_sensor_w1_H100_v3:${STABLEWM_HOME}/turbosens1_sensor_w1_H100_v3/lewm_s3_sensor_w1_H100_v3_epoch_10_object.ckpt"
 # )
 
 # -- Batch: AE baselines --

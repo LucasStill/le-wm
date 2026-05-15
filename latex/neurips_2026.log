@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.3.30)  1 MAY 2026 17:16
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.3.30)  5 MAY 2026 16:57
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -430,32 +430,29 @@ File: l3backend-pdftex.def 2022-01-12 L3 backend support: PDF output (pdfTeX)
 LaTeX Warning: Label `tab:archetypes' multiply defined.
 
 
-LaTeX Warning: Label `eq:phantom' multiply defined.
-
-
 LaTeX Warning: Label `eq:obs' multiply defined.
 
 ))
 \openout1 = `neurips_2026.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 106.
-LaTeX Font Info:    ... okay on input line 106.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 110.
+LaTeX Font Info:    ... okay on input line 110.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -523,7 +520,7 @@ LaTeX Font Info:    ... okay on input line 106.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring OFF on input line 106.
+Package hyperref Info: Link coloring OFF on input line 110.
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2021-04-02 v2.47 Cross-referencing by name of section
 
@@ -535,26 +532,26 @@ Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
 \c@section@level=\count304
 )
-LaTeX Info: Redefining \ref on input line 106.
-LaTeX Info: Redefining \pageref on input line 106.
-LaTeX Info: Redefining \nameref on input line 106.
+LaTeX Info: Redefining \ref on input line 110.
+LaTeX Info: Redefining \pageref on input line 110.
+LaTeX Info: Redefining \nameref on input line 110.
 
 (./neurips_2026.out) (./neurips_2026.out)
 \@outlinefile=\write3
 \openout3 = `neurips_2026.out'.
 
-LaTeX Info: Redefining \microtypecontext on input line 106.
-Package microtype Info: Applying patch `item' on input line 106.
-Package microtype Info: Applying patch `toc' on input line 106.
-Package microtype Info: Applying patch `eqnum' on input line 106.
-Package microtype Info: Applying patch `footnote' on input line 106.
+LaTeX Info: Redefining \microtypecontext on input line 110.
+Package microtype Info: Applying patch `item' on input line 110.
+Package microtype Info: Applying patch `toc' on input line 110.
+Package microtype Info: Applying patch `eqnum' on input line 110.
+Package microtype Info: Applying patch `footnote' on input line 110.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
 Package microtype Info: Automatic font expansion enabled (level 2),
 (microtype)             stretch: 20, shrink: 20, step: 1, non-selected.
 Package microtype Info: Using default expansion set `alltext-nott'.
-LaTeX Info: Redefining \showhyphens on input line 106.
+LaTeX Info: Redefining \showhyphens on input line 110.
 Package microtype Info: No adjustment of tracking.
 Package microtype Info: No adjustment of interword spacing.
 Package microtype Info: No adjustment of character kerning.
@@ -591,7 +588,7 @@ Package caption Info: End \AtBeginDocument code.
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msa on input line 110
+LaTeX Font Info:    Trying to load font information for U+msa on input line 114
 .
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
@@ -600,7 +597,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 110
+LaTeX Font Info:    Trying to load font information for U+msb on input line 114
 .
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
@@ -610,7 +607,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
 LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 1
-10.
+14.
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/t1cmtt.fd
 File: t1cmtt.fd 2019/12/16 v2.5j Standard LaTeX font definitions
@@ -619,8 +616,8 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `cmtt' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-LaTeX Font Info:    Trying to load font information for T1+phv on input line 11
-7.
+LaTeX Font Info:    Trying to load font information for T1+phv on input line 12
+1.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1phv.fd
 File: t1phv.fd 2020/03/25 scalable font definitions for T1/phv.
@@ -632,45 +629,85 @@ Package microtype Info: Loading generic protrusion settings for font family
  [1
 
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2]
-<figures/Turbosens1v3.pdf, id=207, 1087.06125pt x 755.82375pt>
-File: figures/Turbosens1v3.pdf Graphic file (type pdf)
-<use figures/Turbosens1v3.pdf>
-Package pdftex.def Info: figures/Turbosens1v3.pdf  used on input line 173.
-(pdftex.def)             Requested size: 397.48499pt x 276.36353pt.
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+<figures/Turbosens1v4.pdf, id=173, 2033.5975pt x 906.38625pt>
+File: figures/Turbosens1v4.pdf Graphic file (type pdf)
+<use figures/Turbosens1v4.pdf>
+Package pdftex.def Info: figures/Turbosens1v4.pdf  used on input line 146.
+(pdftex.def)             Requested size: 397.48499pt x 177.1526pt.
 
+Underfull \vbox (badness 8056) has occurred while \output is active []
+
+ [2 <./figures/Turbosens1v4.pdf>]
+
+Package natbib Warning: Citation `lacaille2014robust' on page 3 undefined on in
+put line 178.
+
+
+Package natbib Warning: Citation `karchmer1977identification' on page 3 undefin
+ed on input line 178.
+
+
+Package natbib Warning: Citation `dunn1987performance' on page 3 undefined on i
+nput line 178.
+
+
+Package natbib Warning: Citation `thoma2020quantifying' on page 3 undefined on 
+input line 178.
+
+
+Package natbib Warning: Citation `aygun2024thermodynamics' on page 3 undefined 
+on input line 178.
+
+
+Package natbib Warning: Citation `zonta2020predictive' on page 3 undefined on i
+nput line 178.
+
+
+Package natbib Warning: Citation `lee2014prognostics' on page 3 undefined on in
+put line 178.
+
+
+Package natbib Warning: Citation `tsui2015prognostics' on page 3 undefined on i
+nput line 178.
+
+
+Package natbib Warning: Citation `jaw2005recent' on page 3 undefined on input l
+ine 178.
+
+
+Package natbib Warning: Citation `mihai2022digital' on page 3 undefined on inpu
+t line 178.
+
+
+Package natbib Warning: Citation `Belfadel_Creff_Ben_Hamida_2025' on page 3 und
+efined on input line 178.
+
+[3]
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[3] [4 <./figures/Turbosens1v3.pdf>]
-
-LaTeX Warning: Reference `eq:omega' on page 5 undefined on input line 240.
-
-[5]
+[4] [5]
 LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 3
-36.
+18.
  (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 ) [6]
-Underfull \hbox (badness 3838) in paragraph at lines 343--344
-[]\T1/ptm/m/n/10 (+20) This pol-icy yields sparse in-ter-ven-tions ($\OT1/cmr/m
-/n/10 0\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 04%$ \T1/ptm/m/n/10 (+20) of timesteps
-) and strongly asym-met-ric
- []
-
-[7]
-<figures/fig1_xarch_xconfig_inOOD.png, id=307, 675.9654pt x 334.3692pt>
+<figures/fig1_xarch_xconfig_inOOD.png, id=303, 675.9654pt x 334.3692pt>
 File: figures/fig1_xarch_xconfig_inOOD.png Graphic file (type png)
 <use figures/fig1_xarch_xconfig_inOOD.png>
 Package pdftex.def Info: figures/fig1_xarch_xconfig_inOOD.png  used on input li
-ne 447.
+ne 416.
 (pdftex.def)             Requested size: 377.60951pt x 186.79138pt.
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[8 <./figures/fig1_xarch_xconfig_inOOD.png>] [9] (./neurips_2026.bbl [10])
-[11]
+[7] [8 <./figures/fig1_xarch_xconfig_inOOD.png>] (./neurips_2026.bbl
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [9]
+[10]) [11]
 \openout2 = `appendix.aux'.
 
  (./appendix.tex (./neurips_2026.toc)
@@ -692,20 +729,20 @@ LaTeX Warning: Reference `fig:healthy_degraded' on page 18 undefined on input l
 ine 584.
 
 [18]
-<figures/eda_s3_state_healthy_degraded.png, id=477, 1150.5384pt x 430.2474pt>
+<figures/eda_s3_state_healthy_degraded.png, id=480, 1150.5384pt x 430.2474pt>
 File: figures/eda_s3_state_healthy_degraded.png Graphic file (type png)
 <use figures/eda_s3_state_healthy_degraded.png>
 Package pdftex.def Info: figures/eda_s3_state_healthy_degraded.png  used on inp
 ut line 599.
 (pdftex.def)             Requested size: 397.48499pt x 148.63902pt.
-<figures/eda_s3_state_healthy_degraded_test.png, id=478, 1150.5384pt x 430.2474
+<figures/eda_s3_state_healthy_degraded_test.png, id=481, 1150.5384pt x 430.2474
 pt>
 File: figures/eda_s3_state_healthy_degraded_test.png Graphic file (type png)
 <use figures/eda_s3_state_healthy_degraded_test.png>
 Package pdftex.def Info: figures/eda_s3_state_healthy_degraded_test.png  used o
 n input line 608.
 (pdftex.def)             Requested size: 397.48499pt x 148.63902pt.
-<figures/eda_s3_state_healthy_degraded_test_hard.png, id=479, 1150.5384pt x 430
+<figures/eda_s3_state_healthy_degraded_test_hard.png, id=482, 1150.5384pt x 430
 .2474pt>
 File: figures/eda_s3_state_healthy_degraded_test_hard.png Graphic file (type pn
 g)
@@ -726,19 +763,19 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 [21] [22] [23] [24] [25] [26]
-<figures/eda_s4_train_region_archetype.png, id=589, 1003.8303pt x 281.853pt>
+<figures/eda_s4_train_region_archetype.png, id=598, 1003.8303pt x 281.853pt>
 File: figures/eda_s4_train_region_archetype.png Graphic file (type png)
 <use figures/eda_s4_train_region_archetype.png>
 Package pdftex.def Info: figures/eda_s4_train_region_archetype.png  used on inp
 ut line 1268.
 (pdftex.def)             Requested size: 377.60951pt x 106.02577pt.
-<figures/eda_s4_train_sensor_grid.png, id=590, 1293.633pt x 499.3857pt>
+<figures/eda_s4_train_sensor_grid.png, id=599, 1293.633pt x 499.3857pt>
 File: figures/eda_s4_train_sensor_grid.png Graphic file (type png)
 <use figures/eda_s4_train_sensor_grid.png>
 Package pdftex.def Info: figures/eda_s4_train_sensor_grid.png  used on input li
 ne 1278.
 (pdftex.def)             Requested size: 377.60951pt x 145.76302pt.
-<figures/eda_s4_train_state_marginals.png, id=591, 1292.1876pt x 426.393pt>
+<figures/eda_s4_train_state_marginals.png, id=600, 1292.1876pt x 426.393pt>
 File: figures/eda_s4_train_state_marginals.png Graphic file (type png)
 <use figures/eda_s4_train_state_marginals.png>
 Package pdftex.def Info: figures/eda_s4_train_state_marginals.png  used on inpu
@@ -748,7 +785,7 @@ t line 1289.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/eda_s4_train_contamination.png, id=592, 1293.633pt x 216.0873pt>
+<figures/eda_s4_train_contamination.png, id=601, 1293.633pt x 216.0873pt>
 File: figures/eda_s4_train_contamination.png Graphic file (type png)
 <use figures/eda_s4_train_contamination.png>
 Package pdftex.def Info: figures/eda_s4_train_contamination.png  used on input 
@@ -757,7 +794,7 @@ line 1303.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/eda_s4_train_event_rate_region.png, id=593, 896.805pt x 281.196pt>
+<figures/eda_s4_train_event_rate_region.png, id=602, 896.805pt x 281.196pt>
 File: figures/eda_s4_train_event_rate_region.png Graphic file (type png)
 <use figures/eda_s4_train_event_rate_region.png>
 Package pdftex.def Info: figures/eda_s4_train_event_rate_region.png  used on in
@@ -766,7 +803,7 @@ put line 1314.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/eda_s4_train_episode_length.png, id=594, 714.7503pt x 281.853pt>
+<figures/eda_s4_train_episode_length.png, id=603, 714.7503pt x 281.853pt>
 File: figures/eda_s4_train_episode_length.png Graphic file (type png)
 <use figures/eda_s4_train_episode_length.png>
 Package pdftex.def Info: figures/eda_s4_train_episode_length.png  used on input
@@ -792,7 +829,7 @@ Overfull \hbox (20.40082pt too wide) in paragraph at lines 1574--1592
  []
 
 [31]
-<figures/fig2_perHI_E2.png, id=654, 596.2275pt x 359.1819pt>
+<figures/fig2_perHI_E2.png, id=669, 596.2275pt x 359.1819pt>
 File: figures/fig2_perHI_E2.png Graphic file (type png)
 <use figures/fig2_perHI_E2.png>
 Package pdftex.def Info: figures/fig2_perHI_E2.png  used on input line 1689.
@@ -810,90 +847,84 @@ e 1704.
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 [32 <./figures/fig2_perHI_E2.png>]
-<figures/fig5_counterfactual_fidelity.png, id=668, 1326.1545pt x 408.3255pt>
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[33]
+<figures/fig5_counterfactual_fidelity.png, id=691, 1326.1545pt x 408.3255pt>
 File: figures/fig5_counterfactual_fidelity.png Graphic file (type png)
 <use figures/fig5_counterfactual_fidelity.png>
 Package pdftex.def Info: figures/fig5_counterfactual_fidelity.png  used on inpu
-t line 1805.
+t line 1865.
 (pdftex.def)             Requested size: 397.48499pt x 122.38644pt.
-
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-<figures/fig4_inDist_vs_OOD_scatter.png, id=671, 401.8212pt x 406.6392pt>
+<figures/fig4_inDist_vs_OOD_scatter.png, id=694, 401.8212pt x 406.6392pt>
 File: figures/fig4_inDist_vs_OOD_scatter.png Graphic file (type png)
 <use figures/fig4_inDist_vs_OOD_scatter.png>
 Package pdftex.def Info: figures/fig4_inDist_vs_OOD_scatter.png  used on input 
-line 1829.
+line 1889.
 (pdftex.def)             Requested size: 258.36281pt x 261.46434pt.
+
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-
-Underfull \vbox (badness 1975) has occurred while \output is active []
-
- [33]
-[34 <./figures/fig5_counterfactual_fidelity.png> <./figures/fig4_inDist_vs_OOD_
-scatter.png>]
-<figures/gallery_s3_archetypes.png, id=684, 1006.22076pt x 996.21416pt>
+[34 <./figures/fig5_counterfactual_fidelity.png>] [35 <./figures/fig4_inDist_vs
+_OOD_scatter.png>]
+<figures/gallery_s3_archetypes.png, id=711, 1006.22076pt x 996.21416pt>
 File: figures/gallery_s3_archetypes.png Graphic file (type png)
 <use figures/gallery_s3_archetypes.png>
 Package pdftex.def Info: figures/gallery_s3_archetypes.png  used on input line 
-1917.
+1977.
 (pdftex.def)             Requested size: 377.60951pt x 373.85301pt.
-
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-<figures/gallery_s3_episode.png, id=685, 933.95078pt x 642.09116pt>
+<figures/gallery_s3_episode.png, id=712, 933.95078pt x 642.09116pt>
 File: figures/gallery_s3_episode.png Graphic file (type png)
 <use figures/gallery_s3_episode.png>
-Package pdftex.def Info: figures/gallery_s3_episode.png  used on input line 193
+Package pdftex.def Info: figures/gallery_s3_episode.png  used on input line 199
 1.
 (pdftex.def)             Requested size: 377.60951pt x 259.6046pt.
 
+
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/gallery_s3_weather.png, id=686, 928.39154pt x 287.96815pt>
+<figures/gallery_s3_weather.png, id=713, 928.39154pt x 287.96815pt>
 File: figures/gallery_s3_weather.png Graphic file (type png)
 <use figures/gallery_s3_weather.png>
-Package pdftex.def Info: figures/gallery_s3_weather.png  used on input line 194
+Package pdftex.def Info: figures/gallery_s3_weather.png  used on input line 200
 5.
 (pdftex.def)             Requested size: 377.60951pt x 117.12738pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/gallery_s3_sensor_state_corr.png, id=687, 788.85484pt x 283.52077pt>
+<figures/gallery_s3_sensor_state_corr.png, id=714, 788.85484pt x 283.52077pt>
 File: figures/gallery_s3_sensor_state_corr.png Graphic file (type png)
 <use figures/gallery_s3_sensor_state_corr.png>
 Package pdftex.def Info: figures/gallery_s3_sensor_state_corr.png  used on inpu
-t line 1956.
+t line 2016.
 (pdftex.def)             Requested size: 377.60951pt x 135.71635pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/gallery_s4_regions.png, id=688, 1156.32pt x 505.89pt>
+<figures/gallery_s4_regions.png, id=715, 1156.32pt x 505.89pt>
 File: figures/gallery_s4_regions.png Graphic file (type png)
 <use figures/gallery_s4_regions.png>
-Package pdftex.def Info: figures/gallery_s4_regions.png  used on input line 197
+Package pdftex.def Info: figures/gallery_s4_regions.png  used on input line 203
 2.
 (pdftex.def)             Requested size: 377.60951pt x 165.19966pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/gallery_s4_trajectory_arid.png, id=691, 1011.78pt x 1105.12875pt>
+<figures/gallery_s4_trajectory_arid.png, id=718, 1011.78pt x 1105.12875pt>
 File: figures/gallery_s4_trajectory_arid.png Graphic file (type png)
 <use figures/gallery_s4_trajectory_arid.png>
 Package pdftex.def Info: figures/gallery_s4_trajectory_arid.png  used on input 
-line 1988.
+line 2048.
 (pdftex.def)             Requested size: 377.60951pt x 412.44931pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-) [35] [36 <./figures/gallery_s3_archetypes.png>] [37 <./figures/gallery_s3_epi
-sode.png> <./figures/gallery_s3_weather.png>] [38 <./figures/gallery_s3_sensor_
-state_corr.png> <./figures/gallery_s4_regions.png>] [39 <./figures/gallery_s4_t
-rajectory_arid.png>] (./checklist.tex [40
+) [36 <./figures/gallery_s3_archetypes.png>] [37 <./figures/gallery_s3_episode.
+png> <./figures/gallery_s3_weather.png>] [38 <./figures/gallery_s3_sensor_state
+_corr.png> <./figures/gallery_s4_regions.png>] [39 <./figures/gallery_s4_trajec
+tory_arid.png>] (./checklist.tex [40
 
 
 ] [41] [42] [43] [44] [45])
@@ -908,47 +939,107 @@ LaTeX Warning: There were undefined references.
 LaTeX Warning: There were multiply-defined labels.
 
 Package rerunfilecheck Info: File `neurips_2026.out' has not changed.
-(rerunfilecheck)             Checksum: B3773C33A103E62AE72F7C9CEB8FD39A;6805.
+(rerunfilecheck)             Checksum: 98E40CE9BD11F729D12F8BD1A75382C7;6914.
  ) 
 Here is how much of TeX's memory you used:
- 15616 strings out of 480247
- 253591 string characters out of 5896151
- 602236 words of memory out of 5000000
- 32665 multiletter control sequences out of 15000+600000
- 533259 words of font info for 310 fonts, out of 8000000 for 9000
+ 15642 strings out of 480247
+ 254013 string characters out of 5896151
+ 600226 words of memory out of 5000000
+ 32666 multiletter control sequences out of 15000+600000
+ 534453 words of font info for 318 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 70i,14n,77p,1596b,632s stack positions out of 5000i,500n,10000p,200000b,80000s
- </sessions/peaceful-vibrant-goldberg/.texlive2021/texmf-var/fonts/pk/ljfour/
-jknappen/ec/ectt0900.600pk>{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/
-8r.enc} </sessions/peaceful-vibrant-goldberg/.texlive2021/texmf-var/fonts/pk/lj
-four/jknappen/ec/ectt1000.600pk></usr/share/texlive/texmf-dist/fonts/type1/publ
-ic/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/ams
-fonts/cm/cmbx9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra
-/cmex9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10
-.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></
-usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/sha
-re/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texlive/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></usr/share/texlive/texmf-di
-st/fonts/type1/public/amsfonts/cmextra/cmmib9.pfb></usr/share/texlive/texmf-dis
-t/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmr5.pfb></usr/share/texlive/texmf-dist/fonts/type1/p
-ublic/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
-sfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmr9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10
-.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></
-usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/sha
-re/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/share/texli
-ve/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dis
-t/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/u
-rw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8
-a.pfb>
-Output written on neurips_2026.pdf (46 pages, 3861558 bytes).
+ 70i,14n,77p,1946b,632s stack positions out of 5000i,500n,10000p,200000b,80000s
+pdfTeX warning (dest): name{table.caption.93} has been referenced but does no
+t exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.92} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.88} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{figure.caption.80} has been referenced but does not
+ exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{figure.caption.78} has been referenced but does not
+ exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{figure.caption.79} has been referenced but does not
+ exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.74} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.72} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.70} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.63} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.58} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.56} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.54} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.49} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.48} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.94} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.23} has been referenced but does not 
+exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{figure.caption.91} has been referenced but does not
+ exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{figure.caption.20} has been referenced but does not
+ exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{table.caption.39} has been referenced but does not 
+exist, replaced by a fixed one
+
+ </sessions/peaceful-vibrant-goldberg/.texlive2021/texmf-var/fonts/pk/ljfour/jk
+nappen/ec/ectt0900.600pk>{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r
+.enc} </sessions/peaceful-vibrant-goldberg/.texlive2021/texmf-var/fonts/pk/ljfo
+ur/jknappen/ec/ectt1000.600pk></usr/share/texlive/texmf-dist/fonts/type1/public
+/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfo
+nts/cm/cmbx9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra/c
+mex9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.p
+fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></us
+r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share
+/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texliv
+e/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texlive/texmf
+-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></usr/share/texlive/texmf-dist
+/fonts/type1/public/amsfonts/cmextra/cmmib9.pfb></usr/share/texlive/texmf-dist/
+fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmr5.pfb></usr/share/texlive/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmr9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.p
+fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></us
+r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share
+/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/share/texliv
+e/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/share/texlive
+/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/
+fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw
+/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.
+pfb>
+Output written on neurips_2026.pdf (46 pages, 5077363 bytes).
 PDF statistics:
- 1040 PDF objects out of 1200 (max. 8388607)
- 804 compressed objects within 9 object streams
- 275 named destinations out of 1000 (max. 500000)
- 62845 words of extra memory for PDF output out of 74296 (max. 10000000)
+ 1063 PDF objects out of 1200 (max. 8388607)
+ 825 compressed objects within 9 object streams
+ 288 named destinations out of 1000 (max. 500000)
+ 62837 words of extra memory for PDF output out of 74296 (max. 10000000)
 

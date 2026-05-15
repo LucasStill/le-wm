@@ -35,7 +35,7 @@ export WANDB_HTTP_TIMEOUT=5
 # NOTE: no WANDB_SILENT — see train_lewm_scenario3.slurm comment
 
 # ── Data: copy HDF5 to fast local NVMe ($SCRATCH) ────────────────────────────
-HDF5_NAME=scenario3_train_400_lewm.h5
+HDF5_NAME=turbosens1_train.h5
 echo "Copying ${HDF5_NAME} to \$SCRATCH ..."
 cp $STABLEWM_HOME/${HDF5_NAME} $SCRATCH/
 echo "Copy done."
@@ -56,7 +56,7 @@ srun python -u baselines/ar_lstm/train_ar_lstm.py \
     wm.h_step=${H_STEP} \
     wm.zero_pad_prob=${ZERO_PAD_PROB} \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_ar_lstm_h${HISTORY_LEN}_S${H_STEP}_hd256_l2 \
+    subdir=turbosens1_ar_lstm_h${HISTORY_LEN}_S${H_STEP}_hd256_l2 \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}

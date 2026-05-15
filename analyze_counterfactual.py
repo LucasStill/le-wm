@@ -139,10 +139,15 @@ def plot_fig5(rmse_agg: dict, diff_agg: dict, out_path: Path):
         ax_diff.set_ylabel("differential" if col == 0 else "")
         ax_diff.grid(alpha=0.3)
 
-    # Shared legend at the right
+    # Shared legend at the right, with translucent background so it's
+    # readable when it overlaps the plot area.
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="center right", fontsize=8.5, frameon=False,
-               bbox_to_anchor=(1.02, 0.5))
+    leg = fig.legend(handles, labels, loc="center right", fontsize=8.5,
+                     frameon=True, fancybox=True,
+                     facecolor="white", edgecolor="lightgray",
+                     framealpha=0.8,
+                     bbox_to_anchor=(1.02, 0.5))
+    leg.get_frame().set_linewidth(0.4)
     fig.suptitle("Counterfactual fidelity: world model vs simulator under "
                  "alternative actions\n"
                  "Top: absolute RMSE — both conditioned on same action.  "

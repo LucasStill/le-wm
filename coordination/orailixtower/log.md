@@ -31,7 +31,7 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 2026-04-26T10:53Z  Smoke-test caught a real bug: torch.compile inserts `_orig_mod.` mid-key (encoder._orig_mod.X), my prefix-strip only handled key-start. Fixed: replace all occurrences. Re-smoke confirmed weights load (no missing/unexpected keys).
 2026-04-26T10:55Z  Launched bigger-probe diagnostic in tmux `bigger_probe`: ep5 (ckpt epoch_6) → ep9 (ckpt epoch_10), 150 max probe epochs, patience 20. Same encoder weights as default-probe runs ⇒ apples-to-apples comparison. ETA 1-2 h.
 2026-04-26T11:?Z   Bigger-probe diagnostic completed (~30 min total, faster than expected). RESULT: bigger probe gives WORSE Pearson than default at both checkpoints (-0.07/+0.02 vs +0.22/+0.24); both early-stopped on best test-RMSE so it's overfitting, not undertraining. Neither hypothesis A nor B held — third path: default probe is right-sized for 28K-window budget; bigger probes overfit. Encoder DOES carry HI signal (default extracts it); the bottleneck is probe-train data size, not probe capacity. Full write-up in results.md "Bigger-probe diagnostic on L1" section.
-2026-04-26T12:13Z  Pulled dragon's strong-corroboration: eval_sweep at 769K windows on E1 → Pearson 0.563 (vs in-training 0.25). Validates our "data-bound" conclusion. Two new tasks accepted: (A) eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts × {test, test_hard}; (B) mirror n_subsample bump 30000 → 200000 in lewm.yaml + ar_lstm scenario4 yaml.
+2026-04-26T12:13Z  Pulled dragon's strong-corroboration: eval_sweep at 769K windows on E1 → Pearson 0.563 (vs in-training 0.25). Validates our "data-bound" conclusion. Two new tasks accepted: (A) eval_sweep --tasks 1 on L1+L2 epoch_10 ckpts × {test, test_hard}; (B) mirror n_subsample bump 30000 → 200000 in lewm.yaml + ar_lstm turbosens2 yaml.
 2026-04-26T12:14Z  TASK B done: bumped n_subsample in config/train/lewm.yaml and baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml to 200000. Past runs unaffected.
 2026-04-26T12:15Z  TASK A launched in tmux `eval_sweep`: 4 sequential runs (L1_te, L2_te, L1_th, L2_th) with --tasks 1 --no_parallel. ETA ~40 min total. eval_sweep already encoding L1_te: Z_tr=(746309, 64), Z_te=(84447, 64).
 
@@ -197,8 +197,8 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   calls so they keep working with origin's API.
 
 2026-04-27T13:35Z  Pushed orailixtower commit 3d92e36 to feature/option-b-
-  sensor-native: AR-LSTM scenario4 infrastructure (model.py use_cudnn +
-  max_sensors, train_ar_lstm.py compile_encoder, scenario4 yaml, launcher,
+  sensor-native: AR-LSTM turbosens2 infrastructure (model.py use_cudnn +
+  max_sensors, train_ar_lstm.py compile_encoder, turbosens2 yaml, launcher,
   4 helper scripts, run_overnight_chain.sh). Should be enough for you to
   reproduce / extend the AR-LSTM side if needed.
 

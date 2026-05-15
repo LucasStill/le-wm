@@ -16,7 +16,7 @@ Keep **Open questions** current so the user can answer them on reconnect.
   `BATCH_SIZE=512 NUM_WORKERS=8 ACCUM_GRAD=1 MAX_EPOCHS=10 WANDB_MODE=offline`.
   Tee log: `logs/s4_rssm_bs512_2201.log`. Wandb run: `wandb/offline-run-20260502_220125-9inzwnrj`.
   Config: T=64, stoch=32x32, deter=512, hi_probe=on (eval_interval=5 + final epoch),
-  bf16-mixed, optimizer.lr=1e-4. Effective bs=512 matches AR-LSTM scenario4 exactly.
+  bf16-mixed, optimizer.lr=1e-4. Effective bs=512 matches AR-LSTM turbosens2 exactly.
 - **Live status (22:11 UTC, ~10 min in):** healthy. global_step=4149 in 481 s →
   **8.63 it/s @ bs=512 = 4,418 samples/s** (23.7× faster than bs=16). Loss 0.602
   (recon 0.002, kl 0.60, dyn/rep 1.00). GPU 64-70 %, VRAM 7.93 GB.
@@ -132,7 +132,7 @@ Keep **Open questions** current so the user can answer them on reconnect.
 - Launched real run **bs=512, accum=1, nw=8, MAX_EPOCHS=10, WANDB_MODE=offline**
   in tmux `s4_rssm` at 22:01:25 UTC. Tee log: `logs/s4_rssm_bs512_2201.log`,
   wandb dir: `wandb/offline-run-20260502_220125-9inzwnrj`. Effective bs=512 matches
-  AR-LSTM scenario4 exactly (fair comparison preserved, no dataset subsampling).
+  AR-LSTM turbosens2 exactly (fair comparison preserved, no dataset subsampling).
 - At 22:07 UTC: GPU 70 % / 7.93 GB VRAM, wandb .wandb file growing (96 KB).
   No tqdm/wandb-summary visible yet (Lightning quirk + sparse logging cadence at
   large bs). Run is healthy. Theoretical ETA: 9–12 h for 10 epochs.

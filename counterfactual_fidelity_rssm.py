@@ -10,8 +10,8 @@ are reused as-is — both are model-agnostic.
 Usage:
     python counterfactual_fidelity_rssm.py \\
         --ckpts RSSM:/path/to/rssm_*_epoch_10_object.ckpt \\
-        --sim_h5 /home/lthil/.stable_worldmodel/scenario4_train_sensors.h5 \\
-        --eval_h5 /home/lthil/.stable_worldmodel/scenario4_test_lewm.h5 \\
+        --sim_h5 /home/lthil/.stable_worldmodel/turbosens2_train_sensors.h5 \\
+        --eval_h5 /home/lthil/.stable_worldmodel/turbosens2_test.h5 \\
         --out_dir eval_results/counterfactual_rssm \\
         --n_episodes 30 --horizon 100 --actions 0 1 2 3 4 5 6 \\
         --branch_fracs 0.25 0.5 0.75
@@ -37,7 +37,7 @@ from baselines.rssm.model import RSSMWorldModel  # noqa: F401, E402
 
 # Simulator
 sys.path.insert(0, "/home/lthil/thesis/rl_opendeck_simulator")
-from scenarios.scenario4.replay import EpisodeReplayer, CounterfactualSpec  # noqa: E402
+from scenarios.turbosens2.replay import EpisodeReplayer, CounterfactualSpec  # noqa: E402
 
 # Reuse the differential math from the JEPA script
 from counterfactual_fidelity import compute_differentials  # noqa: E402
@@ -121,7 +121,7 @@ def evaluate_one_ckpt(ckpt_name: str, ckpt_path: Path, args, replayer,
     )
     probe.eval()
 
-    fh_lewm = h5py.File("/home/lthil/.stable_worldmodel/scenario4_train_lewm.h5", "r")
+    fh_lewm = h5py.File("/home/lthil/.stable_worldmodel/turbosens2_train.h5", "r")
     ep_offsets = fh_lewm["ep_offset"][:]
 
     results = []

@@ -7,7 +7,7 @@ the eval pipeline is model-agnostic once the model class is importable.
 Usage:
     python baselines/rssm/per_archetype_rssm.py \\
         --ckpt /path/to/rssm_*_epoch_10_object.ckpt \\
-        --hdf5 /home/lthil/.stable_worldmodel/scenario4_test_lewm.h5 \\
+        --hdf5 /home/lthil/.stable_worldmodel/turbosens2_test.h5 \\
         --label RSSM_te --seq-lens 1 10 \\
         --out-csv eval_results/rssm_s4/per_archetype.csv
 """

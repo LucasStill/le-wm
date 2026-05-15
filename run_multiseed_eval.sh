@@ -21,16 +21,16 @@ OUT=eval_results/multiseed
 mkdir -p "$OUT" logs/multiseed
 
 SEEDS=${SEEDS:-"0 1 2"}
-H5_TEST=/home/lthil/.stable_worldmodel/scenario4_test_lewm.h5
-H5_TH=/home/lthil/.stable_worldmodel/scenario4_test_hard_lewm.h5
+H5_TEST=/home/lthil/.stable_worldmodel/turbosens2_test.h5
+H5_TH=/home/lthil/.stable_worldmodel/turbosens2_test_hard.h5
 
 # (name, path) pairs — JEPA family
 CKPTS=(
-  "E1:/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H16_S1_P4/lewm_s4_sensor_w1_H16_S1_P4_epoch_10_object.ckpt"
-  "E2:/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H32_S1_P4/lewm_s4_sensor_w1_H32_S1_P4_epoch_10_object.ckpt"
-  "E3:/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H16_S5_P4/lewm_s4_sensor_w1_H16_S5_P4_epoch_10_object.ckpt"
-  "E5:/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H8_S1_P4/lewm_s4_sensor_w1_H8_S1_P4_epoch_10_object.ckpt"
-  "E6probe:/home/lthil/.stable_worldmodel/scenario4_sensor_w1_H16_S10_P4/lewm_s4_sensor_w1_H16_S10_P4_epoch_1_object.ckpt"
+  "E1:/home/lthil/.stable_worldmodel/turbosens2_sensor_w1_H16_S1_P4/lewm_s4_sensor_w1_H16_S1_P4_epoch_10_object.ckpt"
+  "E2:/home/lthil/.stable_worldmodel/turbosens2_sensor_w1_H32_S1_P4/lewm_s4_sensor_w1_H32_S1_P4_epoch_10_object.ckpt"
+  "E3:/home/lthil/.stable_worldmodel/turbosens2_sensor_w1_H16_S5_P4/lewm_s4_sensor_w1_H16_S5_P4_epoch_10_object.ckpt"
+  "E5:/home/lthil/.stable_worldmodel/turbosens2_sensor_w1_H8_S1_P4/lewm_s4_sensor_w1_H8_S1_P4_epoch_10_object.ckpt"
+  "E6probe:/home/lthil/.stable_worldmodel/turbosens2_sensor_w1_H16_S10_P4/lewm_s4_sensor_w1_H16_S10_P4_epoch_1_object.ckpt"
 )
 
 ts() { date -u +'%Y-%m-%dT%H:%M:%SZ'; }

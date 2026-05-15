@@ -7,18 +7,18 @@
 #       --data_dir /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
 #
 # This creates three pipeline-ready files:
-#   scenario3_train_400_lewm.h5  — 400 episodes × 10 000 steps (train+val)
-#   scenario3_test_lewm.h5       — 40 episodes (held-out test)
-#   scenario3_test_hard_lewm.h5  — 40 episodes, hard distribution shift (OOD)
+#   turbosens1_train.h5  — 400 episodes × 10 000 steps (train+val)
+#   turbosens1_test.h5       — 40 episodes (held-out test)
+#   turbosens1_test_hard.h5  — 40 episodes, hard distribution shift (OOD)
 #
 # TRAINING — from le-wm/:
 #
 #   python train.py \
-#       data=scenario3 \
+#       data=turbosens1 \
 #       n_sensors=84 \
 #       data.dataset.cache_dir=/abs/path/to/data
 #
-# The file loaded will be: {cache_dir}/scenario3_train_400_lewm.h5
+# The file loaded will be: {cache_dir}/turbosens1_train.h5
 #
 # DIFFERENCES FROM TURBOFAN (opendeck_2000_lewm.h5)
 # --------------------------------------------------
@@ -48,7 +48,7 @@ dataset:
   # For P=1 (default) this reduces to the original H*s + w.
   num_steps: ${eval:'(${wm.history_size} + ${wm.num_preds} - 1) * ${wm.h_step} + ${obs_window_size}'}
   frameskip: 1
-  name: scenario3_train_400_lewm
+  name: turbosens1_train
   cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
   keys_to_load:
     - pixels   # (N, 7, 12) normalised sensor data — see prepare_scenario3_dataset.py

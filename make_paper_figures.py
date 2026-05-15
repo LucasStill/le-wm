@@ -204,45 +204,59 @@ def fig1():
 
     x = np.arange(len(rows_ord))
     w = 0.38
-    fig, ax = plt.subplots(figsize=(11, 4.5))
+    fig, ax = plt.subplots(figsize=(11, 4.8))
     in_colors = [C_INDIST if not p else "lightgray" for p in is_ip]
     ood_colors = [C_OOD if not p else "lightgray" for p in is_ip]
     ax.bar(x - w/2, in_d, w, color=in_colors,
            hatch=["" if not p else "//" for p in is_ip],
            edgecolor="black", linewidth=0.6,
-           label="In-distribution (test_lewm)", yerr=in_d_err, capsize=3)
+           label="In-distribution (test)", yerr=in_d_err, capsize=3)
     ax.bar(x + w/2, ood, w, color=ood_colors,
            hatch=["" if not p else "//" for p in is_ip],
            edgecolor="black", linewidth=0.6,
-           label="OOD (test_hard_lewm)", yerr=ood_err, capsize=3)
+           label="OOD (test_hard)", yerr=ood_err, capsize=3)
     ax.axhline(0, color="black", lw=0.5)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=8)
     ax.set_ylabel("HI mean Pearson-r")
     ax.set_title("Encoder representation quality — multi-seed mean ± std (where available)\n"
                  "Hatched bars = config queued, awaiting results")
-    ax.legend(loc="upper right")
+    # Legend below the x-axis (cleared of the plot area entirely).
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, -0.32),
+              ncol=2, frameon=False, fontsize=9)
 
     valid_ood = [v for v in ood if not np.isnan(v)]
     valid_ind = [v for v in in_d if not np.isnan(v)]
-    ymin = min(min(valid_ood + [0]) - 0.1, -0.15)
-    ymax = max(valid_ind) + 0.12
+    valid_err = [e for e in (in_d_err + ood_err) if not np.isnan(e)]
+    # Lift ymax to fit error-bar tips + value labels above them.
+    ymin = min(min(valid_ood + [0]) - 0.10, -0.15)
+    ymax = max(valid_ind) + (max(valid_err) if valid_err else 0) + 0.14
     ax.set_ylim(ymin, ymax)
 
-    for i, (v, p) in enumerate(zip(in_d, is_ip)):
+    LBL_GAP = 0.020   # text offset above the error-bar tip
+    for i, (v, e, p) in enumerate(zip(in_d, in_d_err, is_ip)):
         if p:
             ax.text(i - w/2, 0.02, "(in progress)", ha="center",
                     fontsize=8, color="dimgray", rotation=90, va="bottom")
         else:
-            ax.text(i - w/2, v + 0.015, f"{v:.2f}", ha="center", fontsize=8)
-    for i, (v, p) in enumerate(zip(ood, is_ip)):
+            # Above the error-bar tip, not the bar mean
+            ax.text(i - w/2, v + e + LBL_GAP, f"{v:.2f}",
+                    ha="center", va="bottom", fontsize=8)
+    for i, (v, e, p) in enumerate(zip(ood, ood_err, is_ip)):
         if p:
             continue
-        offset = 0.015 if v >= 0 else -0.04
-        ax.text(i + w/2, v + offset, f"{v:.2f}", ha="center", fontsize=8)
+        if v >= 0:
+            ax.text(i + w/2, v + e + LBL_GAP, f"{v:.2f}",
+                    ha="center", va="bottom", fontsize=8)
+        else:
+            # Below the bottom of the error bar for negative bars
+            ax.text(i + w/2, v - e - LBL_GAP, f"{v:.2f}",
+                    ha="center", va="top", fontsize=8)
 
+    fig.tight_layout()
     out = FIG_DIR / "fig1_xarch_xconfig_inOOD"
-    fig.savefig(f"{out}.pdf"); fig.savefig(f"{out}.png")
+    fig.savefig(f"{out}.pdf", bbox_inches="tight")
+    fig.savefig(f"{out}.png", bbox_inches="tight", dpi=200)
     plt.close(fig)
     print(f"  → {out.name}.{{pdf,png}}")
 
@@ -396,7 +410,7 @@ def fig4():
     ax.set_ylabel("OOD HI Pearson-r (test_hard_lewm)")
     ax.set_title("Specificity ↔ generality (multi-seed mean, error bars = ±1 std)\n"
                  "Larger S → higher OOD; in-distribution best at H=32 S=1 (E2)")
-    ax.legend(loc="lower right")
+    ax.legend(loc="upper left")
     ax.set_aspect("equal", "box")
 
     out = FIG_DIR / "fig4_inDist_vs_OOD_scatter"

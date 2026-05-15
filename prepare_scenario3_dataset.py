@@ -2,7 +2,7 @@
 """
 prepare_scenario3_dataset.py
 ============================
-Convert scenario3 *_sensors.h5 files into pipeline-ready *_lewm.h5 files
+Convert turbosens1 *_sensors.h5 files into pipeline-ready *_lewm.h5 files
 for le-wm training.
 
 What this script does
@@ -25,8 +25,8 @@ Usage
 -----
   # Single file
   python prepare_scenario3_dataset.py \\
-      --input  /path/to/scenario3_train_400_sensors.h5 \\
-      --output /path/to/scenario3_train_400_lewm.h5
+      --input  /path/to/turbosens1_train_400_sensors.h5 \\
+      --output /path/to/turbosens1_train.h5
 
   # All three splits in one shot (recommended — shares train-set stats)
   python prepare_scenario3_dataset.py \\
@@ -34,17 +34,17 @@ Usage
       --data_dir /lustre/fswork/projects/rech/yil/ugy35qd/thesis/rl_opendeck_simulator/data
 
 Output files (--all_splits):
-  scenario3_train_400_lewm.h5
-  scenario3_test_lewm.h5
-  scenario3_test_hard_lewm.h5
+  turbosens1_train.h5
+  turbosens1_test.h5
+  turbosens1_test_hard.h5
 
 After running, point the training config at the lewm file:
-  python train.py data=scenario3 n_sensors=84 \\
+  python train.py data=turbosens1 n_sensors=84 \\
       data.dataset.cache_dir=/path/to/data
 
 Notes
 -----
-- The base scenario3_*.h5 files have STUB ZEROS in observation/sensors.
+- The base turbosens1_*.h5 files have STUB ZEROS in observation/sensors.
   Always use the *_sensors.h5 variants as input.
 - Normalisation is computed from the TRAIN file and applied to all splits,
   so test values are on the same scale (out-of-range values are clipped to
@@ -306,7 +306,7 @@ def main():
         ),
     )
     parser.add_argument(
-        "--train_file", default="scenario3_train_400_sensors.h5",
+        "--train_file", default="turbosens1_train_400_sensors.h5",
         help="Training file name inside --data_dir (used for norm stats).",
     )
     args = parser.parse_args()
@@ -317,9 +317,9 @@ def main():
         output_dir.mkdir(parents=True, exist_ok=True)
 
         splits = [
-            ("scenario3_train_400_sensors.h5", "scenario3_train_400_lewm.h5"),
-            ("scenario3_test_sensors.h5",       "scenario3_test_lewm.h5"),
-            ("scenario3_test_hard_sensors.h5",  "scenario3_test_hard_lewm.h5"),
+            ("turbosens1_train_400_sensors.h5", "turbosens1_train.h5"),
+            ("turbosens1_test_sensors.h5",       "turbosens1_test.h5"),
+            ("turbosens1_test_hard_sensors.h5",  "turbosens1_test_hard.h5"),
         ]
         # Compute normalisation stats once from the training file only
         train_path = data_dir / args.train_file
@@ -346,9 +346,9 @@ def main():
     print(
         "\n" + "=" * 60 + "\n"
         "Done. Next steps:\n\n"
-        "  # JEPA training on scenario3:\n"
+        "  # JEPA training on turbosens1:\n"
         "  python train.py \\\n"
-        "      data=scenario3 \\\n"
+        "      data=turbosens1 \\\n"
         "      n_sensors=84 \\\n"
         "      data.dataset.cache_dir=/path/to/data \\\n"
         "      obs_window_size=1 \\\n"

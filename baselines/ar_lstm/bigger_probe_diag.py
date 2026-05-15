@@ -21,7 +21,7 @@ Usage
     python baselines/ar_lstm/bigger_probe_diag.py \\
         --ckpt   /home/lucas/.stable_worldmodel/ar_lstm_scenario4_w1_H16_S1_P4_h256l2/ar_lstm_s4_w1_H16_S1_P4_h256l2_epoch_6_object.ckpt \\
         --config /home/lucas/.stable_worldmodel/ar_lstm_scenario4_w1_H16_S1_P4_h256l2/config.yaml \\
-        --data   /home/lucas/.stable_worldmodel/scenario4_train_lewm.h5 \\
+        --data   /home/lucas/.stable_worldmodel/turbosens2_train.h5 \\
         --label  L1-epoch5 \\
         --d-model 512 --num-layers 6
 """

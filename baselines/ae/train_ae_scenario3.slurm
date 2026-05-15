@@ -50,7 +50,7 @@ export WANDB_HTTP_TIMEOUT=5
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # ── Data: copy HDF5 to $SCRATCH ───────────────────────────────────────────────
-HDF5_NAME=scenario3_train_400_lewm.h5
+HDF5_NAME=turbosens1_train.h5
 echo "Copying ${HDF5_NAME} to \$SCRATCH ..."
 cp $STABLEWM_HOME/${HDF5_NAME} $SCRATCH/
 echo "Copy done."

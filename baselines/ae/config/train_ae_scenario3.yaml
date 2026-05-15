@@ -35,7 +35,7 @@ data:
   dataset:
     num_steps: ${eval:'${ae_seq_len} + ${obs_window_size} - 1'}
     frameskip: 1
-    name: scenario3_train_400_lewm
+    name: turbosens1_train
     cache_dir: /lustre/fswork/projects/rech/yil/ugy35qd/.stable_worldmodel
     keys_to_load:
       - pixels   # (N, 7, 12) normalised sensor data
@@ -94,7 +94,7 @@ wandb:
   enabled: True
   config:
     entity: thil-ecole-polytechnique
-    project: scenario3
+    project: turbosens1
     name: ${output_model_name}
     resume: never
     log_model: False

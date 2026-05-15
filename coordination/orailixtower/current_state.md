@@ -123,13 +123,13 @@ same gradients (modulo ~1e-6 fp rounding). Comparison vs JEPA is
 ## Setup recap (done)
 
 - `prepare_scenario4_dataset.py --all_splits` finished — produced
-  `scenario4_{train,test,test_hard}_lewm.h5` in
+  `turbosens2_{train,test,test_hard}_lewm.h5` in
   `/home/lucas/.stable_worldmodel/` (4.9 GB / 595 MB / 612 MB,
   pixels (N, 11, 16), 7 actions 0–6).
 - `baselines/ar_lstm/config/train_ar_lstm_scenario4.yaml` created.
 - `baselines/ar_lstm/model.py` patched: `build_ar_lstm` now passes
   `max_sensors` through to `SensorEncoder` (was hardcoded to default
-  128, would have crashed on scenario4's n_sensors=176).
+  128, would have crashed on turbosens2's n_sensors=176).
 - `train_ar_lstm_scenario4_orailix.sh` launcher written (mirror of
   `train_lewm_scenario4_dragon.sh`, env-var overrides for the same
   knobs plus three LSTM-specific knobs).

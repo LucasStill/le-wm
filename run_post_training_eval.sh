@@ -74,7 +74,7 @@ echo "==========================================================" | tee -a "$LOG
 rm -f "$OUT_DIR/multiseed_results.csv"   # fresh run
 run_step "task1-multiseed/test" python baselines/rssm/multiseed_eval_rssm.py \
     --ckpt "$CKPT" \
-    --hdf5 "$STABLEWM_HOME/scenario4_test_lewm.h5" \
+    --hdf5 "$STABLEWM_HOME/turbosens2_test.h5" \
     --label "RSSM_te" \
     --seeds 0 1 2 3 4 5 \
     --seq-lens 1 \
@@ -82,7 +82,7 @@ run_step "task1-multiseed/test" python baselines/rssm/multiseed_eval_rssm.py \
 
 run_step "task1-multiseed/test_hard" python baselines/rssm/multiseed_eval_rssm.py \
     --ckpt "$CKPT" \
-    --hdf5 "$STABLEWM_HOME/scenario4_test_hard_lewm.h5" \
+    --hdf5 "$STABLEWM_HOME/turbosens2_test_hard.h5" \
     --label "RSSM_th" \
     --seeds 0 1 2 3 4 5 \
     --seq-lens 1 \
@@ -91,13 +91,13 @@ run_step "task1-multiseed/test_hard" python baselines/rssm/multiseed_eval_rssm.p
 # ── (2) Custom Task 3 — latent forecasting via RSSM imagination ──────────
 run_step "task3/test" python baselines/rssm/eval_rssm.py \
     --ckpt "$CKPT" \
-    --data "$STABLEWM_HOME/scenario4_test_lewm.h5" \
+    --data "$STABLEWM_HOME/turbosens2_test.h5" \
     --out  "$OUT_DIR/task_results_test.json" \
     --history_size 16 --horizon 50 --n_samples 500
 
 run_step "task3/test_hard" python baselines/rssm/eval_rssm.py \
     --ckpt "$CKPT" \
-    --data "$STABLEWM_HOME/scenario4_test_hard_lewm.h5" \
+    --data "$STABLEWM_HOME/turbosens2_test_hard.h5" \
     --out  "$OUT_DIR/task_results_test_hard.json" \
     --history_size 16 --horizon 50 --n_samples 500
 
@@ -105,13 +105,13 @@ run_step "task3/test_hard" python baselines/rssm/eval_rssm.py \
 rm -f "$OUT_DIR/per_archetype.csv"
 run_step "per-archetype/test" python baselines/rssm/per_archetype_rssm.py \
     --ckpt "$CKPT" \
-    --hdf5 "$STABLEWM_HOME/scenario4_test_lewm.h5" \
+    --hdf5 "$STABLEWM_HOME/turbosens2_test.h5" \
     --label "RSSM_te" --seq-lens 1 \
     --out-csv "$OUT_DIR/per_archetype.csv"
 
 run_step "per-archetype/test_hard" python baselines/rssm/per_archetype_rssm.py \
     --ckpt "$CKPT" \
-    --hdf5 "$STABLEWM_HOME/scenario4_test_hard_lewm.h5" \
+    --hdf5 "$STABLEWM_HOME/turbosens2_test_hard.h5" \
     --label "RSSM_th" --seq-lens 1 \
     --out-csv "$OUT_DIR/per_archetype.csv"
 
@@ -119,8 +119,8 @@ run_step "per-archetype/test_hard" python baselines/rssm/per_archetype_rssm.py \
 if [[ -z "${SKIP_CF:-}" ]]; then
     run_step "counterfactual" python counterfactual_fidelity_rssm.py \
         --ckpts "RSSM:$CKPT" \
-        --sim_h5 "$STABLEWM_HOME/scenario4_train_sensors.h5" \
-        --eval_h5 "$STABLEWM_HOME/scenario4_test_lewm.h5" \
+        --sim_h5 "$STABLEWM_HOME/turbosens2_train_sensors.h5" \
+        --eval_h5 "$STABLEWM_HOME/turbosens2_test.h5" \
         --out_dir "$CF_DIR" \
         --n_episodes 30 --horizon 100 \
         --actions 0 1 2 3 4 5 6 \

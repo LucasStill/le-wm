@@ -16,7 +16,7 @@ Usage
     cd le-wm/
     python baselines/ar_lstm/per_archetype_diag.py \\
         --ckpt   /home/lucas/.stable_worldmodel/ar_lstm_scenario4_w1_H16_S1_P4_h256l2/ar_lstm_s4_w1_H16_S1_P4_h256l2_epoch_10_object.ckpt \\
-        --hdf5   /home/lucas/.stable_worldmodel/scenario4_test_lewm.h5 \\
+        --hdf5   /home/lucas/.stable_worldmodel/turbosens2_test.h5 \\
         --label  L1
 """
 

@@ -23,9 +23,9 @@ encoder_scale: tiny
 # Processes n_sensors scalar values as n_sensors individual tokens.
 #
 #   turbofan  (opendeck_2000_lewm.h5) : n_sensors = 28  (4 contexts × 7 sensors)
-#   scenario3 (scenario3_*_lewm.h5)   : n_sensors = 84  (12 contexts × 7 sensors)
+#   turbosens1 (turbosens1_*_lewm.h5)   : n_sensors = 84  (12 contexts × 7 sensors)
 #
-# Override via CLI:  n_sensors=84  when using data=scenario3
+# Override via CLI:  n_sensors=84  when using data=turbosens1
 # d_model should equal wm.embed_dim to avoid an unnecessary projection bottleneck.
 n_sensors: 28
 sensor_encoder:

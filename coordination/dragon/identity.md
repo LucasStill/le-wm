@@ -56,7 +56,7 @@ For appending to your peer's log: don't — write to your own.
 If we want side-by-side AR-LSTM vs JEPA in the final paper, please mirror
 these where possible:
 
-- **Dataset path on dragon**: `/home/lthil/.stable_worldmodel/scenario4_train_lewm.h5`
+- **Dataset path on dragon**: `/home/lthil/.stable_worldmodel/turbosens2_train.h5`
   (4.9 GB, 7,010,872 timesteps, 500 episodes, pixels (N, 11, 16))
 - **`P=4` always**
 - **Same `H` and `S` grid**: I'm running E1=(H=16,S=1), E2=(H=32,S=1),

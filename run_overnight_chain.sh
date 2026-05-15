@@ -29,8 +29,8 @@ LBIG_RUN_DIR=/home/lucas/.stable_worldmodel/ar_lstm_scenario4_w4_H32_S1_P4_h256l
 LBIG_NAME=ar_lstm_s4_w4_H32_S1_P4_h256l2
 L1_CKPT=/home/lucas/.stable_worldmodel/ar_lstm_scenario4_w1_H16_S1_P4_h256l2/ar_lstm_s4_w1_H16_S1_P4_h256l2_epoch_10_object.ckpt
 L2_CKPT=/home/lucas/.stable_worldmodel/ar_lstm_scenario4_w1_H32_S1_P4_h256l2/ar_lstm_s4_w1_H32_S1_P4_h256l2_epoch_10_object.ckpt
-TEST_H5=/home/lucas/.stable_worldmodel/scenario4_test_lewm.h5
-HARD_H5=/home/lucas/.stable_worldmodel/scenario4_test_hard_lewm.h5
+TEST_H5=/home/lucas/.stable_worldmodel/turbosens2_test.h5
+HARD_H5=/home/lucas/.stable_worldmodel/turbosens2_test_hard.h5
 
 CONFIG=/home/lucas/.stable_worldmodel/ar_lstm_scenario4_w1_H16_S1_P4_h256l2/config.yaml
 

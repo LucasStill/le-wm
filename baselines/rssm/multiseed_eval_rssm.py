@@ -10,7 +10,7 @@ Usage
 -----
     python baselines/rssm/multiseed_eval_rssm.py \\
         --ckpt /path/to/rssm_*_epoch_10_object.ckpt \\
-        --hdf5 /home/lthil/.stable_worldmodel/scenario4_test_lewm.h5 \\
+        --hdf5 /home/lthil/.stable_worldmodel/turbosens2_test.h5 \\
         --label RSSM_te \\
         --seeds 0 1 2 3 4 5 \\
         --seq-lens 1 10 \\

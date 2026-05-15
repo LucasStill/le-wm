@@ -1,8 +1,8 @@
 defaults:
   - _self_
   # Scenario-4 variant of the AR-LSTM baseline.
-  # Mirrors config/train/data/scenario4.yaml so the run is directly comparable
-  # to the JEPA scenario4 experiments launched by train_lewm_scenario4_dragon.sh.
+  # Mirrors config/train/data/turbosens2.yaml so the run is directly comparable
+  # to the JEPA turbosens2 experiments launched by train_lewm_scenario4_dragon.sh.
 
 output_model_name: ar_lstm_s4
 subdir: ${hydra:job.id}
@@ -12,13 +12,13 @@ train_split: 0.9
 seed: 3072
 
 # ── Data ─────────────────────────────────────────────────────────────────────
-# Reads scenario4_train_lewm.h5 (created by prepare_scenario4_dataset.py).
+# Reads turbosens2_train.h5 (created by prepare_scenario4_dataset.py).
 # pixels: (N, 11, 16) = 7 sensors + 4 context_params, action: scalar 0-6.
 data:
   dataset:
     num_steps: ${eval:'(${wm.history_size} + ${wm.num_preds} - 1) * ${wm.h_step} + ${obs_window_size}'}
     frameskip: 1
-    name: scenario4_train_lewm
+    name: turbosens2_train
     cache_dir: /home/lucas/.stable_worldmodel
     keys_to_load:
       - pixels   # (N, 11, 16) normalised sensors+context
@@ -28,7 +28,7 @@ data:
       - pixels   # ~4.9 GB; avoids per-sample LZF chunk decompression thrashing
 
 # ── Encoder ──────────────────────────────────────────────────────────────────
-# n_sensors = 176 = 11 channels × 16 contexts (scenario4)
+# n_sensors = 176 = 11 channels × 16 contexts (turbosens2)
 # Pos-emb sized to max_sensors=200 to leave headroom (default 128 is too small).
 encoder_type: sensor
 n_sensors: 176
@@ -39,7 +39,7 @@ sensor_encoder:
   nhead: 4
   num_layers: 2
   dropout: 0.1
-  max_sensors: 200    # >= n_sensors; default 128 is too small for scenario4
+  max_sensors: 200    # >= n_sensors; default 128 is too small for turbosens2
 
 obs_window_size: 1    # 1 = snapshot encoder; >1 enables TemporalAggregator
 
@@ -102,7 +102,7 @@ wandb:
     resume: never
     log_model: False
 
-# ── Downstream HI probe (identical to JEPA scenario4 config) ─────────────────
+# ── Downstream HI probe (identical to JEPA turbosens2 config) ─────────────────
 hi_probe:
   enabled: false          # override via CLI: hi_probe.enabled=true
   eval_interval: 5

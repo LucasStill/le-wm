@@ -107,7 +107,7 @@ def lejepa_forward(self, batch, stage, cfg):
     num_preds=P>1: parallel step-0 loss + autoregressive rollout for
         steps 1…P-1 (only last-token MSE per step, true targets from emb).
 
-    Data requirement: scenario3.yaml num_steps must be
+    Data requirement: turbosens1.yaml num_steps must be
         (H + P - 1) * s + w  so that emb has enough tokens for all targets.
         This is handled automatically when you set wm.num_preds in the config.
     """

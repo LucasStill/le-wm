@@ -19,14 +19,14 @@ post-training pipeline kicks off:
    matching `rssm_s4_T64_S32x32_D512_epoch_*_object.ckpt`. Final epoch
    is the one used for eval.
 
-2. **Task 1 — HI state probing on `scenario4_test_lewm.h5`.**
+2. **Task 1 — HI state probing on `turbosens2_test.h5`.**
    Freeze the encoder, run `model.encode()` over every frame, fit a Ridge
    probe → predict the 10-dim HI state. Mirrors the AR-LSTM Task 1 (it
    uses the same `model.encode()` contract). Reports per-component R²,
    RMSE, Pearson-r, and the mean across HI dims. Output:
    `eval_results/rssm_s4/task1_test.json`.
 
-3. **Task 1 — HI state probing on `scenario4_test_hard_lewm.h5`** (OOD).
+3. **Task 1 — HI state probing on `turbosens2_test_hard.h5`** (OOD).
    Same probe as above re-applied on the harder split. Output:
    `eval_results/rssm_s4/task1_test_hard.json`.
    The training-side HIProbeCallback fires only on the training-split

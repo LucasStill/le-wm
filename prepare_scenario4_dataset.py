@@ -2,7 +2,7 @@
 """
 prepare_scenario4_dataset.py
 ============================
-Convert scenario4 *_sensors.h5 files into pipeline-ready *_lewm.h5 files
+Convert turbosens2 *_sensors.h5 files into pipeline-ready *_lewm.h5 files
 for le-wm training.
 
 What this script does
@@ -30,16 +30,16 @@ Usage
 
   # Single file
   python prepare_scenario4_dataset.py \\
-      --input  /path/to/scenario4_train_sensors.h5 \\
-      --output /path/to/scenario4_train_lewm.h5
+      --input  /path/to/turbosens2_train_sensors.h5 \\
+      --output /path/to/turbosens2_train.h5
 
 Output files (--all_splits):
-  scenario4_train_lewm.h5
-  scenario4_test_lewm.h5
-  scenario4_test_hard_lewm.h5
+  turbosens2_train.h5
+  turbosens2_test.h5
+  turbosens2_test_hard.h5
 
 After running, point the training config at the lewm file:
-  python train.py data=scenario4 n_sensors=176 \\
+  python train.py data=turbosens2 n_sensors=176 \\
       sensor_encoder.max_sensors=200 \\
       data.dataset.cache_dir=/path/to/data
 
@@ -66,7 +66,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 EP_META_KEYS  = ["archetype", "archetype_onset", "eol_triggered",
                  "region", "flights_per_day", "is_extreme",
                  # Carried for replay / counterfactual eval — see
-                 # scenarios.scenario4.replay.EpisodeReplayer.
+                 # scenarios.turbosens2.replay.EpisodeReplayer.
                  "seed", "ctx_fill_seed"]
 PER_STEP_KEYS = ["event_mask", "event_types", "repaired_flight_mask",
                  "valid_flight_mask", "visit_type", "component_service_mask"]
@@ -77,7 +77,7 @@ PROPAGATED_ATTRS = [
     "archetype_names", "context_names", "context_phases", "event_names",
     "sensor_names", "region_names", "action_names",
     "scenario", "split", "n_episodes", "n_timesteps",
-    "sim_version",  # required by scenarios.scenario4.replay.EpisodeReplayer
+    "sim_version",  # required by scenarios.turbosens2.replay.EpisodeReplayer
 ]
 
 
@@ -258,7 +258,7 @@ def main():
                       help="Process train / test / test_hard from --data_dir")
     parser.add_argument("--output", type=Path, help="Output path for --input mode")
     parser.add_argument("--data_dir", type=Path,
-                        help="Directory containing scenario4_{train,test,test_hard}_sensors.h5")
+                        help="Directory containing turbosens2_{train,test,test_hard}_sensors.h5")
     parser.add_argument("--out_dir", type=Path, default=None,
                         help="Output directory for --all_splits (default = data_dir)")
     args = parser.parse_args()
@@ -267,15 +267,15 @@ def main():
         if args.data_dir is None:
             parser.error("--data_dir is required with --all_splits")
         out_dir = args.out_dir or args.data_dir
-        train_in  = args.data_dir / "scenario4_train_sensors.h5"
-        test_in   = args.data_dir / "scenario4_test_sensors.h5"
-        hard_in   = args.data_dir / "scenario4_test_hard_sensors.h5"
+        train_in  = args.data_dir / "turbosens2_train_sensors.h5"
+        test_in   = args.data_dir / "turbosens2_test_sensors.h5"
+        hard_in   = args.data_dir / "turbosens2_test_hard_sensors.h5"
 
         ch_min, ch_range = compute_norm_stats(train_in)
 
-        prepare_one(train_in, out_dir / "scenario4_train_lewm.h5",     ch_min, ch_range)
-        prepare_one(test_in,  out_dir / "scenario4_test_lewm.h5",      ch_min, ch_range)
-        prepare_one(hard_in,  out_dir / "scenario4_test_hard_lewm.h5", ch_min, ch_range)
+        prepare_one(train_in, out_dir / "turbosens2_train.h5",     ch_min, ch_range)
+        prepare_one(test_in,  out_dir / "turbosens2_test.h5",      ch_min, ch_range)
+        prepare_one(hard_in,  out_dir / "turbosens2_test_hard.h5", ch_min, ch_range)
     else:
         if args.output is None:
             parser.error("--output is required with --input")

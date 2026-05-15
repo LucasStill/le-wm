@@ -65,7 +65,11 @@
 
 
 % Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote.
-\title{TurboSens: An Interactive Turbofan Benchmark for World-Model Evaluation and Physical Understanding}
+%\title{TurboSens: An Interactive Turbofan Benchmark for World-Model Evaluation and Physical Understanding} % changé avec le titre ci-dessous pour simplifier:
+\title{TurboSens: An Interactive Turbofan Benchmark for Probing World Models %Representations
+against Ground Truth}
+% \title{TurboSens: A Paired State Turbofan Benchmark for World Model Evaluation}
+
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -113,9 +117,17 @@
 \addtocontents{toc}{\protect\setcounter{tocdepth}{-3}}
 
 \begin{abstract}
-World models learn representations of physical systems from observations, but evaluating whether they recover the underlying causal state is difficult when that state is unobserved. We introduce TurboSens, an interactive turbofan degradation simulator designed as an evaluation instrument for world model representations. It provides paired access to sensor streams and the full ground truth health state at every timestep: a ten dimensional latent underdetermined by seven sensors. This enables a direct protocol: train a self-supervised world model on observations alone, then evaluate its representations on state recovery, forecasting, and out of distribution generalization with action conditioning. We release two progressively challenging scenarios (TurboSens1 and TurboSens2) with configurable degradation, maintenance, a two channel hidden state, and a phantom observation map where sensed and true states diverge.
+Self supervised world models promise that representations learned from observations alone can recover the underlying generative state of a complex physical system. Verifying that they do is difficult when that state is unobserved: existing physics and prognostics benchmarks substitute a low dimensional readout (a plausibility verdict, a remaining useful life) that cannot certify what the representation actually preserved. We introduce TurboSens, an interactive turbofan simulator and dataset that supplies the missing ground truth. At every flight cycle, the simulator emits a sensor stream paired with the full ten dimensional health state of the engine, hidden behind sensor noise, fouling, and operating context confounds. This pairing enables a direct evaluation protocol that we call \emph{inverse probing}: a world model is pretrained on the sensor stream alone, the encoder is frozen, and a small supervised head, the \emph{probe}, is trained on top of the frozen embeddings to map them to the ground truth health state. The accuracy of this probe under in distribution and out of distribution (OOD) shifts measures how much of the underlying state the representation actually preserved. We release two progressively challenging scenarios (TurboSens1 and TurboSens2) along with a deterministic counterfactual replayer and reproducibility tooling. As an illustration, multi seed sweeps over two world model families, joint embedding predictive architectures (JEPA) and recurrent latent dynamics (autoregressive LSTM), show that lengthening the pretraining context (predictor history, encoder window, predictor stride) monotonically improves OOD probe quality across architectures, while a supervised oracle on the same encoder backbone closes the OOD gap entirely, situating the residual gap at the self supervised pretext rather than at the encoder backbone or the data.
 
-The turbofan domain offers complex, industry relevant dynamics: heterogeneous wear, sparse stochastic events, weather, and region specific conditions. Unlike pixel or language benchmarks, TurboSens provides ground truth, allowing us to ask what representations preserve under distribution shift, where failures originate (encoder vs predictor), and how temporal horizons affect robustness. As a demonstration, increasing the predictor horizon monotonically improves out of distribution generalization. The benchmark is released with reproducibility tooling, a counterfactual replayer, and documented assumptions, revealing a critical insight for world model design: out-of-distribution generalization requires temporally structured bottlenecks that preserve long horizon dependencies, not merely longer training contexts. Without ground truth access to the latent state, this dissociation between context length and bottleneck structure remains invisible.
+
+% Alternative abstract
+% \begin{abstract}
+% Evaluating whether a world model recovers the underlying generative state of a physical system from observations alone is hard when that state is unobserved. Existing physics and prognostics benchmarks substitute a low dimensional readout (a plausibility verdict, a remaining useful life) that cannot certify what the representation preserved. We introduce TurboSens, an interactive turbofan simulator and dataset whose distinctive property is paired access to a sensor stream and the full ten dimensional engine health state at every flight cycle, structurally underdetermined by seven sensor channels and obscured by fouling, weather, and operating context confounds. The pairing supports an inverse probing protocol: a frozen self supervised encoder is probed against the ground truth through state estimation, distribution shift generalization, and counterfactual forecasting. Two progressively challenging scenarios are released alongside a deterministic replayer and multi seed reproducibility tooling. A demonstration sweep across two world model families shows that more temporal context during pretraining monotonically improves OOD probe quality and that a supervised oracle on the same backbone closes the OOD gap entirely, situating the residual gap at the self supervised pretext rather than the encoder backbone or the data.
+% \end{abstract}
+
+
+%World models learn representations of physical systems from observations, but evaluating whether they recover the underlying causal state is difficult when that state is unobserved. We introduce TurboSens, an interactive turbofan degradation simulator designed as an evaluation instrument for world model representations. It provides paired access to sensor streams and the full ground truth health state at every timestep: a ten dimensional latent underdetermined by seven sensors. This enables a direct protocol: train a self-supervised world model on observations alone, then evaluate its representations on state recovery, forecasting, and out of distribution generalization with action conditioning. We release two progressively challenging scenarios (TurboSens1 and TurboSens2) with configurable degradation, maintenance, a two channel hidden state, and a phantom observation map where sensed and true states diverge, to enable the community to build upon it.
+%The turbofan domain offers complex, industry relevant dynamics: heterogeneous wear, sparse stochastic events, weather, and region specific conditions. Unlike pixel or language benchmarks, TurboSens provides ground truth, allowing us to ask what representations preserve under distribution shift, where failures originate (encoder vs predictor), and how temporal horizons affect robustness. As a demonstration, increasing the predictor horizon monotonically improves out of distribution generalization. The benchmark is released with reproducibility tooling, a counterfactual replayer, and documented assumptions, revealing a critical insight for world model design: out-of-distribution generalization requires temporally structured bottlenecks that preserve long horizon dependencies, not merely longer training contexts. Without ground truth access to the latent state, this dissociation between context length and bottleneck structure remains invisible.
 
 \end{abstract}
 
@@ -124,26 +136,38 @@ The turbofan domain offers complex, industry relevant dynamics: heterogeneous we
 \label{sec:introduction}
 
 % --- P1: the world-model evaluation question ---
-World models~\cite{Balestriero_LeCun_2025, Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025, okada2021dreaming, okada2022dreamingv2, Maes_Lidec_Scieur_LeCun_Balestriero_2026} are increasingly proposed as general purpose representations for complex dynamical systems, trained in a self-supervised manner to predict future state and spanning joint embedding, recurrent latent dynamics, and autoregressive architectures. A central open question is whether such representations capture the \emph{physical} structure of the underlying system or merely fit statistical regularities of the observation stream. Answering this requires paired access to sensor observations \emph{and} the true latent state, which existing physics and prognostics benchmarks~\cite{bear1physion, riochet2018intphys, Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025, Saxena_Goebel_Simon_Eklund_2008} replace by a low dimensional readout (a plausibility verdict, a scalar remaining useful life) that cannot certify whether a representation recovered the underlying causal structure.
+World models~\cite{Balestriero_LeCun_2025, Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025, okada2021dreaming, okada2022dreamingv2, Maes_Lidec_Scieur_LeCun_Balestriero_2026} are increasingly proposed as general purpose representations for complex dynamical systems, trained in a self-supervised manner to predict future state and spanning joint embedding, recurrent latent dynamics, and autoregressive architectures. A central open question is whether such representations recover the \emph{underlying generative} state of the system or merely fit statistical regularities of the observation stream. Answering this requires paired access to sensor observations \emph{and} the true latent state, which existing physics and prognostics benchmarks~\cite{bear1physion, riochet2018intphys, Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025, Saxena_Goebel_Simon_Eklund_2008} replace by a low dimensional readout (a plausibility verdict, a scalar remaining useful life) that cannot certify whether a representation recovered the underlying generative structure.
 
 % --- P2: what we provide (core instrument framing) ---
-We introduce \textbf{TurboSens}, an interactive turbofan simulator and accompanying dataset designed as an \emph{instrument} for evaluating world‑model representations. TurboSens is generated using OpenDeckSMR~\cite{psaropoulos_2025_17804895}, a component‑level thermodynamic aircraft engine simulator that exposes, at every timestep, both a sensor stream and the full ten‑dimensional ground‑truth health state $\mathbf{s}_t$. This paired access enables an \emph{inverse evaluation protocol}: train a world model self‑supervised on sensor sequences alone, freeze the encoder, then probe the latent space against the true $\mathbf{s}_t$ through regression, forecasting, and out‑of‑distribution tasks. Because the true state is available but never used as a training signal, TurboSens asks whether a learned representation recovers the causal structure of engine health from observations alone, going beyond scalar RUL regression and binary violation‑of‑expectation discrimination.
+We introduce \textbf{TurboSens}, an interactive turbofan simulator and accompanying dataset designed as an \emph{instrument} for evaluating world‑model representations. TurboSens is generated using OpenDeckSMR~\cite{psaropoulos_2025_17804895}, a component‑level thermodynamic aircraft engine simulator that exposes, at every timestep, both a sensor stream and the full ten‑dimensional ground‑truth health state $\mathbf{s}_t$. This paired access enables an \emph{inverse evaluation protocol}: train a world model self‑supervised on sensor sequences alone, freeze the encoder, then probe the latent space against the true $\mathbf{s}_t$ through regression, forecasting, and out‑of‑distribution tasks. Because the true state is available but never used as a training signal, TurboSens asks whether a learned representation recovers the underlying generative state of engine health from observations alone, going beyond scalar RUL regression and binary violation‑of‑expectation discrimination.
 
-% --- P3: interactive / cookbook angle ---
-TurboSens is \emph{interactive} rather than a static dump of trajectories. The simulator can be queried online under arbitrary action sequences, enabling counterfactual rollouts, reinforcement learning and model predictive control experiments, and on-demand generation of out-of-distribution regimes for stress testing. The environment is structured as an \emph{open instrument}: degradation archetypes, maintenance policies, stochastic event rates, and flight phase contexts are independent and industrially grounded knobs, each anchored in a documented physical phenomenon. Scenarios are composed from the same building blocks and can be reconfigured to assemble progressively more challenging benchmarks as world model representations mature, rather than freezing a single reference difficulty level.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/Turbosens1v4.pdf}
 
-% --- P4: what makes the states interesting ---
-The simulator is driven by a well-maintained fleet abstraction: engines are kept within a healthy operating band by an expert policy combining life-limiting part time ceilings, health correlated scheduling, and opportunistic bundling, with imperfect restoration and deferred repairs. Trajectories therefore unfold not as a single monotonic arc but as a \emph{sawtooth of partial resets}, punctuated by rare stochastic events (abstract step changes, transient pulses, sensor-level perturbations) that create discontinuities in the health state, the observations, or both. Sensor observations are recorded across multiple flight phase contexts per timestep, and the mapping from seven sensor channels to ten state dimensions is structurally underdetermined. Every modeling element is grounded in turbofan engine operating practice and is documented and configurable, so users can audit our assumptions independently of the protocol.
+    \caption{\textbf{The TurboSens evaluation framework.} \textbf{(i)}~A turbofan engine is decomposed into subsystems whose health $\mathbf{s}_t \in \mathbb{R}^{10}$ degrades over time and is partially restored by discrete maintenance actions $a_t$; a fouling channel $\mathbf{c}_t$ accumulates between washes (TurboSens2 only). \textbf{(ii)}~The two channels combine into a phantom state $\tilde{\mathbf{s}}_t = f(\mathbf{s}_t, \mathbf{c}_t)$ that OpenDeckSMR (ODSMR) maps to sensor observations $\mathbf{o}_t \in \mathbb{R}^{S \times C}$ across $C$ flight phase contexts. \textbf{(iii)}~A world model is pretrained self supervised (encoder $\mathrm{Enc}_\theta$, predictor $g_\psi$); at evaluation the encoder is frozen and a small supervised head trained on its embeddings, which we call a \emph{probe} ($h_\psi$), decodes them against the ground truth $\mathbf{s}_t$. \textbf{(iv)}~Counterfactual forecasting forks an episode under alternative actions $\{a^k_{t+1}\}$ and compares the model's rollout against a deterministic simulator replay over a future horizon $\tau$.}
+
+    %\caption{\textbf{The Turbosens evaluation framework. A) The latent state} $\omega_t$ packs sub-system health state $s_t$ (green per subsystems), fouling $c_t$ (red diamonds) adds a degradation deposit on the sub-systems states. Maintenance action $a_t$ (pink) restore the health of some systems, or reduces fouling. Weather and phase contexts ($w_t,\phi_t$) (yellow) condition the environment. \textbf{B) Simulator dynamics and world model:} OpenDeckSMR emits a sensor observation $o_t=g(\omega_t)$ at every timestep, and a self supervised world model learns to encode $o_t$ into a latent $z_t$ that is advanced by the predictor under the action history. \textbf{C) Possible futures forecasting and inverse probing:} branching from $z_t$ under alternative actions $a_{t+1}$ produces predicted future latents that we compare against the simulator's deterministic replay; a fixed head $h_\psi$ maps $z_t$ to the simulator's ground truth state $s_t$ over multiple horizons.}
+    \label{fig:problem_formulation}
+\end{figure}
+
+
+
+% --- P3: interactive instrument + state structure (merged P3+P4) ---
+TurboSens is \emph{interactive} rather than a static dump of trajectories: the simulator can be queried online under arbitrary action sequences for counterfactual rollouts and on-demand generation of out-of-distribution regimes, with degradation archetypes, maintenance policies, event rates, and flight phase contexts exposed as independent knobs. The simulator is driven by a well-maintained fleet abstraction (life-limiting part ceilings, health correlated scheduling, opportunistic bundling, imperfect restoration), so trajectories unfold as a \emph{sawtooth of partial resets} punctuated by rare stochastic events; sensor observations are recorded across multiple flight phase contexts per timestep and the seven-channel observation is structurally underdetermined relative to the ten state dimensions. Even if every modeling element draws grounds in industrial operating practice, it is not representative of a real serviced engine. We make these choices documented and configurable, so users can audit our assumptions independently of the protocol.
 
 % --- P5: Contributions ---
 \paragraph{Contributions.}
 \begin{enumerate}
     \item An \textbf{interactive turbofan simulator} built on OpenDeckSMR, exposing paired ground‑truth state and sensor observations with discrete maintenance actions, on‑demand trajectory generation, and a configurable cookbook of degradation archetypes, maintenance policies, events, and flight contexts.
 
-    \item An \textbf{inverse evaluation protocol} that trains world models self‑supervised on sensor sequences, then directly probes their representations against the full ten‑dimensional health state through regression, degradation‑velocity estimation, multi‑step latent forecasting, and out‑of‑distribution detection.
+    \item An \textbf{inverse evaluation protocol (`probing')} that trains world models self‑supervised on sensor sequences, then directly probes their representations against the full ten‑dimensional health state through regression, degradation‑velocity estimation, multi‑step latent forecasting, and out of distribution (OOD) detection.
 
     \item \textbf{Reference scenarios and splits}: released HDF5 datasets (TurboSens1, TurboSens2) with documented schemas, providing a concrete starting point for the protocol while leaving the pipeline open for further scenario composition.
 \end{enumerate}
+
+
+
 
 
 
@@ -151,7 +175,8 @@ The simulator is driven by a well-maintained fleet abstraction: engines are kept
 \label{sec:related_work}
 
 \paragraph{Why turbofan engines.}
-We pick a turbofan engine as the substrate for world model evaluation for three reasons. First, the observations are scalar sensor channels rather than pixels, which removes the visual decoding bottleneck that dominates evaluation on video benchmarks and isolates the question of whether the encoder captures the underlying generative state. Second, the system carries a physically meaningful latent state (component level efficiency and flow capacity deviations) that the simulator emits at every timestep, so a probe against the ground truth state is well-posed and component-identifiable. Third, a single engine simultaneously exercises many phenomena that world models must handle in concert: noise, multi-context observations, action interventions through maintenance, region and phase-dependent dynamics, and rare stochastic events. The turbofan substrate also bridges world model evaluation with the predictive maintenance and digital twin literature, but the goal of this paper is squarely the former; the dataset is positioned as an instrument for evaluating world model representations, not as a prognostics benchmark.
+Turbofan operation is a high stakes domain in which the degradation mechanisms driving wear are only partially observable through sensors, motivating a substrate where representation quality can be measured against an exposed ground truth state. We pick this substrate for world model evaluation for three reasons. First, the observations are scalar sensor channels rather than pixels, which removes the visual decoding bottleneck that dominates evaluation on video benchmarks and isolates the question of whether the encoder captures the underlying generative state. Second, the system carries a physically meaningful latent state (component level efficiency and flow capacity deviations) \cite{lacaille2014robust, karchmer1977identification} that the simulator emits at every timestep, so a probe against the ground truth state is well-posed and component-identifiable. Third, a single engine simultaneously exercises many phenomena \cite{riegler2007geared, dunn1987performance, thoma2020quantifying, aygun2024thermodynamics} that world models must handle in concert: noise, multi-context observations, action interventions through maintenance, region and phase-dependent dynamics, and rare stochastic events. The turbofan substrate also bridges world model evaluation with the predictive maintenance \cite{zonta2020predictive, lee2014prognostics, tsui2015prognostics, jaw2005recent} and digital twin literature \cite{mihai2022digital, Belfadel_Creff_Ben_Hamida_2025}, but the goal of this paper is squarely the former; the dataset is positioned as an instrument for evaluating world model representations, not as a prognostics benchmark.
+
 
 \paragraph{World models and physical understanding.}
 A growing family of world models, spanning joint‑embedding predictive architectures~\cite{Balestriero_LeCun_2025, Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025, Maes_Lidec_Scieur_LeCun_Balestriero_2026}, recurrent latent‑dynamics models~\cite{okada2021dreaming, okada2022dreamingv2}, and autoregressive sequence models~\cite{wang2020data, krishnan2022self, deng2024enhancing, calabrese2021predictive}, train encoders and predictors on high‑dimensional observation streams (pixels, sensors) to recover latent dynamics without supervision. A parallel body of work asks whether such representations encode \emph{physical} structure: Physion~\cite{bear1physion} scores rigid‑body outcome prediction, CLEVRER~\cite{yiclevrer} probes causal reasoning over collision videos, and IntPhys/IntPhys2~\cite{riochet2018intphys, Bordes_Garrido_Kao_Williams_Rabbat_Dupoux_2025} adopt a violation‑of‑expectation paradigm. Two structural limitations recur across the field. First, these evaluations reduce physical understanding to binary discrimination, effectively an out‑of‑distribution detection task that flags anomalies rather than recovering the underlying state. Second, ground‑truth access to the latent state is typically unavailable, so evaluation collapses onto downstream task return or reconstruction quality and cannot certify whether the representation captures physical structure or merely statistical regularities of the observation stream.
@@ -165,22 +190,13 @@ Turbofan prognostics research has long been dominated by C‑MAPSS~\cite{Saxena_
 % Piloto_Weinstein_Battaglia_Botvinick_2022
 
 
-\section{Problem Formulation}
+\section{Problem Formulation: Turbofan Degradation and Simulator}
 \label{sec:formulation}
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=1\linewidth]{figures/Turbosens1v3.pdf}
 
-    \caption{\textbf{The TurboSens evaluation framework. (i)} A turbofan engine is decomposed into subsystems whose health degrades over time, modulated by operating context, fouling, and maintenance actions $a$ that restore selected components of the health state. \textbf{(ii)} Subsystem health and fouling channels assemble into a global state $\omega$ that OpenDeckSMR (ODSMR) maps to sensor observations across $C$ flight phase contexts. \textbf{(iii)} A world model learns a representation from these observations in a self supervised manner; at test time, the frozen representations are probed against the true subsystem health, framing representation evaluation as an inverse problem. \textbf{(iv)} Companion downstream tasks include forecasting possible futures conditioned on candidate maintenance policies.}
+Evaluating a world model on TurboSens means asking whether its representation captures the underlying generative structure of the data: the latent state, its temporal dynamics, the action effects and the noise that obscures it. We build the formulation up in three steps, starting from the simplest version of the simulator and adding components as we need them. We show the framework in Fig.\ref{fig:problem_formulation}.
 
-    %\caption{\textbf{The Turbosens evaluation framework. A) The latent state} $\omega_t$ packs sub-system health state $s_t$ (green per subsystems), fouling $c_t$ (red diamonds) adds a degradation deposit on the sub-systems states. Maintenance action $a_t$ (pink) restore the health of some systems, or reduces fouling. Weather and phase contexts ($w_t,\phi_t$) (yellow) condition the environment. \textbf{B) Simulator dynamics and world model:} OpenDeckSMR emits a sensor observation $o_t=g(\omega_t)$ at every timestep, and a self supervised world model learns to encode $o_t$ into a latent $z_t$ that is advanced by the predictor under the action history. \textbf{C) Possible futures forecasting and inverse probing:} branching from $z_t$ under alternative actions $a_{t+1}$ produces predicted future latents that we compare against the simulator's deterministic replay; a fixed head $h_\psi$ maps $z_t$ to the simulator's ground truth state $s_t$ over multiple horizons.}
-    \label{fig:problem_formulation}
-\end{figure}
-
-Evaluating a world model on TurboSens means asking whether its representation captures the underlying generative structure of the data: the latent state, its temporal dynamics, the action effects that intervene on it, and the noise that obscures it. We build the formulation up in three steps, starting from the simplest version of the simulator and adding components only as we need them \ref{fig:problem_formulation}.
-
-\paragraph{Step 1 observation, state, and the OpenDeckSMR map.}
+\paragraph{Observation, state $s_t$, and the OpenDeckSMR engine simulator.}
 At every flight cycle $t$ the engine has a latent mechanical wear state $\mathbf{s}_t \in \mathbb{R}^K$ with $K{=}10$, encoding efficiency and flow capacity deviations of the five sub systems (booster, fan, high pressure compressor, high pressure turbine, low pressure turbine). The thermodynamic simulator OpenDeckSMR then produces a sensor observation tensor
 \begin{equation}
     \mathbf{o}_t \;=\; g_\mathrm{ODS}(\mathbf{s}_t,\, \phi_t) \;+\; \boldsymbol{\varepsilon}_t \;\in\; \mathbb{R}^{S \times C},
@@ -188,31 +204,22 @@ At every flight cycle $t$ the engine has a latent mechanical wear state $\mathbf
 \end{equation}
 with $S{=}7$ sensor channels measured under $C$ flight phase contexts ($C{=}12$ in TurboSens1, $C{=}16$ in TurboSens2), $\phi_t$ the current context, and $\boldsymbol{\varepsilon}_t$ sensor noise. The probing target throughout the paper is $\mathbf{s}_t$; everything else either drives its dynamics or shapes how it is observed.
 
-\paragraph{Step 2 TurboSens1: degradation archetypes, weather, maintenance.}
-TurboSens1 augments $(\mathbf{s}_t, \mathbf{o}_t)$ with three components that meaningfully shape state trajectories. Each episode is assigned a \emph{degradation archetype} $\eta \in \{\text{A, B, C, D}\}$ that acts as a per sub system drift multiplier (compressor heavy, fan and booster heavy, turbine heavy, balanced) and produces qualitatively different wear curves across the fleet. A \emph{weather} channel $w_t$ (ambient temperature deviation, seasonal phase) modulates the operating envelope and the per step drift. A discrete \emph{maintenance action} $a_t \in \mathcal{A}_3$ ($|\mathcal{A}_3|{=}6$) restores selected components of $\mathbf{s}_t$ via a diagonal restoration mask $R(a_t) \in \{0,1\}^{K \times K}$ with imperfect efficacy $\boldsymbol{\rho}_\mathrm{mech}$. The state then evolves
+\paragraph{TurboSens1: degradation archetypes, weather, maintenance.}
+TurboSens1 augments $(\mathbf{s}_t, \mathbf{o}_t)$ with three components that meaningfully shape state trajectories. Each episode is assigned a \emph{degradation archetype} $\eta \in \{\text{A, B, C, D}\}$ that acts as a per sub system drift multiplier (compressor heavy, fan and booster heavy, turbine heavy, balanced) and produces qualitatively different wear curves across the fleet. A \emph{weather} channel $w_t$ (ambient temperature deviation, seasonal phase) modulates the operating envelope and the per step drift. A discrete \emph{maintenance action} $a_t \in \mathcal{A}_1$ ($|\mathcal{A}_1|{=}6$) restores selected components of $\mathbf{s}_t$ via a diagonal restoration mask $R(a_t) \in \{0,1\}^{K \times K}$ with imperfect efficacy $\boldsymbol{\rho}_\mathrm{mech}$. The state then evolves
 \begin{equation}
     \mathbf{s}_{t+1} \;=\; \mathbf{s}_t \;+\; \boldsymbol{\Delta}_{\!s}(\mathbf{s}_t,\, \eta,\, w_t) \;+\; R(a_t)\,\boldsymbol{\rho}_\mathrm{mech}(a_t,\, \eta) \;+\; \boldsymbol{\eta}_t,
     \label{eq:s_transition}
 \end{equation}
-where $\boldsymbol{\Delta}_{\!s}$ collects the archetype and weather conditional drift and $\boldsymbol{\eta}_t$ is zero mean process noise. Stochastic events (abstract permanent step changes, transient anomalies, sensor level perturbations) inject sparse, structured discontinuities on top of equation~\ref{eq:s_transition}; their event flag vector $e_t$ is part of the latent state but does not enter the probing target. Although the events draw inspiration from real engine phenomena, their probabilities and magnitudes are mathematical abstractions and in no case reflect what is observed in real life flight settings; calibrating them to operational data is left for future work.
+where $\boldsymbol{\Delta}_{\!s}$ collects the archetype and weather conditional drift and $\boldsymbol{\eta}_t$ is zero mean process noise. Stochastic events (abstract permanent step changes, transient anomalies, sensor perturbations) inject sparse, structured discontinuities on top of equation~\ref{eq:s_transition}; their event flag vector $e_t$ is part of the latent state but does not enter the probing target. Although the events draw inspiration from real engine phenomena, their probabilities and magnitudes are mathematical abstractions and in no case reflect what is observed in real life flight settings; calibrating them to operational data is left for future work.
 
-\paragraph{Step 3 TurboSens2: fouling, phantom observation, regions, wash actions.}
-TurboSens2 keeps the state equation~\ref{eq:s_transition} for mechanical wear and adds a transient \emph{fouling} channel $\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ ($K_c{=}5$, one per module) that fouls module efficiency and biases corrected flow upward. The action set extends to $\mathcal{A}_4$ ($|\mathcal{A}_4|{=}7$) with an \emph{engine wash} action that decays $\mathbf{c}_t$ toward zero without touching $\mathbf{s}_t$:
+\paragraph{TurboSens2: fouling, phantom observation, region archetypes, wash actions.}
+TurboSens2 keeps the state equation~\ref{eq:s_transition} for mechanical wear and adds a transient \emph{fouling} channel $\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ ($K_c{=}5$, one per module) that fouls module efficiency and biases corrected flow upward. The action set extends to $\mathcal{A}_2$ ($|\mathcal{A}_2|{=}7$) with an \emph{engine wash} action that decays $\mathbf{c}_t$ toward zero without touching $\mathbf{s}_t$:
 \begin{equation}
     \mathbf{c}_{t+1} \;=\; \gamma(a_t)\,\mathbf{c}_t \;+\; \mathbf{u}_t(\phi_t,\, \eta_\mathrm{reg}) \;+\; \boldsymbol{\zeta}_t,
 \end{equation}
-with $\gamma(a_t)$ the decay factor (close to one for non cleaning actions, small for a wash) and $\mathbf{u}_t$ a region and phase dependent fouling source. Episodes are also drawn from one of six geographic regions $\eta_\mathrm{reg}$ that shift event rates, archetype priors, and fouling dynamics.
+with $\gamma(a_t)$ the decay factor (close to one for non cleaning actions, small for a wash) and $\mathbf{u}_t$ a region and phase dependent fouling source. Episodes are also drawn from one of six \emph{region archetypes} $\eta_\mathrm{reg}$ (six operating environments characterised by their dominant atmospheric stressor, e.g. Arid, Littoral, Industrial) that shift event rates, archetype priors, and fouling dynamics.
 
-The two channels do not reach the sensors independently. They are first combined into a \emph{phantom state}
-\begin{equation}
-    \tilde{\mathbf{s}}_t \;=\; \mathrm{clip}\!\bigl(\mathbf{s}_t \;+\; M\,\max(\mathbf{0},\,-\mathbf{s}_t) \;+\; C\,\mathbf{c}_t\bigr),
-    \label{eq:phantom}
-\end{equation}
-where $M$ is a sparse non negative coupling that lets local wear inflate downstream flow capacity and $C$ is a sparse non negative coupling that lets fouling inflate corrected flow and depress efficiency. The simulator is then queried on $\tilde{\mathbf{s}}_t$ rather than $\mathbf{s}_t$:
-\begin{equation}
-    \mathbf{o}_t \;=\; g_\mathrm{ODS}(\tilde{\mathbf{s}}_t,\, \phi_t) \;+\; \boldsymbol{\varepsilon}_t.
-\end{equation}
-A single $\mathbf{o}_t$ is therefore consistent with many $(\mathbf{s}_t, \mathbf{c}_t)$ pairs, and the observability of $\mathbf{s}_t$ is action dependent: immediately after a wash, $\mathbf{c}_t \approx 0$ so $\tilde{\mathbf{s}}_t \approx \mathbf{s}_t$ and the sensors expose the true wear; between washes fouling rebuilds and the two diverge. A representation that simply regresses $\tilde{\mathbf{s}}_t$ from $\mathbf{o}_t$ is therefore mis specified, and only a world model that integrates the action history can disentangle the two channels.
+The two channels do not reach the sensors independently: they are first combined into a \emph{phantom state} $\tilde{\mathbf{s}}_t = \mathrm{clip}(\mathbf{s}_t + M\max(\mathbf{0}, -\mathbf{s}_t) + C\mathbf{c}_t)$ (full form in Appendix~\ref{sec:pomdp}, eq.~\ref{eq:phantom_app}), with $M$ a sparse non negative coupling that lets local wear inflate downstream flow capacity and $C$ a sparse non negative coupling that lets fouling inflate corrected flow and depress efficiency. The simulator is then queried on $\tilde{\mathbf{s}}_t$ rather than $\mathbf{s}_t$, so a single $\mathbf{o}_t = g_\mathrm{ODS}(\tilde{\mathbf{s}}_t, \phi_t) + \boldsymbol{\varepsilon}_t$ is consistent with many $(\mathbf{s}_t, \mathbf{c}_t)$ pairs and the observability of $\mathbf{s}_t$ is action dependent: immediately after a wash, $\mathbf{c}_t \approx 0$ so $\tilde{\mathbf{s}}_t \approx \mathbf{s}_t$ and the sensors expose the true wear; between washes fouling rebuilds and the two diverge. A representation that simply regresses $\tilde{\mathbf{s}}_t$ from $\mathbf{o}_t$ is therefore mis specified, and only a world model that integrates the action history can disentangle the two channels.
 
 \paragraph{POMDP form and evaluation task.}
 Collecting $(\mathbf{s}_t, \mathbf{c}_t, w_t, \phi_t, \eta_\mathrm{reg}, e_t)$ into a single latent $\omega_t \in \Omega$ recovers the standard partially observable Markov decision process $(\Omega, \mathcal{A}, \mathcal{O}, f, g, \rho_0)$, which we use in Appendix~\ref{sec:pomdp} for the channel wise transitions in their general form. We ask whether a world model trained self supervised on observation and action histories learns representations that recover the engine state $\mathbf{s}_t$. The encoder produces an embedding
@@ -227,78 +234,55 @@ which we freeze and feed to a fixed linear probe $h_\psi$ trained to predict
 reporting per component Pearson, RMSE, and $R^2$ on held out episodes (Section~\ref{sec:evaluation}).
 
 
-\section{The TurboSens Dataset}
+\section{Introducing the TurboSens Dataset}
 \label{sec:dataset}
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{cl}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llll}
 \toprule
-\textbf{Symbol} & \textbf{Description} \\
+\textbf{Symbol} & \textbf{Description} & \textbf{TurboSens1} & \textbf{TurboSens2} \\
 \midrule
-$\omega_t \in \Omega$                   & Full POMDP latent state (see eq.~\ref{eq:omega}) \\
-$\mathbf{s}_t \in \mathbb{R}^K$         & Engine mechanical wear, probing target \\
-$\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ & Fouling channel (TurboSens2 only) \\
-$\tilde{\mathbf{s}}_t$                  & Phantom state coupling $\mathbf{s}_t$ and $\mathbf{c}_t$ \\
-$K, K_c$                                & Mechanical and fouling dimensions ($K{=}10$) \\
-$\phi_t$                                & Flight phase context \\
-$S, C$                                  & Sensor types and flight phase contexts \\
-$\mathbf{o}_t \in \mathbb{R}^{S \times C}$ & Sensor observation tensor at time $t$ \\
-$a_t \in \mathcal{A}$                   & Maintenance action at time $t$ \\
-$\mathbf{z}_t \in \mathbb{R}^d$         & Encoder embedding, $\mathrm{Enc}_\theta(\mathbf{o}_{\le t}, a_{\le t})$ \\
-$\hat{\mathbf{s}}_{t+\tau}$             & Probe prediction at horizon $\tau$ \\
+\multicolumn{4}{l}{\textit{Latent state}} \\
+$\omega_t \in \Omega$                   & Full POMDP latent state (Appendix~\ref{sec:pomdp})  & --                 & --                 \\
+$\mathbf{s}_t \in \mathbb{R}^K$         & Mechanical wear, probing target                    & $K{=}10$            & $K{=}10$            \\
+$\mathbf{c}_t \in \mathbb{R}_{\ge 0}^{K_c}$ & Fouling channel                                 & --                 & $K_c{=}5$            \\
+$\tilde{\mathbf{s}}_t$                  & Phantom state (eq.~\ref{eq:phantom})               & $\tilde{\mathbf{s}}_t = \mathbf{s}_t$ & $\tilde{\mathbf{s}}_t = \tilde{\mathbf{s}}(\mathbf{s}_t, \mathbf{c}_t)$ \\
+\midrule
+\multicolumn{4}{l}{\textit{Observation and action}} \\
+$\mathbf{o}_t \in \mathbb{R}^{S \times C}$ & Sensor observation tensor                       & $7 \times 12$       & $7 \times 16$       \\
+$\phi_t$                                & Flight phase context                               & $C{=}12$            & $C{=}16$            \\
+$a_t \in \mathcal{A}$                   & Maintenance action                                 & $|\mathcal{A}|{=}6$  & $|\mathcal{A}|{=}7$ (adds wash) \\
+\midrule
+\multicolumn{4}{l}{\textit{Dataset scale}} \\
+                                        & Episodes (train / test / test-hard)                & 400 / 40 / 40       & 500 / 60 / 60       \\
+                                        & Total flights                                       & 4M / 400k / 400k    & 7.0M / 831k / 855k  \\
+                                        & Mean episode length                                 & 10{,}000 (capped)   & 14{,}022             \\
+                                        & Repair rate (per step)                             & 0.08\%              & 0.09\%              \\
+                                        & Wash rate (per step)                               & --                  & 1.05\%              \\
+                                        & Region archetypes                                  & 0                   & 6                   \\
+                                        & Degradation archetypes                             & 4                   & 4                   \\
+                                        & Stochastic events                                  & 10                  & 12 (+2 regional)    \\
+                                        & Weather model                                      & limited OU          & hierarchical seasonal OU \\
+\midrule
+\multicolumn{4}{l}{\textit{Evaluation (probe)}} \\
+$\mathbf{z}_t \in \mathbb{R}^d$         & Encoder embedding, $\mathrm{Enc}_\theta(\mathbf{o}_{\le t}, a_{\le t})$ & shared & shared \\
+$h_\psi$                                & Probe head (frozen encoder, supervised on $\mathbf{s}_t$) & shared & shared \\
+$\hat{\mathbf{s}}_{t+\tau}$             & Probe prediction at horizon $\tau$                 & shared              & shared              \\
 \bottomrule
 \end{tabular}
-\caption{Core notation used in the main body; the full symbol table (probe, objective, and scenario specific symbols) is in Appendix~\ref{sec:notation_full}.}
+\caption{Core notation and the per scenario values it takes. Top three blocks define the latent, observation and action symbols; \emph{Dataset scale} reports cardinalities of the released splits; \emph{Evaluation} lists the probe side symbols introduced in Section~\ref{sec:evaluation}. Region archetypes are the six geographic operating environments of TurboSens2 (Appendix~\ref{sec:scen4_regions}). The full symbol table is in Appendix~\ref{sec:notation_full}.}
 \label{tab:notation}
 \end{table}
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{lcc}
-\toprule
-\textbf{Property} & \textbf{TurboSens1} & \textbf{TurboSens2} \\
-\midrule
-Episodes                  & 400 & 500 (train) / 60 (test) / 60 (test-hard) \\
-Total flights             & 4M & 7.0M (train) / 831k (test) / 855k (test-hard) \\
-Episode length (mean/max) & 10{,}000 / 10{,}000 & 14{,}022 / 20{,}000 \\
-Observation $\mathbf{o}_t$  & $\mathbb{R}^{7 \times 12}$ & $\mathbb{R}^{7 \times 16}$ \\
-Observation dim $S\cdot C$ & 84 & 112 \\
-Mechanical wear dim $K$   & 10 & 10 \\
-Fouling dim $K_c$   & -- & 5 \\
-Maintenance policy        & health based & health based + context \\
-Action space $\mathcal{A}$ & discrete (6)  & discrete (7, adds engine wash)\\
-Repair rate (per step)    & 0.04\% & 0.09\% \\
-Wash rate (per step)      & -- & 1.05\% \\
-Regions                   & 0 & 6 \\
-Degradation archetypes    & 4 & 4 \\
-Stochastic events         & 10 & 12 (adds two regional events) \\
-Phantom observation model & no & yes, $\tilde{\mathbf{s}}_t \neq \mathbf{s}_t$ \\
-Weather model             & limited & hierarchical seasonal OU \\
-Flight-phase contexts $C$ & 12 & 16 \\
-Context meaning           & key probes & flight-phase discretization \\
-\bottomrule
-\end{tabular}
-\caption{OpenDeckSMR environment properties across scenarios. Episode length for
-TurboSens2 is the mean across the train split. The repair rate counts steps
-with any non-wash maintenance action; the wash rate counts engine-wash actions
-separately since TurboSens1 has no fouling channel to clean.}
-\label{tab:odsmr_base}
-\end{table}
 
 
 
+We introduce TurboSens, a synthetic turbofan degradation dataset generated with \texttt{OpenDeckSMR}, a component level thermodynamic simulator that exposes \emph{both} the observable sensor stream and the ground truth health state $\mathbf{s}_t$, the key property that enables direct evaluation of learned representations. The simulator is queried at $C$ fixed flight phase contexts per flight cycle and emits an observation tensor $\mathbf{o}_t \in \mathbb{R}^{S \times C}$ with $S{=}7$ sensor channels per context; different flight conditions excite different parts of the thermodynamic cycle, so the $C$ slices of $\mathbf{o}_t$ carry more information about $\mathbf{s}_t$ together than in isolation, rewarding a world model that aggregates evidence across contexts.
 
-TurboSens is a synthetic turbofan degradation dataset generated with \texttt{OpenDeckSMR}, a component level thermodynamic simulator that exposes \emph{both} the observable sensor stream and the ground truth health state $\mathbf{s}_t$, the key property that enables direct evaluation of learned representations. At every flight cycle, the simulator is queried at $C$ fixed flight phase contexts (climb, cruise, descent, etc.; $C{=}12$ in TurboSens1, $C{=}16$ in TurboSens2) and emits an observation tensor $\mathbf{o}_t \in \mathbb{R}^{S \times C}$ with $S{=}7$ sensor channels per context. The multi context structure is deliberate: different flight conditions excite different parts of the thermodynamic cycle, so the $C$ slices of $\mathbf{o}_t$ together carry more information about $\mathbf{s}_t$ than any single context in isolation, and a world model that learns to aggregate evidence across contexts is rewarded.
-
-We release two scenarios, summarized in Table~\ref{tab:odsmr_base}. \textbf{TurboSens1} offers health‑correlated maintenance with six actions, four heterogeneous degradation archetypes, twelve flight contexts, a library of ten stochastic events, and imperfect restoration. Full details of Scenario 1 are provided in Appendix~\ref{sec:dataset_scenario3}. \textbf{TurboSens2} extends this setting with a two‑channel hidden state that separates intrinsic mechanical wear from transient fouling, six geographic operating regions with region‑specific event intensities, sixteen flight‑phase contexts, and a phantom observation model in which the sensed state $\tilde{\mathbf{s}}$ can diverge from the true mechanical state $\mathbf{s}$ under heavy fouling. The transition from TurboSens1 to TurboSens2 introduces phantom observations, a fouling channel, an engine wash action, and region conditional weather and event dynamics; the difference between probe results on the two scenarios is therefore an end to end ablation of these features taken jointly. Per feature attribution is left for future work.
-
-TurboSens is designed to challenge world models with sparse, imbalanced interventions (component overhauls occur on $0.04\%$-$0.09\%$ of steps, engine washes add another $\approx 1\%$ in TurboSens2), heterogeneous failure trajectories, multi context partial observability, and the action dependent latent observability of the phantom map (eq.~\ref{eq:phantom}). The dataset is generated on demand via a provided script; the reference splits are released as HDF5 files with a documented schema.
-
-
-\subsection{Datasets Coverage}
+We release two scenarios summarised in Table~\ref{tab:notation}. \textbf{TurboSens1} provides health correlated maintenance, four heterogeneous degradation archetypes, and a library of stochastic events with imperfect restoration (Appendix~\ref{sec:dataset_scenario3}). \textbf{TurboSens2} extends this setting with a two channel hidden state separating intrinsic mechanical wear from transient fouling, six region archetypes with region specific event intensities, and a phantom state model where the sensed state $\tilde{\mathbf{s}}$ can diverge from the true $\mathbf{s}$ under heavy fouling. The difference in probe results between the two scenarios therefore acts as a joint ablation of phantom observation, fouling, wash, and region effects; per feature attribution is left for future work. Interventions are sparse (component overhauls $\approx 0.08\%$ of steps, engine washes a further $\approx 1\%$ in TurboSens2), the seven sensor observation is structurally underdetermined relative to the ten state dimensions, and the latent observability of the phantom map is action dependent. The dataset is generated on demand via a provided script; the released splits are HDF5 files with a documented schema.
 
 
 \subsection{Degradation and Maintenance Mechanisms}
@@ -310,8 +294,7 @@ TurboSens1 models degradation as a two‑regime process: an early \textit{burn�
 
 where $t_k$ is the time since last repair, $\beta_k,\tau_k$ control burn‑in, $\alpha_k^{(m)}$ is a speed‑regime‑dependent drift rate, and $\varepsilon_t$ is Gaussian noise. The linear term dominates after $\approx 500$ steps, consuming $\sim$70-80\% of the degradation budget over a $10^4$‑step episode.
 
-\paragraph{Heterogeneous archetypes.}
-Each episode is assigned one of four failure modes (Table~\ref{tab:archetypes}), modulating drift rates to concentrate wear in specific subsystems. Archetypes A-C mimic real‑world degradation; Archetype D (balanced) produces long‑lived engines that rarely reach airworthiness limits.
+Each episode is assigned one of four failure mode archetypes (Table~\ref{tab:archetypes}) that modulate drift rates to concentrate wear in specific subsystems (A--C) or distribute it uniformly to produce long lived engines (D).
 
 \begin{table}[h]
 \centering
@@ -330,46 +313,32 @@ D & Balanced          & $0.65\times$ & All uniformly \\
 \end{tabular}
 \end{table}
 
-\paragraph{Realistic maintenance.}
-Six actions (idle or replace one of five module assemblies) are selected by an expert policy that mimics industrial practice:
+Six maintenance actions (idle or replace one of five module assemblies) are selected by an expert policy mimicking industrial practice:
 \begin{itemize}
     \item \textit{LLP ceilings}: hard cycle limits per component, forcing replacement regardless of health.
-    \item \textit{Health‑correlated scheduling}: maintenance is triggered when a component is predicted to reach 80\% degradation within $1500$-$2500$ steps.
-    \item \textit{Opportunistic bundling}: any visit triggers a scan for other near‑end‑of‑life components, bundling replacements to avoid costly separate shop visits.
+    \item \textit{Health‑correlated scheduling}: maintenance is triggered when a component is predicted to reach 80\% degradation within a semi-stochastic process.
+    \item \textit{Opportunistic bundling}: any visit triggers a scan for other near‑end‑of‑life components, bundling replacements to avoid costly separate shop visits, and calendar by avoiding high-season (summer).
     \item \textit{Imperfect restoration}: even new components restore only $80$-$90\%$ of the degradation budget, with episode‑varying quality $\kappa\sim\mathcal{U}(0.7,1.0)$.
-    \item \textit{Inspection deferred repairs}: $3$-$7\%$ chance that a degraded component is missed during inspection, forcing an unplanned emergency visit $200$-$800$ steps later.
+    % retiré
 \end{itemize}
 
-This policy yields sparse interventions ($0.04\%$ of timesteps) and strongly asymmetric inter‑maintenance intervals, in contrast to the uniform scheduling of earlier benchmarks.
+This policy yields sparse interventions and strongly asymmetric inter‑maintenance intervals, in contrast to the uniform scheduling of earlier benchmarks.
 
 A library of ten stochastic events (\texttt{perm\_step\_1},
-\texttt{trans\_anomaly\_1}, \texttt{sensor\_pulse\_1}, and others)
-further enriches the dataset, making the latent state recovery
-problem harder and the encoder representations more challenging to
-learn. Although these events draw inspiration from real engine
-phenomena, their probabilities and magnitudes are mathematical
-abstractions and in no case reflect what is observed in real life
-flight settings; calibrating them to operational data is left for
-future work. Full details, rates, and the mapping between labels and
-the mathematical effects they model are provided in
+\texttt{trans\_anomaly\_1}, \texttt{sensor\_pulse\_1}, and others) further enriches the dataset, making the latent state recovery problem harder and the encoder representations more challenging to learn. Full details, rates, and the mathematical effects they model are provided in
 Appendix~\ref{sec:dataset_events}.
 
 
 \section{Evaluation Framework}~\label{sec:evaluation}
+The benchmark proposes an inverse evaluation protocol: a world model is trained on the sensor observation stream of the train split; we then freeze the encoder and \emph{probe} its embeddings against the ground truth mechanical state $\mathbf{s}_t$ that the simulator exposes. By a probe we mean a small head trained on the frozen embeddings to predict the ground truth state; the rest of the world model is held fixed and no probe gradient ever reaches the encoder. The protocol is architecture agnostic: any encoder that produces a per frame embedding $\mathbf{z}_t$ admits the same probe
+without modification.
 
-The benchmark proposes an inverse evaluation protocol. A world model is
-trained self supervised on the sensor observation stream of the train
-split; we then freeze the encoder and probe its embeddings against the
-ground truth mechanical state $\mathbf{s}_t$ that the simulator
-exposes. The protocol is architecture agnostic: any encoder that
-produces a per frame embedding $\mathbf{z}_t$ admits the same probe
-without modification, and no fine tuning of the world model is
-performed. Two evaluation tasks are central to the present paper; two
-auxiliary tasks (degradation velocity estimation and latent forecasting
-with an action divergence gap) ship with the benchmark and are
-described in Appendix~\ref{sec:auxiliary_tasks}.
+We use two distinct words throughout. A \emph{rollout} is what the world model does: starting from a context window of embeddings, the predictor autoregressively produces $\hat{\mathbf{z}}_{t+\tau}$ for $\tau = 1, \ldots, \tau_\mathrm{max}$, which the probe decodes to $\hat{\mathbf{s}}_{t+\tau}$. A \emph{replay} is what the simulator does: a deterministic re execution of an episode from its parent seed, optionally forked at a chosen branch point under a counterfactual action sequence (the \texttt{EpisodeReplayer} of
+Appendix~\ref{sec:replayer}). Counterfactual evaluation pairs the two: we compare a model rollout against a simulator replay under the same intervention.
 
-\paragraph{Task 1 Health Indicator state estimation.}
+Two evaluation tasks are central to the present paper; two auxiliary tasks (degradation velocity estimation and latent forecasting with an action divergence gap) are shipped and described in Appendix~\ref{sec:auxiliary_tasks}.
+
+\paragraph{Task 1. Mechanical state estimation.}
 A linear probe $h_\psi$ is trained to predict
 $\mathbf{s}_t \in \mathbb{R}^{10}$ from the embedding $\mathbf{z}_t$
 on the train split's full $\sim$770k step embedding stream. The probe
@@ -381,7 +350,7 @@ Probe head capacity is held fixed across runs after observing that the
 probe head matters far less than the probe data budget
 (Appendix~\ref{sec:probe_size}).
 
-\paragraph{Task 2 OOD probing.}
+\paragraph{Task 2. OOD probing.}
 \label{sec:ood}
 TurboSens2 ships an OOD \texttt{test\_hard} split (60 episodes,
 distinct seed offset, $6.7\%$ extreme degradation episodes versus
@@ -399,8 +368,8 @@ probes (Appendix~\ref{sec:auxiliary_tasks}).
 \paragraph{Probe over single embedding versus full history.}
 The probe head supports both a single embedding input
 $h_\psi(\mathbf{z}_t)$ ($\mathrm{seq\_len}{=}1$) and a temporally
-aggregated input $h_\psi(\mathbf{z}_{t-w+1:t})$ over a window of
-$w$ consecutive embeddings. The default reported in
+aggregated input $h_\psi(\mathbf{z}_{t-W+1:t})$ over a window of
+$W$ consecutive embeddings. The default reported in
 Section~\ref{sec:results} is $\mathrm{seq\_len}{=}1$ since it isolates
 how much of $\mathbf{s}_t$ a single embedding carries; an
 $\mathrm{seq\_len}{=}10$ comparison is reported alongside in the
@@ -427,7 +396,7 @@ reported as preliminary. Wall clock and configuration details are in
 Appendix~\ref{sec:run_inventory}.
 
 \paragraph{Stride $S$ monotonically improves OOD generalisation.}
-Figure~\ref{fig:s4_xarch} reports mean HI Pearson on the in
+Figure~\ref{fig:s4_xarch} reports mean Pearson on $\mathbf{s}$ across components on the in
 distribution \texttt{test} split and the OOD \texttt{test\_hard}
 split. Inside the JEPA family at $H{=}16$, OOD Pearson is monotonic
 in stride: $S{=}1$ ($E_1$, $0.234 \pm 0.180$) $\to$ $S{=}5$ ($E_3$,
@@ -446,9 +415,11 @@ seed mean by roughly one standard deviation.
     \centering
     \includegraphics[width=0.95\linewidth]{figures/fig1_xarch_xconfig_inOOD.png}
     \caption{Encoder representation quality across two architectures
-    and seven temporal configurations on TurboSens2. Mean HI Pearson on
-    the in distribution \texttt{test} split (blue) and the OOD
-    \texttt{test\_hard} split (orange); JEPA error bars are multi seed
+    and seven temporal configurations on TurboSens2. Mean Pearson on
+    the components of $\mathbf{s}$ on the in distribution \texttt{test}
+    split (blue) and the OOD \texttt{test\_hard} split (orange);
+    figure axes still labelled HI but refer to $\mathbf{s}$.
+    JEPA error bars are multi seed
     std ($n{=}5$ to $6$ valid seeds, one degenerate seed filtered);
     AR LSTM rows ($L_1$, $L_2$, $L_\mathrm{big}$) are single seed.
     Inside JEPA the in distribution leader is $E_2$ and the OOD leader
@@ -463,8 +434,8 @@ seed mean by roughly one standard deviation.
 The per-component breakdown of the in distribution leader $E_2$
 (Appendix~\ref{sec:per_hi}, Figure~\ref{fig:s4_per_hi_e2}) sign flips
 on three of ten dimensions on OOD and exhibits Pearson and RMSE
-rankings that disagree: HI$_2$ has an acceptable OOD Pearson but the
-worst RMSE, while HI$_8$ has a high in distribution Pearson and a
+rankings that disagree: $s^2$ has an acceptable OOD Pearson but the
+worst RMSE, while $s^8$ has a high in distribution Pearson and a
 moderate one on OOD. Single metric reporting hides this; we recommend
 per component Pearson and RMSE alongside the mean and treat the worst
 component as a more conservative figure of merit under shift.
@@ -493,7 +464,7 @@ quantity the protocol exposes.
 \centering
 \small
 \setlength{\tabcolsep}{5pt}
-\caption{Mean HI Pearson on \texttt{test} and OOD \texttt{test\_hard}
+\caption{Mean Pearson on state $\mathbf{s}$ on \texttt{test} and OOD \texttt{test\_hard}
 (probe $\mathrm{seq\_len}{=}1$). Seeds: valid seeds out of five or
 six (degenerate probe init seeds filtered). The supervised oracle and
 \texttt{raw\_sensors} are diagnostic baselines (ceiling and floor);
@@ -520,94 +491,73 @@ $L_1$ AR LSTM, $H{=}16, S{=}1$       & $0.554 \pm 0.015$ & $0.117 \pm 0.142$    
 \end{table}
 
 \paragraph{Counterfactual fidelity.}
-The deterministic \texttt{EpisodeReplayer} (Appendix~\ref{sec:replayer})
-allows comparing each trained predictor against the simulator under
-counterfactual action sequences. Across five checkpoints $\times$ seven
-actions $\times$ thirty episodes $\times$ three branch positions, the
-absolute HI RMSE between model and sim plateaus at
-$\approx 0.003\text{--}0.005$ within $\tau{\approx}20$ and remains
-bounded through $\tau{=}100$; the differential
-$|\Delta_\mathrm{model}(a, 0) - \Delta_\mathrm{sim}(a, 0)|$ that
-isolates the action specific response sits at
-$\approx 0.0015\text{--}0.005$, non zero across all configurations.
-The $(H, S)$ axis that strongly differentiates probe Pearson barely
-differentiates counterfactual fidelity, suggesting the within JEPA
-specificity vs generality tradeoff lives at the encoder rather than
-the predictor (per action and per checkpoint curves in
-Appendix~\ref{sec:counterfactual_curves}, Figure~\ref{fig:s4_counterfactual}).
+The deterministic \texttt{EpisodeReplayer}
+(Appendix~\ref{sec:replayer}) lets us branch any held out episode at a
+chosen timestep, force one of the seven maintenance actions, and
+compare the model rollout against the simulator replay under the same
+intervention. We score each checkpoint by the Pearson,
+sign agreement, and magnitude ratio
+$\lVert\Delta_\mathrm{model}\rVert / \lVert\Delta_\mathrm{sim}\rVert$
+between predicted and true action induced deltas in $\mathbf{s}$
+(Appendix~\ref{sec:counterfactual_curves}, Table~\ref{tab:cf_summary}).
+Three observations.
 
-\paragraph{More temporal context closes the OOD gap, across architectures.}
-The multi seed AR LSTM rows reveal a monotone OOD trend in temporal
-context: $L_1$ (OOD $0.117$) $\to$ $L_2$ (OOD $0.231$) $\to$
-$L_\mathrm{big}$ (OOD $0.344$), with both predictor history and a
-TemporalAggregator window contributing. Combined with the JEPA stride
-trend ($S{=}1\to20$: OOD $0.234\to0.394$ at $H{=}16$), the picture is
-consistent across architectures: more temporal context during
-pretraining reliably shrinks the in distribution / OOD gap,
-regardless of how that context enters (stride for JEPA, history and
-aggregator width for AR LSTM).
+First, both predictor families fail on the same axis: sign agreement on
+action effects sits well above chance (0.60 to 0.74) but Pearson stays
+modest (0.08 to 0.20) and magnitude is consistently overshot by
+1.7$\times$ to 3.0$\times$. $R^2$ is negative across every
+configuration, meaning the do nothing baseline beats every SSL
+predictor on the action conditioned task. Self supervised world models
+on TurboSens learn the \emph{direction} of each maintenance action far
+better than its \emph{magnitude}, regardless of predictor architecture.
 
-\paragraph{Action conditioned counterfactuals (ongoing).}
-The released simulator exposes a deterministic
-\texttt{EpisodeReplayer} (Appendix~\ref{sec:replayer}) that
-reconstructs any episode bit identically from its parent seed and
-forks it at a chosen branch point under either an overridden action
-($\texttt{branch\_t}$ + $\texttt{override\_action}$), an open loop
-forced action sequence ($\texttt{forced\_actions}$), or a re seeded
-weather realisation ($\texttt{weather\_seed}$). This is the python
-interface around which the action conditioned probe will be reported
-in the camera ready: rolling the trained predictor under the same
-counterfactual action sequence as the replayer and measuring the
-divergence between predicted and replayed mechanical state closes the
-last cell of the evaluation framework of
-Section~\ref{sec:evaluation}.
+Second, the headline metric is a function of which metric you read.
+Best Pearson, best sign agreement, and best magnitude calibration are
+achieved by three different checkpoints (JEPA $E_5$, AR LSTM
+$L_\mathrm{big}$, AR LSTM $L_\mathrm{big}$), so no single counterfactual
+score is sufficient for ranking world models. Magnitude calibration in
+particular tracks temporal context: the AR LSTM with the longest
+predictor history ($L_\mathrm{big}$, $H{=}32$ + window 4) is the only
+checkpoint with a magnitude ratio below 2, mirroring the in
+distribution and OOD probe trend reported above.
 
+Third, the failure concentrates on engine wash. The simulator's
+delta in $\mathbf{s}$ on wash is near zero by construction (wash decays $\mathbf{c}_t$
+toward zero and leaves $\mathbf{s}_t$ unchanged), but the JEPA
+predictors return wash deltas 7$\times$ to 11$\times$ larger than the
+simulator's ground truth. In other words the predictors have
+internalised the \emph{observable sawtooth} on the sensor stream,
+which the wash creates by collapsing the phantom state $\tilde{\mathbf{s}}_t$
+toward $\mathbf{s}_t$, rather than the underlying mechanical effect on
+$\mathbf{s}_t$, which is identically null. This is the action dependent
+phantom observation pathology of equation~\ref{eq:phantom},
+operationalised as a concrete failure mode of the trained models on a
+single, named action. The instrument exposes it because we have access
+to the true $\mathbf{s}_t$.
 
 \subsection{Discussion}
 \label{sec:discussion}
 
-The multi seed sweep makes three deferred repairs visible. (i) Increasing
-the temporal context during pretraining monotonically improves OOD
-generalisation across architectures (JEPA stride at $H{=}16$:
-OOD $0.234 \to 0.394$; AR LSTM history $\times$ aggregator width:
-OOD $0.117 \to 0.344$). (ii) Two diagnostics bracket the SSL
-encoders and reframe the OOD picture: the supervised oracle and a
-no encoder raw probe both reach $\approx 0.55 / 0.51$ on
-\texttt{test} / \texttt{test\_hard} with essentially zero gap, while
-even the strongest SSL encoder sits $\approx 0.15$ Pearson below the
-supervised ceiling on the held out split. The encoder backbone can
-preserve the OOD relevant information when supervised and the signal
-is present in the observation; the gap is therefore a property of
-the SSL pretext, not the backbone or the data. Closing this gap is
-the research question the benchmark surfaces. (iii) Counterfactual
-fidelity is bounded across all checkpoints and barely differentiated
-by $(H, S)$, locating the within JEPA specificity vs generality
-tradeoff at the encoder level rather than the predictor level.
+The multi seed sweep makes three deferred repairs visible. (i) Increasing the temporal context during pretraining monotonically improves OOD generalisation across architectures (JEPA stride at $H{=}16$: OOD $0.234 \to 0.394$; AR LSTM history $\times$ aggregator width: OOD $0.117 \to 0.344$). (ii) Two diagnostics bracket the SSL encoders and reframe the OOD picture: the supervised oracle and a no encoder raw probe both reach $\approx 0.55 / 0.51$ on \texttt{test} / \texttt{test\_hard} with essentially zero gap, while even the strongest SSL encoder sits $\approx 0.15$ Pearson below the supervised ceiling on the held out split. The encoder backbone can preserve the OOD relevant information when supervised and the signal is present in the observation; the gap is therefore a property of the SSL pretext, not the backbone or the data. Closing this gap is the research question the benchmark surfaces. (iii) Counterfactual fidelity is bounded across all checkpoints and barely differentiated by $(H, S)$, locating the within JEPA specificity vs generality tradeoff at the encoder level rather than the predictor level.
 
-Two methodological points underpin all three deferred repairs. Single seed
-probe numbers can be off by more than one standard deviation: the
-multi seed reranking flipped the JEPA in distribution leader from
-$E_1$ to $E_2$. And aggregate metrics hide a per component picture in
-which Pearson and RMSE rank components differently and sign flips
-appear on multiple dimensions for the in distribution leader $E_2$;
-the worst component is therefore a more conservative summary statistic
-than the mean under shift.
+Two methodological points underpin all three deferred repairs. Single seed probe numbers can be off by more than one standard deviation: the multi seed reranking flipped the JEPA in distribution leader from $E_1$ to $E_2$. And aggregate metrics hide a per component picture in which Pearson and RMSE rank components differently and sign flips appear on multiple dimensions for the in distribution leader $E_2$; the worst component is therefore a more conservative summary statistic than the mean under shift.
 
+The monotone temporal context trend admits two readings the present sweep cannot separate. The straightforward one is that pretraining receptive field is the binding constraint, and any mechanism that lengthens the context should help. The second is that the way the context is consumed matters: a strided JEPA target, a longer history through an autoregressive recurrence, and a TemporalAggregator window are not equivalent bottlenecks on the latent even at matched nominal receptive field. Distinguishing the two would require a controlled architectural ablation that holds receptive field fixed while varying the bottleneck, which we leave as a target experiment for the protocol rather than as a claim of the present paper.
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-TurboSens is an evaluation instrument for world model representations. Its distinctive property of paired ground truth latent state alongside the sensor stream, supports concrete evaluative claims: how much of the underlying state a frozen representation preserves under distribution shift, whether generalisation gaps trace to the encoder or the predictor, and how the predictor's response to counterfactual actions compares to the simulator's. The contribution is the instrument itself: a configurable simulator, two progressively challenging scenarios, a linear probing protocol, a deterministic counterfactual replayer, and multi seed reproducibility tooling.
+TurboSens is an evaluation instrument for world model representations. Its distinctive property of paired ground truth latent state alongside the sensor stream supports concrete evaluative claims: how much of the underlying state a frozen representation preserves under distribution shift, whether generalisation gaps trace to the encoder or the predictor, and how the predictor's response to counterfactual actions compares to the simulator's. The contribution is the instrument itself: a configurable simulator, two progressively challenging scenarios, an inverse probing protocol, a deterministic counterfactual replayer, and multi seed reproducibility tooling.
 
-Our experiments illustrate the instrument. On TurboSens2, more temporal context during pretraining monotonically improves OOD probe quality across both architectures we tested, and two diagnostics (a supervised oracle on the same backbone, and a linear probe on the raw observation) both close the in distribution / OOD gap entirely while every SSL encoder leaves $\approx 0.15$ Pearson on the table. The OOD relevant signal is therefore in the data and the encoder backbone can preserve it under supervision; the gap is a property of the SSL pretext. The benchmark documents its assumptions and limitations (synthetic data, single domain, simulator fidelity, linear probe sufficiency), and progressive scenarios let researchers isolate specific evaluation challenges while keeping ground truth accessible.
-
-
+We exercised the protocol on representatives of two world model families, joint embedding predictive architectures and autoregressive latent dynamics. The action conditioned replay-and-probe pairing exposed concrete failure modes that scalar evaluation does not reach. We see this as the kind of finding the benchmark is designed to make accessible to future work.
 
 
 
 
 
-\section*{References}
+
+
+
 
 \bibliographystyle{plainnat}
 \bibliography{references}

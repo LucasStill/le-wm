@@ -10,6 +10,17 @@ Warning--entry type for "psaropoulos_2025_17804895" isn't style-file defined
 --line 138 of file references.bib
 Warning--string name "june" is undefined
 --line 204 of file references.bib
+Warning--I didn't find a database entry for "lacaille2014robust"
+Warning--I didn't find a database entry for "karchmer1977identification"
+Warning--I didn't find a database entry for "dunn1987performance"
+Warning--I didn't find a database entry for "thoma2020quantifying"
+Warning--I didn't find a database entry for "aygun2024thermodynamics"
+Warning--I didn't find a database entry for "zonta2020predictive"
+Warning--I didn't find a database entry for "lee2014prognostics"
+Warning--I didn't find a database entry for "tsui2015prognostics"
+Warning--I didn't find a database entry for "jaw2005recent"
+Warning--I didn't find a database entry for "mihai2022digital"
+Warning--I didn't find a database entry for "Belfadel_Creff_Ben_Hamida_2025"
 Warning--I didn't find a database entry for "dosovitskiy2021image"
 Warning--I didn't find a database entry for "xiong2020layer"
 Warning--empty journal in Assran_Bardes_Fan_Garrido_Howes_Mojtaba_Komeili_Muckley_Rizvi_Roberts_et_al_2025
@@ -25,45 +36,45 @@ Warning--there's a number but no volume in Maes_Lidec_Scieur_LeCun_Balestriero_2
 Warning--empty publisher in Ramasso_Saxena
 Warning--empty year in yiclevrer
 Warning--empty year in yiclevrer
-You've used 20 entries,
+You've used 21 entries,
             2773 wiz_defined-function locations,
-            742 strings with 11264 characters,
-and the built_in function-call counts, 13205 in all, are:
-= -- 1097
-> -- 1174
-< -- 8
-+ -- 392
-- -- 372
-* -- 1235
-:= -- 2104
-add.period$ -- 87
-call.type$ -- 20
-change.case$ -- 181
-chr.to.int$ -- 20
-cite$ -- 53
-duplicate$ -- 465
-empty$ -- 783
-format.name$ -- 400
-if$ -- 2691
+            760 strings with 11670 characters,
+and the built_in function-call counts, 13714 in all, are:
+= -- 1148
+> -- 1195
+< -- 10
++ -- 399
+- -- 378
+* -- 1267
+:= -- 2175
+add.period$ -- 90
+call.type$ -- 21
+change.case$ -- 186
+chr.to.int$ -- 21
+cite$ -- 55
+duplicate$ -- 492
+empty$ -- 825
+format.name$ -- 409
+if$ -- 2806
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 20
-newline$ -- 131
-num.names$ -- 80
-pop$ -- 370
+missing$ -- 21
+newline$ -- 136
+num.names$ -- 84
+pop$ -- 380
 preamble$ -- 1
-purify$ -- 162
+purify$ -- 166
 quote$ -- 0
-skip$ -- 407
+skip$ -- 432
 stack$ -- 0
-substring$ -- 266
-swap$ -- 69
-text.length$ -- 4
+substring$ -- 292
+swap$ -- 77
+text.length$ -- 5
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 215
+type$ -- 226
 warning$ -- 13
-while$ -- 78
+while$ -- 84
 width$ -- 0
-write$ -- 305
-(There were 18 warnings)
+write$ -- 318
+(There were 29 warnings)

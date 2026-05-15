@@ -56,7 +56,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 # Jean-Zay best practice: $SCRATCH is per-node NVMe (~3 GB/s reads).
 # Reading from Lustre ($WORK/$fswork) during training causes I/O hangs.
 # The copy takes ~2s for 1.3 GB and makes all subsequent reads instant.
-HDF5_NAME=scenario3_train_400_lewm.h5
+HDF5_NAME=turbosens1_train.h5
 echo "Copying ${HDF5_NAME} to \$SCRATCH ..."
 cp $STABLEWM_HOME/${HDF5_NAME} $SCRATCH/
 echo "Copy done. Data dir: $SCRATCH"
@@ -74,7 +74,7 @@ DATA_DIR=$SCRATCH
 #   1 = dense (original); 5 = every 5th observation
 #   Effective temporal reach = HISTORY_LEN * H_STEP observations
 #
-# N_SENSORS : MUST be 84 for scenario3 (7 sensors × 12 contexts)
+# N_SENSORS : MUST be 84 for turbosens1 (7 sensors × 12 contexts)
 
 WIN_SIZE=1
 HISTORY_LEN=50
@@ -94,7 +94,7 @@ ZERO_PAD_PROB=0.0
 RUN_NAME=lewm_s3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS}
 
 srun python -u train.py \
-    data=scenario3 \
+    data=turbosens1 \
     encoder_type=sensor \
     n_sensors=${N_SENSORS} \
     obs_window_size=${WIN_SIZE} \
@@ -108,7 +108,7 @@ srun python -u train.py \
     loader.pin_memory=True \
     trainer.precision=bf16-mixed \
     data.dataset.cache_dir=${DATA_DIR} \
-    subdir=scenario3_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
+    subdir=turbosens1_sensor_w${WIN_SIZE}_H${HISTORY_LEN}_S${H_STEP}_P${NUM_PREDS} \
     output_model_name=${RUN_NAME} \
     hi_probe.enabled=true \
     hi_probe.probe_seq_len=${HISTORY_LEN}

@@ -9,11 +9,11 @@ what you learned in `logs/handoff_notes.md`.
 - Repo: `/home/lthil/thesis/le-wm` — branch `feature/option-b-sensor-native`.
 - Venv: `.venv/` (uv-managed). Activate with `source .venv/bin/activate`.
 - Hardware: RTX 5090 (32 GB VRAM), 60 GB RAM, no Slurm.
-- Data: `/home/lthil/.stable_worldmodel/scenario4_{train,test,test_hard}_lewm.h5`.
+- Data: `/home/lthil/.stable_worldmodel/turbosens2_{train,test,test_hard}_lewm.h5`.
   Pixels shape (N, 11, 16) = 7 sensors + 4 context_params; 7 actions.
 - Launcher: `./train_lewm_scenario4_dragon.sh` (env-var overrides for WIN_SIZE,
   HISTORY_LEN, H_STEP, NUM_PREDS, BATCH_SIZE, NUM_WORKERS, PRECISION).
-- Config: `config/train/data/scenario4.yaml` — pixels cached in RAM (~4.9 GB) to
+- Config: `config/train/data/turbosens2.yaml` — pixels cached in RAM (~4.9 GB) to
   avoid LZF chunk thrashing; that was the main bug we fixed today.
 - Deadline: ~1 week. Jean Zay H100 priority is low, so dragon is the primary machine.
 
@@ -55,7 +55,7 @@ If it finished, read the last `logs/s4_cached_*.log` for final metrics.
     # stack of workers (we installed py-spy already)
     source .venv/bin/activate && py-spy dump --pid <PID>
     # HDF5 chunk/compression inspection
-    python -c "import h5py;f=h5py.File('/home/lthil/.stable_worldmodel/scenario4_train_lewm.h5','r');print(f['pixels'].chunks,f['pixels'].compression)"
+    python -c "import h5py;f=h5py.File('/home/lthil/.stable_worldmodel/turbosens2_train.h5','r');print(f['pixels'].chunks,f['pixels'].compression)"
     # kill a stuck run
     tmux kill-session -t s4 ; pgrep -f train.py | xargs -r kill -9
 

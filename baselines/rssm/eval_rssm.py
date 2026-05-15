@@ -23,7 +23,7 @@ Usage
     source .venv/bin/activate
     python baselines/rssm/eval_rssm.py \\
         --ckpt /home/lthil/.stable_worldmodel/rssm_scenario4_T64_S32x32_D512/rssm_s4_T64_S32x32_D512_epoch_10_object.ckpt \\
-        --data /home/lthil/.stable_worldmodel/scenario4_test_lewm.h5 \\
+        --data /home/lthil/.stable_worldmodel/turbosens2_test.h5 \\
         --out  eval_results/rssm_s4/task1_test.json \\
         --history_size 16 --horizon 50 --n_samples 500
 """
@@ -49,11 +49,11 @@ log = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Data helpers — scenario4 layout: pixels (N, 11, 16) → flatten to (N, 176).
+# Data helpers — turbosens2 layout: pixels (N, 11, 16) → flatten to (N, 176).
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_episodes(hdf5_path: str, train_split: float = 0.9, seed: int = 3072):
-    """Load all sensor episodes and HI states from a scenario4 HDF5 file.
+    """Load all sensor episodes and HI states from a turbosens2 HDF5 file.
 
     Returns
     -------
@@ -315,10 +315,10 @@ def task3_latent_forecasting(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Evaluate RSSM on TurboSens scenario4 Tasks 1+3")
+    p = argparse.ArgumentParser(description="Evaluate RSSM on TurboSens turbosens2 Tasks 1+3")
     p.add_argument("--ckpt",          required=True)
     p.add_argument("--data",          required=True,
-                   help="Path to scenario4_test*.h5")
+                   help="Path to turbosens2_test*.h5")
     p.add_argument("--out",           default="eval_results/rssm_s4/task_results.json")
     p.add_argument("--history_size",  type=int, default=16)
     p.add_argument("--horizon",       type=int, default=50)

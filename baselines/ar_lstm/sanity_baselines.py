@@ -29,7 +29,7 @@ Usage
     cd le-wm/
     source .venv/bin/activate
     python baselines/ar_lstm/sanity_baselines.py \\
-        --hdf5 /home/lucas/.stable_worldmodel/scenario4_test_lewm.h5 \\
+        --hdf5 /home/lucas/.stable_worldmodel/turbosens2_test.h5 \\
         --config /home/lucas/.stable_worldmodel/ar_lstm_scenario4_w1_H16_S1_P4_h256l2/config.yaml \\
         --modes raw_sensors random_encoder \\
         --label-suffix te \\
@@ -60,7 +60,7 @@ from baselines.ar_lstm.model import build_ar_lstm     # noqa: E402
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--hdf5", required=True, type=Path,
-                        help="Test HDF5 (scenario4_test_lewm.h5 or _test_hard_…).")
+                        help="Test HDF5 (turbosens2_test.h5 or _test_hard_…).")
     parser.add_argument("--config", required=True, type=Path,
                         help="L1/L2 hydra config.yaml (used to build the random encoder).")
     parser.add_argument("--modes", nargs="+",

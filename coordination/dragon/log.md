@@ -53,8 +53,8 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
 2026-04-26T10:18Z  E3 finished overnight. E4 deferred (E3 essentially tied E1
   on probes, so E4 unlikely to surprise). L2 results great work. Now running
-  in parallel on dragon: HI probe eval of E1 against scenario4_test_hard_lewm.h5
-  and scenario4_test_lewm.h5 (settles "does E1 generalize OOD?"). Should land
+  in parallel on dragon: HI probe eval of E1 against turbosens2_test_hard.h5
+  and turbosens2_test.h5 (settles "does E1 generalize OOD?"). Should land
   in ~15 min.
 
   REQUEST: Please run the bigger-probe diagnostic on L1 frozen encoder NOW
@@ -96,11 +96,11 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
   eval_sweep pipeline (see /home/lthil/thesis/le-wm/eval_sweep.py — should
   be at /home/lucas/thesis/le-wm/eval_sweep.py via the repo). Just task 1
   is enough for now (HI state estimation). Run on both regular test
-  (scenario4_test_lewm.h5) and test_hard (scenario4_test_hard_lewm.h5).
+  (turbosens2_test.h5) and test_hard (turbosens2_test_hard.h5).
 
   Command template:
     python eval_sweep.py --tasks 1 --no_parallel \
-      --hdf5 /home/lucas/.stable_worldmodel/scenario4_test_lewm.h5 \
+      --hdf5 /home/lucas/.stable_worldmodel/turbosens2_test.h5 \
       --out_dir eval_results/all_ckpts_test \
       L1_te:<path-to-L1-epoch_10_object.ckpt> \
       L2_te:<path-to-L2-epoch_10_object.ckpt>
@@ -219,7 +219,7 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
     velocity), 2b (maintenance alarm), 3 (latent forecasting). Both regular
     test and test_hard. L1 + L2 epoch_10 ckpts.
         python eval_sweep.py --tasks 1 2 3 --no_parallel \
-            --hdf5 .../scenario4_test_lewm.h5 \
+            --hdf5 .../turbosens2_test.h5 \
             --out_dir eval_results/L_multi_test \
             L1:<L1_ep10> L2:<L2_ep10>
         # then again with --hdf5 test_hard.h5 → eval_results/L_multi_test_hard
@@ -401,7 +401,7 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
         python eval_sweep.py --tasks 1 3 --no_parallel \
             --task1_seq_lens 1 \
             --forecast_horizon 200 \
-            --hdf5 .../scenario4_test_lewm.h5 \
+            --hdf5 .../turbosens2_test.h5 \
             --out_dir eval_results/forecast_L1 \
             --seed 0 \
             L1_fc:<L1_ep10_path>
@@ -442,10 +442,10 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
    - Import: PYTHONPATH=~/thesis/rl_opendeck_simulator:$PYTHONPATH
      (skipped pip install -e — the OpenDeckSMR sub-package lacks
      pyproject.toml. PYTHONPATH is enough.)
-   - Dataset: scenario4_*_sensors.h5 ALREADY have ep_meta/seed and
+   - Dataset: turbosens2_*_sensors.h5 ALREADY have ep_meta/seed and
      ctx_fill_seed (the lewm.h5 files don't, but replayer takes the
      sensors.h5 directly). Only sim_version is missing → benign
-     UserWarning, defaults to 'scenario4@v1.0.0'.
+     UserWarning, defaults to 'turbosens2@v1.0.0'.
 
   End-to-end verified: replay_full(ep_idx=0) returns Episode4 with
   full state trajectory. counterfactual(0, CounterfactualSpec(branch_t=2000,
@@ -673,7 +673,7 @@ Format: `YYYY-MM-DDTHH:MMZ  short event description`. Append to bottom only.
 
         for seed in 0 2 3 4 5; do
           for split in test test_hard; do
-            h5=/home/lucas/.stable_worldmodel/scenario4_${split}_lewm.h5
+            h5=/home/lucas/.stable_worldmodel/turbosens2_${split}_lewm.h5
             outdir=eval_results/multiseed/L_big_${split}_seed${seed}
             python eval_sweep.py --tasks 1 --no_parallel --task1_seq_lens 1 \
                 --hdf5 $h5 \

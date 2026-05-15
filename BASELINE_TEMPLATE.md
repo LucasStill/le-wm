@@ -93,7 +93,7 @@ data:
   dataset:
     num_steps: 64                       # contiguous chunk length per sample
     frameskip: 1
-    name: scenario4_train_lewm
+    name: turbosens2_train
     cache_dir: /home/lthil/.stable_worldmodel
     keys_to_load: [pixels, action]
     keys_to_cache: [action, pixels]     # cache pixels in RAM (~4.9 GB)

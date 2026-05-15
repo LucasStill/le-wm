@@ -9,7 +9,7 @@ Usage
 -----
     python baselines/ar_lstm/multiseed_l1l2.py \\
         --ckpt /path/to/L1_epoch_10_object.ckpt \\
-        --hdf5 /path/to/scenario4_test_lewm.h5 \\
+        --hdf5 /path/to/turbosens2_test.h5 \\
         --label L1_te \\
         --seeds 0 1 2 3 4 \\
         --seq-lens 1 \\

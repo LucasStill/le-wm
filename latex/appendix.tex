@@ -104,7 +104,7 @@ $\mathbf{z}^\mathrm{agg}_t \in \mathbb{R}^d$  & Temporally aggregated embedding 
 $\hat{\mathbf{s}}_{t+\tau}$                   & Probe prediction at horizon $\tau$ \\
 $h_\psi$                                      & Probe head, $\hat{\mathbf{s}}_{t+\tau} = h_\psi(\mathbf{z}_t)$ \\
 $d$                                           & Embedding dimension \\
-$w$                                           & Encoder temporal window size \\
+$W$                                           & Encoder temporal window size \\
 $H$                                           & Predictor history (context) length \\
 $\mathrm{seq\_len}$                           & Context length of the downstream target probe \\
 $\lambda$                                     & SIGReg regularisation weight \\
@@ -562,7 +562,7 @@ Episode length                   & 10{,}000 steps (all episodes at the cap) \\
 Archetype counts (A / B / C / D) & 121 / 104 / 102 / 73 \\
 NaN or Inf values in states      & 0 \\
 NaN or Inf values in sensors     & 0 \\
-Non zero maintenance rate        & 0.04\% of timesteps \\
+Non zero maintenance rate        & 0.08\% of timesteps \\
 Stochastic event rate            & ${<}1\%$ of timesteps \\
 Sensor observation shape         & $(N, 7, 12)$ \\
 \bottomrule
@@ -1412,8 +1412,8 @@ the configuration.
 
 The encoder in \eqref{eq:sensor_encoder} reads a single snapshot, so it
 cannot directly express degradation rate or trend direction. When the
-encoder is configured with a temporal window $w > 1$, each of the $w$
-consecutive frames $\mathbf{o}_{t-w+1}, \ldots, \mathbf{o}_t$ is encoded
+encoder is configured with a temporal window $W > 1$, each of the $W$
+consecutive frames $\mathbf{o}_{t-W+1}, \ldots, \mathbf{o}_t$ is encoded
 independently with shared weights, and a lightweight Temporal
 Aggregator fuses the per frame embeddings into one trajectory aware
 embedding $\mathbf{z}^\mathrm{agg}_t \in \mathbb{R}^d$. The aggregator
@@ -1422,11 +1422,11 @@ learnable positional code per slot; the output at the last position
 attends over the full window and is used as the aggregated embedding:
 \begin{equation}
   \mathbf{z}^\mathrm{agg}_t = \mathrm{TempAgg}\!\left(
-    \mathbf{z}_{t-w+1}, \ldots, \mathbf{z}_t
+    \mathbf{z}_{t-W+1}, \ldots, \mathbf{z}_t
   \right).
   \label{eq:temporal_agg}
 \end{equation}
-Setting $w{=}1$ recovers the snapshot baseline; the parameter overhead
+Setting $W{=}1$ recovers the snapshot baseline; the parameter overhead
 of the aggregator is $\mathcal{O}(d^2)$, negligible relative to the
 predictor.
 
@@ -1517,7 +1517,7 @@ Section~\ref{sec:run_inventory}.
     SIGReg weight $\lambda$       & 0.15 \\
     SIGReg knots / projections    & 17 / 1024 \\
     Predictor history $H$         & $\{8, 16, 32\}$ \\
-    Encoder window $w$            & $\{1, 5, 10\}$ \\
+    encoder window $W$            & $\{1, 5, 10\}$ \\
     Predictor stride $S$          & $\{1, 5, 10, 20\}$ \\
     \bottomrule
   \end{tabular}
@@ -1526,7 +1526,7 @@ Section~\ref{sec:run_inventory}.
 \subsection{Downstream Evaluation Probes}
 \label{app:probes}
 
-After training, the encoder and the temporal aggregator (when $w > 1$)
+After training, the encoder and the temporal aggregator (when $W > 1$)
 are frozen, and small heads are trained on the frozen embeddings to
 expose what the world model representation actually captures. The
 probes use the same train and test splits as the world model, but they
@@ -1564,7 +1564,7 @@ readout. We report this probe as a placeholder for future work that
 should explicitly handle event sparsity.
 
 \paragraph{What each temporal hyperparameter controls.}
-The encoder window $w$, the predictor history $H$, and the probe input
+The encoder window $W$, the predictor history $H$, and the probe input
 length \texttt{seq\_len} are independent design knobs whose effects are
 summarised in Table~\ref{tab:temp_hyperparams}.
 
@@ -1575,7 +1575,7 @@ summarised in Table~\ref{tab:temp_hyperparams}.
     \toprule
     Parameter & Affects encoder? & Affects predictor? & Affects probe? \\
     \midrule
-    $w$ (encoder window) &
+    $W$ (encoder window) &
     Yes, depth of temporal fusion inside $\mathbf{z}_t$ &
     Indirectly, through richer $\mathbf{z}_t$ &
     Indirectly \\
@@ -1789,16 +1789,76 @@ reported in Section~\ref{sec:results}.
 \subsection{Counterfactual fidelity curves}
 \label{sec:counterfactual_curves}
 
-Figure~\ref{fig:s4_counterfactual} reports the per checkpoint and
-per action curves underlying the counterfactual fidelity summary in
-Section~\ref{sec:results}. The top row plots absolute mean HI RMSE
-between the world model and the simulator under the same overridden
-action; the bottom row plots the differential
+Table~\ref{tab:cf_summary} reports the aggregate counterfactual
+fidelity scores referenced in Section~\ref{sec:results}, computed over
+thirty held out episodes $\times$ three branch positions $\times$ seven
+maintenance actions per checkpoint. Pearson, sign agreement and
+magnitude ratio are means across the seven actions; $R^2$ is reported
+in the rightmost column for completeness and is negative for every
+configuration, meaning the constant zero predictor (do nothing baseline)
+beats every SSL world model on this task.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Counterfactual fidelity, aggregated across seven maintenance
+actions and thirty episodes per branch position.
+$\lVert\cdot\rVert / \lVert\cdot\rVert$ is the magnitude ratio of the
+predicted action induced HI delta to the simulator's; values above 1
+indicate overshoot. Sign agreement is the fraction of (HI, action)
+pairs whose predicted delta matches the simulator's sign. Best per
+column in bold.}
+\label{tab:cf_summary}
+\begin{tabular}{l c c c c}
+\toprule
+ckpt & mean Pearson & sign agree & $\lVert\Delta_\mathrm{model}\rVert / \lVert\Delta_\mathrm{sim}\rVert$ & mean $R^2$ \\
+\midrule
+\multicolumn{5}{l}{\textit{JEPA}} \\
+$E_1$        & $+0.165$            & $0.602$           & $2.35$           & $-15.6$ \\
+$E_2$        & $+0.141$            & $0.667$           & $3.00$           & $-23.6$ \\
+$E_5$        & $\mathbf{+0.204}$   & $0.650$           & $2.03$           & $-11.4$ \\
+$E_6$        & $+0.197$            & $0.724$           & $2.37$           & $-15.7$ \\
+$E_7$        & $+0.077$            & $0.731$           & $2.69$           & $-20.4$ \\
+\midrule
+\multicolumn{5}{l}{\textit{AR LSTM}} \\
+$L_1$        & $+0.112$            & $0.641$           & $2.49$           & --      \\
+$L_2$        & $+0.131$            & $0.655$           & $2.98$           & --      \\
+$L_\mathrm{big}$ & $+0.106$        & $\mathbf{0.744}$  & $\mathbf{1.66}$  & --      \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three patterns visible in the table.
+\begin{itemize}
+  \item \emph{Direction over magnitude.} Sign agreement is well above
+    the 0.5 chance baseline for every checkpoint, while Pearson stays
+    in $[0.08, 0.20]$ and the magnitude ratio is consistently above 1
+    (overshoot). The two predictor families behave the same way on
+    this axis.
+  \item \emph{Best-of differs by metric.} The leader on Pearson ($E_5$),
+    sign agreement ($L_\mathrm{big}$) and magnitude ratio
+    ($L_\mathrm{big}$) are not the same checkpoint. A single number is
+    not enough to rank world models for action conditioned use.
+  \item \emph{Magnitude tracks temporal context.} The only checkpoint
+    with a magnitude ratio below 2 is $L_\mathrm{big}$, which has the
+    longest predictor history ($H{=}32$) and the largest encoder
+    aggregator window ($W{=}4$) of any model in the table. This is
+    consistent with the in distribution and OOD probe trends reported
+    in Section~\ref{sec:results}.
+\end{itemize}
+
+Figure~\ref{fig:s4_counterfactual} reports the underlying per
+checkpoint and per action curves: the top row plots absolute mean HI
+RMSE between the world model and the simulator under the same
+overridden action; the bottom row plots the differential
 $|\Delta_\mathrm{model}(a, 0) - \Delta_\mathrm{sim}(a, 0)|$, which
 subtracts the \emph{do nothing} baseline from both rollouts and
 isolates the action specific response. Curves are means over thirty
 episodes and three branch positions per checkpoint, with a one
-standard deviation band around the mean.
+standard deviation band around the mean. The wash overshoot reported
+in Section~\ref{sec:results} is most visible in the bottom row of the
+JEPA columns: the differential for action 6 (\texttt{engine\_wash})
+saturates well above the differential for any other action.
 
 \begin{figure}[h]
     \centering

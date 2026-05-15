@@ -18,7 +18,7 @@
 
 Both used: bf16-mixed, nw=4, AdamW lr=7e-5 cosine schedule, JEPA encoder (828K params),
 hi_probe at epochs 5 & 9 (probe_seq_len = HISTORY_LEN), `wandb.config.project=turbofan_S4`,
-data = `/home/lthil/.stable_worldmodel/scenario4_train_lewm.h5`.
+data = `/home/lthil/.stable_worldmodel/turbosens2_train.h5`.
 
 ## Final metrics
 

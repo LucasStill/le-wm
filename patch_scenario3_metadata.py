@@ -2,7 +2,7 @@
 """
 patch_scenario3_metadata.py
 ===========================
-Adds missing metadata from a scenario3 ``*_sensors.h5`` source file into an
+Adds missing metadata from a turbosens1 ``*_sensors.h5`` source file into an
 existing ``*_lewm.h5`` file, in place.
 
 Why this exists
@@ -40,8 +40,8 @@ Usage
 -----
   # Single file
   python patch_scenario3_metadata.py \\
-      --source /path/to/scenario3_train_400_sensors.h5 \\
-      --target /path/to/scenario3_train_400_lewm.h5
+      --source /path/to/turbosens1_train_400_sensors.h5 \\
+      --target /path/to/turbosens1_train.h5
 
   # All three splits (source and target files must be co-located and follow
   # the standard naming convention)
@@ -159,9 +159,9 @@ def patch_one(source: Path, target: Path) -> None:
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 SPLIT_PAIRS = [
-    ("scenario3_train_400_sensors.h5", "scenario3_train_400_lewm.h5"),
-    ("scenario3_test_sensors.h5",      "scenario3_test_lewm.h5"),
-    ("scenario3_test_hard_sensors.h5", "scenario3_test_hard_lewm.h5"),
+    ("turbosens1_train_400_sensors.h5", "turbosens1_train.h5"),
+    ("turbosens1_test_sensors.h5",      "turbosens1_test.h5"),
+    ("turbosens1_test_hard_sensors.h5", "turbosens1_test_hard.h5"),
 ]
 
 

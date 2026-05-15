@@ -1,4 +1,4 @@
-\begin{thebibliography}{20}
+\begin{thebibliography}{21}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -136,6 +136,12 @@ Emmanuel Ramasso and Abhinav Saxena.
 \newblock 2015.
 \newblock URL
   \url{https://ntrs.nasa.gov/api/citations/20150007677/downloads/20150007677.pdf}.
+
+\bibitem[Riegler and Bichlmaier(2007)]{riegler2007geared}
+C~Riegler and C~Bichlmaier.
+\newblock The geared turbofan technology—opportunities, challenges and
+  readiness status.
+\newblock \emph{Porceedings CEAS. Sep}, pages 10--13, 2007.
 
 \bibitem[Riochet et~al.(2018)Riochet, Castro, Bernard, Lerer, Fergus, Izard,
   and Dupoux]{riochet2018intphys}

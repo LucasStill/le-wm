@@ -25,7 +25,7 @@ data:
   dataset:
     num_steps: 64                       # contiguous chunk length per sample
     frameskip: 1
-    name: scenario4_train_lewm
+    name: turbosens2_train
     cache_dir: /home/lucas/.stable_worldmodel
     keys_to_load:
       - pixels
