@@ -255,31 +255,49 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--input",  type=Path, help="Single input _sensors.h5")
     mode.add_argument("--all_splits", action="store_true",
-                      help="Process train / test / test_hard from --data_dir")
+                      help="Process train / test (+ test_hard / test_shift / "
+                           "test_region when present) from --data_dir")
     parser.add_argument("--output", type=Path, help="Output path for --input mode")
     parser.add_argument("--data_dir", type=Path,
-                        help="Directory containing turbosens2_{train,test,test_hard}_sensors.h5")
+                        help="Directory containing turbosens2_{split}_sensors.h5")
     parser.add_argument("--out_dir", type=Path, default=None,
                         help="Output directory for --all_splits (default = data_dir)")
+    parser.add_argument("--stats_from", type=Path, default=None,
+                        help="--input mode: compute normalisation stats from "
+                             "this file (use the TRAIN _sensors.h5) instead of "
+                             "the input itself. Required for eval splits so "
+                             "all splits share the train normalisation.")
     args = parser.parse_args()
 
     if args.all_splits:
         if args.data_dir is None:
             parser.error("--data_dir is required with --all_splits")
         out_dir = args.out_dir or args.data_dir
-        train_in  = args.data_dir / "turbosens2_train_sensors.h5"
-        test_in   = args.data_dir / "turbosens2_test_sensors.h5"
-        hard_in   = args.data_dir / "turbosens2_test_hard_sensors.h5"
+        train_in = args.data_dir / "turbosens2_train_sensors.h5"
 
         ch_min, ch_range = compute_norm_stats(train_in)
 
-        prepare_one(train_in, out_dir / "turbosens2_train.h5",     ch_min, ch_range)
-        prepare_one(test_in,  out_dir / "turbosens2_test.h5",      ch_min, ch_range)
-        prepare_one(hard_in,  out_dir / "turbosens2_test_hard.h5", ch_min, ch_range)
+        prepare_one(train_in, out_dir / "turbosens2_train_lewm.h5",
+                    ch_min, ch_range)
+        # Eval splits are optional: process whichever exist, always with
+        # the TRAIN normalisation stats.
+        for split in ("test", "test_hard", "test_shift", "test_region"):
+            src = args.data_dir / f"turbosens2_{split}_sensors.h5"
+            if src.exists():
+                prepare_one(src, out_dir / f"turbosens2_{split}_lewm.h5",
+                            ch_min, ch_range)
+            else:
+                logging.info(f"  (skipping absent split: {src.name})")
     else:
         if args.output is None:
             parser.error("--output is required with --input")
-        ch_min, ch_range = compute_norm_stats(args.input)
+        stats_src = args.stats_from or args.input
+        if args.stats_from is None:
+            logging.warning(
+                "--input mode without --stats_from: normalisation computed "
+                "from the input itself. Only correct for the TRAIN split; "
+                "eval splits MUST pass --stats_from <train _sensors.h5>.")
+        ch_min, ch_range = compute_norm_stats(stats_src)
         prepare_one(args.input, args.output, ch_min, ch_range)
 
 

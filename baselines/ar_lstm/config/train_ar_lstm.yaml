@@ -35,6 +35,8 @@ sensor_encoder:
   nhead: 4
   num_layers: 2
   dropout: 0.1
+  max_sensors: 200    # positional embedding capacity; must be >= n_sensors
+                      # (200 covers turbosens2's 176 tokens; harmless for 28)
 
 obs_window_size: 1    # 1 = snapshot encoder (matching JEPA baseline)
 
