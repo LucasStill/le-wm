@@ -30,7 +30,7 @@
 #SBATCH --cpus-per-task=24
 #SBATCH --gpus-per-task=1
 #SBATCH --time=20:00:00
-#SBATCH --array=0-17
+#SBATCH --array=0-20%18
 #SBATCH --output=logs/ts21_sweep_%A_%a.out
 #SBATCH --error=logs/ts21_sweep_%A_%a.out
 #SBATCH -C h100
@@ -55,13 +55,18 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 # ── config table ──────────────────────────────────────────────────────────────
 CFG=$((SLURM_ARRAY_TASK_ID / 3))
 SEED=$((SLURM_ARRAY_TASK_ID % 3))
-IDS=(J16 J32 J160 J320 L16 LBIG)
-FAMS=(jepa jepa jepa jepa lstm lstm)
-HS=(16 32 16 16 16 32)
-SS=(1 1 10 20 1 1)
-WS=(1 1 1 1 1 4)
-BS=(512 512 256 128 512 256)
-ACC=(1 1 2 4 1 2)
+IDS=(J16 J32 J160 J320 L16 LBIG L160)
+FAMS=(jepa jepa jepa jepa lstm lstm lstm)
+HS=(16 32 16 16 16 32 160)
+SS=(1 1 10 20 1 1 1)
+WS=(1 1 1 1 1 4 1)
+BS=(512 512 256 128 512 256 256)
+ACC=(1 1 2 4 1 2 2)
+# L160 (tasks 18-20): the missing cell of the 2x2 — a recurrent model
+# whose TRAINING context (160 raw steps + P=4) spans the wash interval,
+# so the objective incentivises cross wash integration. Submit with:
+#   sbatch --array=18-20 --time=40:00:00 --qos=qos_gpu_h100-t4 \
+#     train_sweep_turbosens21.slurm
 
 ID=${IDS[$CFG]}; FAM=${FAMS[$CFG]}; H=${HS[$CFG]}; S=${SS[$CFG]}
 W=${WS[$CFG]}; NBS=${BS[$CFG]}; NACC=${ACC[$CFG]}
